@@ -1,0 +1,4 @@
+[submodule "experiment/exptools2"]
+	path = experiment/exptools2
+	url = git@github.com:Gilles86/exptools2.git
+	branch = master

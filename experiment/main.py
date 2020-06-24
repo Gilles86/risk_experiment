@@ -73,9 +73,9 @@ class MapperTrial(Trial):
         if self.phase % 2 == 0:
             self.stimulus_arrays[int(self.phase / 2)].draw()
 
-    def log_phase_info(self, phase=None):
+    def log_phase_info(self):
         self.parameters['color'] = self.colors[int(self.phase/2)]
-        super().log_phase_info(phase=phase)
+        super().log_phase_info()
 
     def _create_stimulus_array(self, n_dots, circle_radius, dot_radius,
             image):

@@ -4,13 +4,14 @@ preferences:
     units: deg
 
 window:
-  size: [1440, 900]
+  #size: [800, 600]
   pos: [0, 0]
   color: [0, 0, 0]
-  fullscr: False
-  #winType: pyglet
-  waitBlanking: True
+  fullscr: True
+  winType: glfw
+  #waitBlanking: True
   screen: 0
+  #refreshHz: 30
 
 monitor:
   name: default
@@ -19,7 +20,9 @@ monitor:
   gamma: 1
 
 mouse:
-  visible: False
+  visible: True
+  setup: False
+  
 
 eyetracker:
   model: eyelink
