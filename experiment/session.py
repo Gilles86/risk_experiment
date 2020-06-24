@@ -1,0 +1,27 @@
+from stimuli import FixationLines
+from exptools2.core import Session
+from psychopy import visual
+
+class PileSession(Session):
+    """ Simple session with x trials. """
+    def __init__(self, output_str, output_dir=None, settings_file=None):
+        """ Initializes TestSession object. """
+        super().__init__(output_str, output_dir=None, settings_file=settings_file)
+
+        print(self.settings)
+
+        self.fixation_lines = FixationLines(self.win,
+                self.settings['pile'].get('aperture_size'),
+                color=(1, -1, -1))
+        
+        self.image1 = visual.ImageStim(self.win, 
+                self.settings['pile'].get('image1'),
+                size=self.settings['pile'].get('dot_size'))
+
+    def run(self):
+        """ Runs experiment. """
+        self.start_experiment()
+        for trial in self.trials:
+            trial.run()
+
+        self.close()
