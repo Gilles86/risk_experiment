@@ -6,6 +6,7 @@ import argparse
 from stimuli import _create_stimulus_array
 from session import PileSession
 from trial import InstructionTrial
+from utils import run_experiment
 
         
 class MapperTrial(Trial):
@@ -46,24 +47,23 @@ class MapperTrial(Trial):
 class MapperSession(PileSession):
 
     def __init__(self, output_str, output_dir=None, settings_file=None):
-        print(settings_file)
         super().__init__(output_str, output_dir=None, settings_file=settings_file)
-        print(self.settings)
         self.image2 = visual.ImageStim(self.win, 
                 self.settings['pile'].get('image2'),
                 size=self.settings['pile'].get('dot_size'))
 
-    def create_trials(self, durations=(2., 5.), timing='seconds'):
-        n_dummies = self.settings['mri'].get('n_dummy_scans')
+    def create_trials(self):
 
-        phase_durations = [10000] * (n_dummies + 1)
+        n_dummies = self.settings['mri'].get('n_dummy_scans')
+        phase_durations = [np.inf] * (n_dummies + 1)
+
+        self.trials = [InstructionTrial(session=self, trial_nr=0,
+            phase_durations=phase_durations)]
 
         design = self.settings['mapper'].get('design')
         n_blocks = self.settings['mapper'].get('n_repeats_blocks')
         block_length = len(self.settings['mapper'].get('design'))
 
-        self.trials = [InstructionTrial(session=self, trial_nr=0,
-            phase_durations=phase_durations)]
         for block in range(n_blocks):
             for trial_nr, n_dots in enumerate(design):
 
@@ -71,36 +71,15 @@ class MapperSession(PileSession):
                 self.trials.append(
                     MapperTrial(session=self,
                               trial_nr=trial_nr,
-                              phase_durations=durations,
+                              phase_durations=[],
                               txt='Trial %i' % (trial_nr),
                               n_dots=n_dots,
-                              verbose=True,
-                              timing=timing)
+                              verbose=True,)
                 )
 
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('subject', default=None, nargs='?')
-    parser.add_argument('session', default=None, nargs='?')
-    args = parser.parse_args()
-    
-    if args.subject is None:
-        subject = input('Subject? (999): ')
-        subject = 999 if subject  == '' else subject
-    else:
-        subject = args.subject
-
-    if args.subject is None:
-        session = input('Session? (1): ')
-        session = 1 if session  == '' else session
-    else:
-        session = args.session
-
-    settings = op.join(op.dirname(__file__), 'settings.yml')
-    session = MapperSession(f'sub-{subject}_ses-{session}', settings_file=settings)
-    session.create_trials(durations=(.4, .6), timing='seconds')
-
-    session.run()
-    session.quit()
+    session_cls = MapperSession
+    name = 'mapper'
+    run_experiment(session_cls, name)
