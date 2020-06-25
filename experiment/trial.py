@@ -13,7 +13,8 @@ class InstructionTrial(Trial):
             Indicate when the fixation cross changes to green with your 
             index finger. Response with your middle finger if the fixation
             cross changes to red.'''
-            self.text = TextStim(self.session.win, txt)
+
+        self.text = TextStim(self.session.win, txt)
 
         self.n_triggers = 0
 
