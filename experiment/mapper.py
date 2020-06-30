@@ -40,9 +40,9 @@ class MapperTrial(Trial):
         if self.phase % 2 == 0:
             self.stimulus_arrays[int(self.phase / 2)].draw()
 
-    def log_phase_info(self):
+    def log_phase_info(self, phase=None):
         self.parameters['color'] = self.colors[int(self.phase/2)]
-        super().log_phase_info()
+        super().log_phase_info(phase=phase)
 
 class MapperSession(PileSession):
 
