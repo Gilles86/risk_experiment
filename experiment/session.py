@@ -4,9 +4,10 @@ from psychopy import visual
 
 class PileSession(Session):
     """ Simple session with x trials. """
-    def __init__(self, output_str, output_dir=None, settings_file=None):
+    def __init__(self, output_str, subject=None, output_dir=None, settings_file=None):
         """ Initializes TestSession object. """
         super().__init__(output_str, output_dir=None, settings_file=settings_file)
+        self.subject = subject
 
         print(self.settings)
 

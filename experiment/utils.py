@@ -20,7 +20,7 @@ def run_experiment(session_cls, name, *args, **kwargs):
         session = args.session
 
     settings = op.join(op.dirname(__file__), 'settings.yml')
-    session = session_cls(f'sub-{subject}_ses-{name}_{session}', settings_file=settings)
+    session = session_cls(f'sub-{subject}_ses-{name}_{session}', settings_file=settings, subject=subject)
     session.create_trials()
     session.run()
     session.quit()

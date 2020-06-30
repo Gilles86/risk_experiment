@@ -7,6 +7,8 @@ from utils import run_experiment
 from stimuli import _create_stimulus_array, CertaintyStimulus, ProbabilityPieChart
 import numpy as np
 from psychopy import logging
+import os.path as op
+import pandas as pd
 
 class CalibrationSession(PileSession):
 
@@ -18,21 +20,43 @@ class CalibrationSession(PileSession):
 
         txt = """
         In this task, you will see two piles of swiss Franc coins in
-        succession combined with a pie chart in the middle of the screen.
-        The amount of the pile chart that is colored indicates
-        the probability of a lottery you will gain that amount of 
-        Swiss Francs.
-        Note that always one of the two piles has a probability of
-        100% for payout. The other probability changes every 
-        16 trials.
-        """
-        # self.trials = [InstructionTrial(session=self, trial_nr=0,
-            # phase_durations=phase_durations, txt=txt)]
-        self.trials = [IntroBlockTrial(session=self, trial_nr=0),
-                GambleTrial(self, 1),
-                GambleTrial(self, 2),
-                GambleTrial(self, 3)]
+        succession. Both piles are combined with a pie chart in.
+        The amount of the pile chart that is lightly colored indicates
+        the probability of a lottery you will gain the amount of 
+        Swiss Francs represented by the pile.
+        One of the two piles has a probability of 100% for payout.
+        The other probability changes every 16 trials.
 
+        Your task is to either select the first lottery or
+        the second lottery, by using your index or middle finger.
+        Immediately after your choice, we ask how certain you were
+        about your choice from a scale from 1 (very uncertain)
+        to 4 (very certain).
+
+        """
+
+        trial_settings = pd.read_csv(op.abspath(op.join('settings',
+            f'sub-{self.subject}_ses-calibrate.tsv')), sep='\t')
+
+        self.trials = []
+
+        jitter1 = self.settings['calibrate'].get('jitter1')
+        jitter2 = self.settings['calibrate'].get('jitter2')
+
+        trial_settings = trial_settings[trial_settings.trial < 100]
+        for (run, p1, p2), d in trial_settings.groupby(['run', 'p1', 'p2']):
+            self.trials.append(IntroBlockTrial(session=self, trial_nr=run,
+                prob1=p1,
+                prob2=p2))
+
+            for ix, row in d.iterrows():
+                print(row)
+                self.trials.append(GambleTrial(self, row.trial,
+                    prob1=row.p1, prob2=row.p2,
+                    num1=int(row.n1), 
+                    num2=int(row.n2),
+                    jitter1=jitter1,
+                    jitter2=jitter2))
 
 class IntroBlockTrial(Trial):
 
@@ -50,8 +74,8 @@ class IntroBlockTrial(Trial):
         text_height = self.session.settings['various'].get('text_height')
         piechart_width = self.session.settings['various'].get('piechart_width')
 
-        piechart_pos1 = .6 * -text_width - .5 * piechart_width, .75 * piechart_width
-        piechart_pos2 = .6 * -text_width - .5 * piechart_width, -.75 * piechart_width
+        piechart_pos1 = .6 * -text_width - .5 * piechart_width, 1.5 * piechart_width
+        piechart_pos2 = .6 * -text_width - .5 * piechart_width, -1.5 * piechart_width
 
         self.piechart1 = ProbabilityPieChart(self.session.win, prob1, pos=piechart_pos1, size=piechart_width)
         self.piechart2 = ProbabilityPieChart(self.session.win, prob2, pos=piechart_pos2, size=piechart_width)
@@ -70,11 +94,11 @@ class IntroBlockTrial(Trial):
 class GambleTrial(Trial):
     def __init__(self, session, trial_nr, phase_durations=None, 
             prob1=0.55, prob2=1.0, num1=10, num2=5,
-            jitter1=4, jitter2=4, **kwargs):
+            jitter1=2.5, jitter2=4.0, **kwargs):
 
 
         if phase_durations is None:
-            phase_durations = [.5, .5, .3, jitter1, .5, .5, .3, jitter2] 
+            phase_durations = [.3, .5, .6, jitter1, .3, .5, .6, jitter2] 
         else:
             raise Exception("Don't directly set phase_durations for GambleTrial!")
 
@@ -83,11 +107,16 @@ class GambleTrial(Trial):
         self.parameters['prob1'] = prob1
         self.parameters['prob2'] = prob2
 
+        self.parameters['n1'] = num1
+        self.parameters['n2'] = num2
+
         self.buttons = self.session.settings['various'].get('buttons')
         piechart_width = self.session.settings['various'].get('piechart_width')
 
         self.piechart1 = ProbabilityPieChart(self.session.win, prob=prob1, size=piechart_width)
         self.piechart2 = ProbabilityPieChart(self.session.win, prob=prob2, size=piechart_width)
+
+        # self.text1 = TextStim('Pie1: {int(
 
         self.pile1 = _create_stimulus_array(self.session.win,
             num1,
@@ -103,7 +132,8 @@ class GambleTrial(Trial):
 
 
         self.choice_stim = TextStim(self.session.win)
-        self.certainty_stim = CertaintyStimulus(self.session.win, response_size=[4, 1])
+        button_size = self.session.settings['various'].get('button_size')
+        self.certainty_stim = CertaintyStimulus(self.session.win, response_size=[button_size, button_size])
 
         self.choice = None
         self.certainty = None
@@ -119,7 +149,7 @@ class GambleTrial(Trial):
             self.pile1.draw()
         elif self.phase == 4:
             self.piechart2.draw()
-        elif self.phase == 5:
+        elif self.phase == 6:
             self.pile2.draw()
 
         if self.choice is not None:

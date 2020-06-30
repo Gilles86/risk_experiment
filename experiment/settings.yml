@@ -40,7 +40,7 @@ mri:
   n_dummy_scans: 4
 
 pile:
-  aperture_size: 10
+  aperture_size: 15
   dot_size: .5
   image1: 'assets/onefranc_v3.png'
   image2: 'assets/onefranc_v3_neg.png'
@@ -57,13 +57,14 @@ calibrate:
   p_stim1: [1, .43, .55, .71]
   p_stim2: [1, .43, .55, .71]
 
-  jitter1: [1, 1.5, 2]
-  jitter2: [1, 1.5, 2]
+  jitter1: 1.5
+  jitter2: 3.5
 
 various:
-  piechart_width: 1.5 
-  text_width: 10
-  text_height: .5
-  buttons: ['h', 'j', 'k', 'l']
+  piechart_width: 1 
+  text_width: 20
+  text_height: .75
+  buttons: ['j', 'k', 'l', 'semicolon']
+  button_size: 2
 
 

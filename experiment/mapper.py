@@ -46,7 +46,7 @@ class MapperTrial(Trial):
 
 class MapperSession(PileSession):
 
-    def __init__(self, output_str, output_dir=None, settings_file=None):
+    def __init__(self, output_str, subject=None, output_dir=None, settings_file=None):
         super().__init__(output_str, output_dir=None, settings_file=settings_file)
         self.image2 = visual.ImageStim(self.win, 
                 self.settings['pile'].get('image2'),

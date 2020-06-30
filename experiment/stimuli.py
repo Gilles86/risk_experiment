@@ -58,14 +58,16 @@ class CertaintyStimulus(object):
         self.rectangles = [Rect(window, size=response_size, pos=positions[n], opacity=.5,
             fillColor=fillColor) for n in range(n_responses)]
 
-        texts = ['Very unsure', 'Somewhat unsure', 'Somewhat sure', 'Very sure']
         self.stim_texts = [TextStim(window, 
             height=.45*response_size[1],
             wrapWidth = .9*response_size[0], 
             pos=positions[n],
             color=(-1, -1, -1),
-            text=texts[n]) for n in range(n_responses)]
+            text=n+1) for n in range(n_responses)]
 
+        
+        self.description_text = TextStim(window, pos=(0, 1.5 * response_size[1]), wrapWidth=response_size[0] * 8.8,
+        text='How certain are you about your choice (1=very uncertain,  4= very certain)')
 
     def draw(self):
         for rect in self.rectangles:
@@ -74,10 +76,12 @@ class CertaintyStimulus(object):
         for txt in self.stim_texts:
             txt.draw()
 
+        self.description_text.draw()
+
 
 class ProbabilityPieChart(object):
 
-    def __init__(self, window, prob, size, pos=(0.0, 0.0), color_pos=(.75, .75, .75), color_neg=(-.75, -.75, -.75)):
+    def __init__(self, window, prob, size, prefix='', pos=(0.0, 0.0), color_pos=(.65, .65, .65), color_neg=(-.65, -.65, -.65)):
 
         deg = prob * 360.
 
@@ -88,9 +92,14 @@ class ProbabilityPieChart(object):
                 pos=pos,
                 size=size)
 
+        txt = f'{prefix}{int(prob*100):d}%'
+        self.text = TextStim(window, pos=(pos[0], pos[1]+size*1.5),
+                text=txt, wrapWidth=size*3, height=size*.75)
+
     def draw(self):
         self.piechart_pos.draw()
         self.piechart_neg.draw()
+        self.text.draw()
 
 
 def _sample_dot_positions(n=10, circle_radius=20, dot_radius=1, max_tries=500000):
