@@ -21,7 +21,6 @@ monitor:
 
 mouse:
   visible: True
-  setup: False
   
 
 eyetracker:
