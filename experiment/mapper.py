@@ -50,6 +50,7 @@ class MapperSession(PileSession):
         super().__init__(output_str, output_dir=None, settings_file=settings_file)
         self.image2 = visual.ImageStim(self.win, 
                 self.settings['pile'].get('image2'),
+                texRes=32,
                 size=self.settings['pile'].get('dot_size'))
 
     def create_trials(self):
@@ -76,6 +77,10 @@ class MapperSession(PileSession):
                               n_dots=n_dots,
                               verbose=True,)
                 )
+
+        outro_trial = InstructionTrial(session=self, trial_nr=n_blocks*len(design)+1,
+                phase_durations=[0, 10], txt='')
+        self.trials.append(outro_trial)
 
 
 if __name__ == '__main__':

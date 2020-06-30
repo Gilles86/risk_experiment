@@ -16,6 +16,7 @@ class PileSession(Session):
         
         self.image1 = visual.ImageStim(self.win, 
                 self.settings['pile'].get('image1'),
+                texRes=32,
                 size=self.settings['pile'].get('dot_size'))
 
     def run(self):
