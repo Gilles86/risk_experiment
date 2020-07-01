@@ -12,6 +12,8 @@ window:
   #waitBlanking: True
   screen: 1
   #refreshHz: 30
+  viewPos: [0, 7.5]
+  #viewScale: [.5, .5]
 
 monitor:
   name: default
@@ -39,8 +41,8 @@ mri:
   n_dummy_scans: 4
 
 pile:
-  aperture_size: 15
-  dot_size: .5
+  aperture_size: 17
+  dot_size: .9
   image1: 'assets/onefranc_v3.png'
   image2: 'assets/onefranc_v3_neg.png'
 

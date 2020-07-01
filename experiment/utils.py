@@ -1,5 +1,7 @@
 import os.path as op
 import argparse
+import numpy as np
+import scipy.stats as ss
 
 def run_experiment(session_cls, name, *args, **kwargs):
     parser = argparse.ArgumentParser()
@@ -24,3 +26,15 @@ def run_experiment(session_cls, name, *args, **kwargs):
     session.create_trials()
     session.run()
     session.quit()
+
+def sample_isis(n, s=1.0, loc=0.0, scale=10, cut=30):
+
+    d = np.zeros(n, dtype=int)
+    changes = ss.lognorm(s, loc, scale).rvs(n)
+    changes = changes[changes < cut]
+    
+    ix = np.cumsum(changes).astype(int)
+    ix = ix[ix < len(d)]
+    d[ix] = 1
+    
+    return d

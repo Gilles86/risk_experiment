@@ -6,11 +6,11 @@ import argparse
 from stimuli import _create_stimulus_array
 from session import PileSession
 from trial import InstructionTrial
-from utils import run_experiment
+from utils import run_experiment, sample_isis
 
         
 class MapperTrial(Trial):
-    def __init__(self, session, trial_nr, phase_durations, txt=None,
+    def __init__(self, session, trial_nr, phase_durations, colors,
             n_dots=5, **kwargs):
 
         phase_durations = []
@@ -24,13 +24,12 @@ class MapperTrial(Trial):
         super().__init__(session, trial_nr, phase_durations, **kwargs)
 
         self.parameters['n_dots'] = n_dots
-
-        self.colors = list(((np.random.rand(mapper_settings.get('n_repeats_stimulus')) < mapper_settings.get('p_oddball')) + 1).astype(int))
+        self.colors = colors
 
         self.stimulus_arrays = [_create_stimulus_array(self.session.win, n_dots,
             self.session.settings['pile'].get('aperture_size'),
             self.session.settings['pile'].get('dot_size')/2.,
-            image=[self.session.image1, self.session.image2][color-1])  \
+            image=[self.session.image1, self.session.image2][color])  \
                     for i, color in enumerate(self.colors)]
 
     def draw(self):
@@ -64,17 +63,21 @@ class MapperSession(PileSession):
         design = self.settings['mapper'].get('design')
         n_blocks = self.settings['mapper'].get('n_repeats_blocks')
         block_length = len(self.settings['mapper'].get('design'))
+        n_repeats_stimulus = self.settings['mapper'].get('n_repeats_stimulus')
+
+        colors = sample_isis(n_blocks * block_length * n_repeats_stimulus)
 
         for block in range(n_blocks):
             for trial_nr, n_dots in enumerate(design):
-
                 trial_nr += block*block_length + 1
+
+                color_ix = (trial_nr-1)*n_repeats_stimulus, trial_nr*n_repeats_stimulus
                 self.trials.append(
                     MapperTrial(session=self,
                               trial_nr=trial_nr,
                               phase_durations=[],
-                              txt='Trial %i' % (trial_nr),
                               n_dots=n_dots,
+                              colors=colors[color_ix[0]:color_ix[1]],
                               verbose=True,)
                 )
 
