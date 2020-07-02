@@ -37,6 +37,7 @@ class DummyWaiterTrial(InstructionTrial):
     def get_events(self):
         events = super().get_events()
 
-        for key, t in events:
-            if key == self.session.mri_trigger:
-                self.stop_phase()
+        if events:
+            for key, t in events:
+                if key == self.session.mri_trigger:
+                    self.stop_phase()
