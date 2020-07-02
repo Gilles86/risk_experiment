@@ -60,9 +60,10 @@ class MapperSession(PileSession):
         txt = """
         You will now see piles of one-CHF coins in rapid succession.
         Your task is to indicate every time you see coins that are a bit
-        darker, by pressing with your index finger.\n
+        darker, by pressing the first button (index finger).\n
         It is important that you do not move your eyes. Keep looking
         at where the two red lines cross each other.
+        Press any of your buttons to start.
         """
 
         self.trials = [InstructionTrial(session=self, trial_nr=0, txt=txt)]
