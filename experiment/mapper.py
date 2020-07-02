@@ -5,7 +5,7 @@ import numpy as np
 import argparse
 from stimuli import _create_stimulus_array
 from session import PileSession
-from trial import InstructionTrial
+from trial import InstructionTrial, DummyWaiterTrial
 from utils import run_experiment, sample_isis
 
         
@@ -45,8 +45,11 @@ class MapperTrial(Trial):
 
 class MapperSession(PileSession):
 
+    Trial = MapperTrial
+
     def __init__(self, output_str, subject=None, output_dir=None, settings_file=None):
         super().__init__(output_str, output_dir=None, settings_file=settings_file)
+
         self.image2 = visual.ImageStim(self.win, 
                 self.settings['pile'].get('image2'),
                 texRes=32,
@@ -54,11 +57,18 @@ class MapperSession(PileSession):
 
     def create_trials(self):
 
-        n_dummies = self.settings['mri'].get('n_dummy_scans')
-        phase_durations = [np.inf] * (n_dummies + 1)
+        txt = """
+        You will now see piles of one-CHF coins in rapid succession.
+        Your task is to indicate every time you see coins that are a bit
+        darker, by pressing with your index finger.\n
+        It is important that you do not move your eyes. Keep looking
+        at where the two red lines cross each other.
+        """
 
-        self.trials = [InstructionTrial(session=self, trial_nr=0,
-            phase_durations=phase_durations)]
+        self.trials = [InstructionTrial(session=self, trial_nr=0, txt=txt)]
+
+        n_dummies = self.settings['mri'].get('n_dummy_scans')
+        self.trials.append(DummyWaiterTrial(session=self, n_triggers=n_dummies, trial_nr=0))
 
         design = self.settings['mapper'].get('design')
         n_blocks = self.settings['mapper'].get('n_repeats_blocks')
@@ -73,7 +83,7 @@ class MapperSession(PileSession):
 
                 color_ix = (trial_nr-1)*n_repeats_stimulus, trial_nr*n_repeats_stimulus
                 self.trials.append(
-                    MapperTrial(session=self,
+                    self.Trial(session=self,
                               trial_nr=trial_nr,
                               phase_durations=[],
                               n_dots=n_dots,

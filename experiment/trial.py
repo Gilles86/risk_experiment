@@ -1,28 +1,38 @@
+import numpy as np
 from exptools2.core import Trial
 from psychopy.visual import TextStim
 
 class InstructionTrial(Trial):
-    """ Simple trial with text (trial x) and fixation. """
-    def __init__(self, session, trial_nr, phase_durations=[10000],
+    """ Simple trial with instruction text. """
+    def __init__(self, session, trial_nr, phase_durations=[np.inf],
             txt=None, **kwargs):
 
         super().__init__(session, trial_nr, phase_durations, **kwargs)
 
         if txt is None:
-            txt = '''Keep looking at the colored cross in the middle of the screen.
-            Indicate when the fixation cross changes to green with your 
-            index finger. Response with your middle finger if the fixation
-            cross changes to red.'''
+            txt = '''Pess any button to continue.'''
 
         self.text = TextStim(self.session.win, txt)
 
         self.n_triggers = 0
 
     def draw(self):
-        if self.phase == 0:
-            self.text.draw()
-        if self.phase > 0:
-            self.session.fixation_lines.draw()
+        self.text.draw()
+
+    def get_events(self):
+        events = super().get_events()
+
+        if events:
+            self.stop_phase()
+
+class DummyWaiterTrial(InstructionTrial):
+    """ Simple trial with text (trial x) and fixation. """
+    def __init__(self, session, trial_nr, phase_durations=None, n_triggers=1,
+            txt="Waiting for scanner triggers.", **kwargs):
+        phase_durations = [np.inf] * n_triggers
+
+        super().__init__(session, trial_nr, phase_durations, txt, **kwargs)
+
 
     def get_events(self):
         events = super().get_events()
