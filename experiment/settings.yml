@@ -12,7 +12,7 @@ window:
   #waitBlanking: True
   screen: 1
   #refreshHz: 30
-  viewPos: [0, 7.5]
+  viewPos: [0, 0]
   #viewScale: [.5, .5]
 
 monitor:
@@ -41,8 +41,8 @@ mri:
   n_dummy_scans: 4
 
 pile:
-  aperture_size: 17
-  dot_size: .9
+  aperture_size: 15
+  dot_size: 1.
   image1: 'assets/onefranc_v3.png'
   image2: 'assets/onefranc_v3_neg.png'
 
