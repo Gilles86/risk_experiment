@@ -66,10 +66,14 @@ class MapperSession(PileSession):
         Press any of your buttons to start.
         """
 
-        self.trials = [InstructionTrial(session=self, trial_nr=0, txt=txt)]
+        txt_height = self.settings['various'].get('text_height')
+        txt_width = self.settings['various'].get('text_width')
+        self.trials = [InstructionTrial(session=self, trial_nr=0, txt=txt,
+            height=txt_height, wrapWidth=txt_width)]
 
         n_dummies = self.settings['mri'].get('n_dummy_scans')
-        self.trials.append(DummyWaiterTrial(session=self, n_triggers=n_dummies, trial_nr=0))
+        self.trials.append(DummyWaiterTrial(session=self, n_triggers=n_dummies, trial_nr=0,
+            height=txt_height, wrapWidth=txt_width))
 
         design = self.settings['mapper'].get('design')
         n_blocks = self.settings['mapper'].get('n_repeats_blocks')

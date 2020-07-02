@@ -7,12 +7,16 @@ class InstructionTrial(Trial):
     def __init__(self, session, trial_nr, phase_durations=[np.inf],
             txt=None, **kwargs):
 
+        txt_height = kwargs.pop('height', None)
+        txt_width = kwargs.pop('wrapWidth', None)
+
         super().__init__(session, trial_nr, phase_durations, **kwargs)
 
         if txt is None:
             txt = '''Pess any button to continue.'''
 
-        self.text = TextStim(self.session.win, txt)
+        self.text = TextStim(self.session.win, txt,
+                height=txt_height, wrapWidth=txt_width, **kwargs)
 
         self.n_triggers = 0
 

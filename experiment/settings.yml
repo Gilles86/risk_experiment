@@ -4,7 +4,7 @@ preferences:
     units: deg
 
 window:
-  #size: [800, 600]
+  size: [1024, 768]
   pos: [0, 0]
   color: [0, 0, 0]
   fullscr: False
@@ -17,8 +17,8 @@ window:
 
 monitor:
   name: default
-  width: 50  # in cm
-  distance: 50  # in cm
+  width: 42  # in cm
+  distance: 125  # in cm
   gamma: 1
 
 mouse:
@@ -41,8 +41,8 @@ mri:
   n_dummy_scans: 4
 
 pile:
-  aperture_size: 15
-  dot_size: 1.
+  aperture_size: 7
+  dot_size: .75
   image1: 'assets/onefranc_v3.png'
   image2: 'assets/onefranc_v3_neg.png'
 
@@ -63,8 +63,8 @@ calibrate:
 
 various:
   piechart_width: 1 
-  text_width: 20
-  text_height: .75
+  text_width: 14
+  text_height: .5
   buttons: ['j', 'k', 'l', 'semicolon']
   button_size: 2
 
