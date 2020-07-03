@@ -7,7 +7,7 @@ window:
   #size: [1280, 900]
   pos: [0, 0]
   color: [0, 0, 0]
-  fullscr: True
+  fullscr: False
   winType: pyglet
   #waitBlanking: True
   screen: 1
@@ -41,10 +41,10 @@ mri:
   n_dummy_scans: 4
 
 pile:
-  aperture_radius: 7.
-  dot_radius: .4
-  image1: 'assets/onefranc_v3.png'
-  image2: 'assets/onefranc_v3_neg.png'
+  aperture_radius: 6.
+  dot_radius: .3
+  image1: 'assets/onefranc_v4.png'
+  image2: 'assets/onefranc_v4_neg.png'
 
 mapper:
   design: [80, 5, 7, 10, 14, 20, 28, 40, 56, 80, 56, 40, 28, 20, 14, 10, 7, 5]
