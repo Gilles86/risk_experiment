@@ -4,20 +4,23 @@ preferences:
     units: deg
 
 window:
-  size: [1280, 400]
-  pos: [0, 200]
+  size: [1280, 1024]
+  pos: [0, 0]
+
   color: [0, 0, 0]
   fullscr: True
   winType: pyglet
   viewPos: [0, 10]
   #waitBlanking: True
-  screen: 0
+  screen: 1
   #refreshHz: 30
+  viewPos: [0, 0]
+  #viewScale: [.5, .5]
 
 monitor:
   name: default
-  width: 50  # in cm
-  distance: 50  # in cm
+  width: 42  # in cm
+  distance: 125  # in cm
   gamma: 1
 
 mouse:
@@ -41,15 +44,15 @@ mri:
   n_dummy_scans: 4
 
 pile:
-  aperture_size: 15
-  dot_size: .5
+  aperture_radius: 7.
+  dot_radius: .4
   image1: 'assets/onefranc_v3.png'
   image2: 'assets/onefranc_v3_neg.png'
 
 mapper:
   design: [80, 5, 7, 10, 14, 20, 28, 40, 56, 80, 56, 40, 28, 20, 14, 10, 7, 5]
   n_repeats_stimulus: 6
-  n_repeats_blocks: 6
+  n_repeats_blocks: 4
   on_duration: .3
   off_duration: .4
   p_oddball: .1
@@ -63,8 +66,8 @@ calibrate:
 
 various:
   piechart_width: 1 
-  text_width: 20
-  text_height: .75
+  text_width: 14
+  text_height: .5
   buttons: ['j', 'k', 'l', 'semicolon']
   button_size: 2
 

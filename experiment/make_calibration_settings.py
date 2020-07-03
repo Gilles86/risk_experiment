@@ -38,7 +38,7 @@ def main(subject):
     df = df.groupby('p1', as_index=False).apply(lambda d: d.sample(frac=1)).reset_index(level=0, drop=True)
 
     # Get run numbers
-    df['run'] = df.groupby('p1').p1.transform(lambda p: np.ceil((np.arange(len(p))+1) / (len(prob1) * N_RUNS))).astype(int)
+    df['run'] = df.groupby('p1').p1.transform(lambda p: np.ceil((np.arange(len(p))+1) / (len(p) / N_RUNS))).astype(int)
 
     df = df.set_index(['run', 'p1'])
     ixs = np.random.permutation(df.index.unique())

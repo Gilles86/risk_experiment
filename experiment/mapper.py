@@ -5,12 +5,12 @@ import numpy as np
 import argparse
 from stimuli import _create_stimulus_array
 from session import PileSession
-from trial import InstructionTrial
-from utils import run_experiment
+from trial import InstructionTrial, DummyWaiterTrial
+from utils import run_experiment, sample_isis
 
         
 class MapperTrial(Trial):
-    def __init__(self, session, trial_nr, phase_durations, txt=None,
+    def __init__(self, session, trial_nr, phase_durations, colors,
             n_dots=5, **kwargs):
 
         phase_durations = []
@@ -24,13 +24,12 @@ class MapperTrial(Trial):
         super().__init__(session, trial_nr, phase_durations, **kwargs)
 
         self.parameters['n_dots'] = n_dots
-
-        self.colors = list(((np.random.rand(mapper_settings.get('n_repeats_stimulus')) < mapper_settings.get('p_oddball')) + 1).astype(int))
+        self.colors = colors
 
         self.stimulus_arrays = [_create_stimulus_array(self.session.win, n_dots,
             self.session.settings['pile'].get('aperture_size'),
             self.session.settings['pile'].get('dot_size')/2.,
-            image=[self.session.image1, self.session.image2][color-1])  \
+            image=[self.session.image1, self.session.image2][color])  \
                     for i, color in enumerate(self.colors)]
 
     def draw(self):
@@ -46,8 +45,11 @@ class MapperTrial(Trial):
 
 class MapperSession(PileSession):
 
+    Trial = MapperTrial
+
     def __init__(self, output_str, subject=None, output_dir=None, settings_file=None):
         super().__init__(output_str, output_dir=None, settings_file=settings_file)
+
         self.image2 = visual.ImageStim(self.win, 
                 self.settings['pile'].get('image2'),
                 texRes=32,
@@ -55,26 +57,38 @@ class MapperSession(PileSession):
 
     def create_trials(self):
 
-        n_dummies = self.settings['mri'].get('n_dummy_scans')
-        phase_durations = [np.inf] * (n_dummies + 1)
+        txt = """
+        You will now see piles of one-CHF coins in rapid succession.
+        Your task is to indicate every time you see coins that are a bit
+        darker, by pressing the first button (index finger).\n
+        It is important that you do not move your eyes. Keep looking
+        at where the two red lines cross each other.
+        Press any of your buttons to start.
+        """
 
-        self.trials = [InstructionTrial(session=self, trial_nr=0,
-            phase_durations=phase_durations)]
+        self.trials = [InstructionTrial(session=self, trial_nr=0, txt=txt,)]
+
+        n_dummies = self.settings['mri'].get('n_dummy_scans')
+        self.trials.append(DummyWaiterTrial(session=self, n_triggers=n_dummies, trial_nr=0))
 
         design = self.settings['mapper'].get('design')
         n_blocks = self.settings['mapper'].get('n_repeats_blocks')
         block_length = len(self.settings['mapper'].get('design'))
+        n_repeats_stimulus = self.settings['mapper'].get('n_repeats_stimulus')
+
+        colors = sample_isis(n_blocks * block_length * n_repeats_stimulus)
 
         for block in range(n_blocks):
             for trial_nr, n_dots in enumerate(design):
-
                 trial_nr += block*block_length + 1
+
+                color_ix = (trial_nr-1)*n_repeats_stimulus, trial_nr*n_repeats_stimulus
                 self.trials.append(
-                    MapperTrial(session=self,
+                    self.Trial(session=self,
                               trial_nr=trial_nr,
                               phase_durations=[],
-                              txt='Trial %i' % (trial_nr),
                               n_dots=n_dots,
+                              colors=colors[color_ix[0]:color_ix[1]],
                               verbose=True,)
                 )
 

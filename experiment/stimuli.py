@@ -93,7 +93,7 @@ class ProbabilityPieChart(object):
                 size=size)
 
         txt = f'{prefix}{int(prob*100):d}%'
-        self.text = TextStim(window, pos=(pos[0], pos[1]+size*1.5),
+        self.text = TextStim(window, pos=(pos[0], pos[1]+size*1.),
                 text=txt, wrapWidth=size*3, height=size*.75)
 
     def draw(self):
@@ -102,26 +102,25 @@ class ProbabilityPieChart(object):
         self.text.draw()
 
 
-def _sample_dot_positions(n=10, circle_radius=20, dot_radius=1, max_tries=500000):
+def _sample_dot_positions(n=10, circle_radius=20, dot_radius=1, max_n_tries=10000):
 
-    counter = 0
+    coords = np.zeros((0, 2))
+    tries = 0
 
-    distances = np.zeros((n, n))
-    while(((distances < dot_radius*2).any())):
-        radius = np.random.rand(n) * np.pi * 2
-        # Sqrt for uniform distribution (https://stackoverflow.com/questions/5837572/generate-a-random-point-within-a-circle-uniformly)
-        ecc = np.sqrt(np.random.rand(n)) * (circle_radius - dot_radius)
 
-        coords = np.vstack(([np.cos(radius)], [np.sin(radius)])).T * ecc[:, np.newaxis]
+    while((coords.shape[0] < n) & (tries < max_n_tries)):
+        radius = np.random.rand() * np.pi * 2
+        ecc = np.random.rand() * (circle_radius - dot_radius)
+        coord = np.array([[np.cos(radius), np.sin(radius)]]) * ecc
 
-        distances = np.sqrt(((coords[:, np.newaxis, :] - coords[np.newaxis, ...])**2).sum(2))
+        distances = np.sqrt(((coords - coord)**2).sum(1))
 
-        np.fill_diagonal(distances, np.inf)
-        counter +=1
+        if (distances > dot_radius * 2).all():
+            coords = np.vstack((coords, coord))
 
-        if counter > max_tries:
-            raise Exception('Too many tries')
+        tries += 1
 
+    if tries == max_n_tries:
+        raise Exception
+        
     return coords
-
-

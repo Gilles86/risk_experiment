@@ -1,0 +1,17 @@
+# Experimental paradigm
+3T
+
+Mapper:
+The design is 18 elements long. Every element takes .7 * 6 repetitions = 75.6 seconds
+4 blocks plus 10 seconds outro makes 312.4 seconds (plus 5 dummy scans!)
+
+# Scans
+Survey 00:32
+TSE 05:10
+T2*w 5:15
+T1w 11:08
+Mapper ~ 4:55 (4 times?)
+
+
+
+
