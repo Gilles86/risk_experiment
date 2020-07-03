@@ -12,13 +12,13 @@ class PileSession(Session):
         print(self.settings)
 
         self.fixation_lines = FixationLines(self.win,
-                self.settings['pile'].get('aperture_size'),
+                self.settings['pile'].get('aperture_radius')*2,
                 color=(1, -1, -1))
         
         self.image1 = visual.ImageStim(self.win, 
                 self.settings['pile'].get('image1'),
                 texRes=32,
-                size=self.settings['pile'].get('dot_size'))
+                size=self.settings['pile'].get('dot_radius'))
 
     def run(self):
         """ Runs experiment. """

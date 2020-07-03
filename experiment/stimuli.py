@@ -93,7 +93,7 @@ class ProbabilityPieChart(object):
                 size=size)
 
         txt = f'{prefix}{int(prob*100):d}%'
-        self.text = TextStim(window, pos=(pos[0], pos[1]+size*1.5),
+        self.text = TextStim(window, pos=(pos[0], pos[1]+size*1.),
                 text=txt, wrapWidth=size*3, height=size*.75)
 
     def draw(self):

@@ -48,19 +48,21 @@ class CalibrationSession(PileSession):
         jitter2 = self.settings['calibrate'].get('jitter2')
 
         trial_settings = trial_settings[trial_settings.trial < 100]
-        for (run, p1, p2), d in trial_settings.groupby(['run', 'p1', 'p2']):
-            self.trials.append(IntroBlockTrial(session=self, trial_nr=run,
-                prob1=p1,
-                prob2=p2))
+        for run, d in trial_settings.groupby(['run']):
+            self.trials.append(InstructionTrial(self, trial_nr=run,
+                txt=txt.format(run=run)))
+            for (p1, p2), d2 in d.groupby(['p1', 'p2']):
+                self.trials.append(IntroBlockTrial(session=self, trial_nr=run,
+                    prob1=p1,
+                    prob2=p2))
 
-            for ix, row in d.iterrows():
-                print(row)
-                self.trials.append(GambleTrial(self, row.trial,
-                    prob1=row.p1, prob2=row.p2,
-                    num1=int(row.n1), 
-                    num2=int(row.n2),
-                    jitter1=jitter1,
-                    jitter2=jitter2))
+                for ix, row in d2.iterrows():
+                    self.trials.append(GambleTrial(self, row.trial,
+                        prob1=row.p1, prob2=row.p2,
+                        num1=int(row.n1), 
+                        num2=int(row.n2),
+                        jitter1=jitter1,
+                        jitter2=jitter2))
 
 class IntroBlockTrial(Trial):
 
@@ -70,7 +72,7 @@ class IntroBlockTrial(Trial):
 
         txt = f"""
         In this block of 16 trials, the first option will have a
-        winning change of {int(prob1*100):d}%.\n
+        winning change of {int(prob1*100):d}%.\n\n
         The second option will have a winning chance of {int(prob2*100):d}%.
         """
 
@@ -102,7 +104,7 @@ class GambleTrial(Trial):
 
 
         if phase_durations is None:
-            phase_durations = [.3, .5, .6, jitter1, .3, .5, .6, jitter2] 
+            phase_durations = [.3, .5, .6, jitter1, .3, .5, .6, jitter2, 0.0] 
         else:
             raise Exception("Don't directly set phase_durations for GambleTrial!")
 
@@ -124,14 +126,14 @@ class GambleTrial(Trial):
 
         self.pile1 = _create_stimulus_array(self.session.win,
             num1,
-            self.session.settings['pile'].get('aperture_size'),
-            self.session.settings['pile'].get('dot_size')/2.,
+            self.session.settings['pile'].get('aperture_radius'),
+            self.session.settings['pile'].get('dot_radius'),
             image=self.session.image1)
 
         self.pile2 = _create_stimulus_array(self.session.win,
             num2,
-            self.session.settings['pile'].get('aperture_size'),
-            self.session.settings['pile'].get('dot_size')/2.,
+            self.session.settings['pile'].get('aperture_radius'),
+            self.session.settings['pile'].get('dot_radius'),
             image=self.session.image1)
 
 
@@ -156,19 +158,21 @@ class GambleTrial(Trial):
         elif self.phase == 6:
             self.pile2.draw()
 
-        if self.choice is not None:
-            if (self.session.clock.getTime() - self.choice_time) < .5:
-                self.choice_stim.draw()
-            else:
-                if (self.session.clock.getTime() - self.certainty_time) < .5:
-                    self.certainty_stim.draw()
+        if self.phase == 7:
+            if self.choice is not None:
+                if (self.session.clock.getTime() - self.choice_time) < .5:
+                    self.choice_stim.draw()
+                else:
+                    if (self.session.clock.getTime() - self.certainty_time) < .5:
+                        self.certainty_stim.draw()
+
 
 
     def get_events(self):
         events = super().get_events()
 
         for key, t in events:
-            if self.phase > 4:
+            if self.phase > 5:
                 if self.choice is None:
                     if key in [self.buttons[0], self.buttons[1]]:
                         self.choice_time = self.session.clock.getTime()
@@ -176,19 +180,33 @@ class GambleTrial(Trial):
                             self.choice = 1
                         elif key == self.buttons[1]:
                             self.choice = 2
-                        
-                        self.parameters['choice'] = self.choice
                         self.choice_stim.text = f'You chose pile {self.choice}'
-                elif self.certainty is None:
+
+                        self.log(choice=self.choice)
+
+                elif (self.phase > 6) & (self.certainty is None):
                     if key in self.buttons:
                         self.certainty_time = self.session.clock.getTime()
                         self.certainty = self.buttons.index(key)
-                        self.parameters['certainty'] = self.choice
                         self.certainty_stim.rectangles[self.certainty].opacity = 1.0
-                        
+                        self.log(certainty=self.certainty)
 
         return events
 
+    def log(self, choice=None, certainty=None):
+        onset = self.session.clock.getTime()
+        idx = self.session.global_log.shape[0]
+        self.session.global_log.loc[idx, 'trial_nr'] = self.trial_nr
+        self.session.global_log.loc[idx, 'onset'] = onset
+        self.session.global_log.loc[idx, 'phase'] = self.phase
+        self.session.global_log.loc[idx, 'nr_frames'] = self.session.nr_frames
+
+        if choice:
+            self.session.global_log.loc[idx, 'event_type'] = 'choice'
+            self.session.global_log.loc[idx, 'choice'] = self.choice
+        if certainty:
+            self.session.global_log.loc[idx, 'event_type'] = 'certainty'
+            self.session.global_log.loc[idx, 'certainty'] = self.certainty
 
 if __name__ == '__main__':
 

@@ -7,10 +7,11 @@ class InstructionTrial(Trial):
     def __init__(self, session, trial_nr, phase_durations=[np.inf],
             txt=None, **kwargs):
 
-        txt_height = kwargs.pop('height', None)
-        txt_width = kwargs.pop('wrapWidth', None)
-
         super().__init__(session, trial_nr, phase_durations, **kwargs)
+
+        txt_height = self.session.settings['various'].get('text_height')
+        txt_width = self.session.settings['various'].get('text_width')
+
 
         if txt is None:
             txt = '''Pess any button to continue.'''
