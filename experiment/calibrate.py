@@ -21,17 +21,21 @@ class CalibrationSession(PileSession):
         txt = """
         In this task, you will see two piles of swiss Franc coins in
         succession. Both piles are combined with a pie chart in.
-        The amount of the pile chart that is lightly colored indicates
+        The part of the pie chart that is lightly colored indicates
         the probability of a lottery you will gain the amount of 
         Swiss Francs represented by the pile.
-        One of the two piles has a probability of 100% for payout.
+        There is always one pile that has a probability of 100% for payout.
         The other probability changes every 16 trials.
 
         Your task is to either select the first lottery or
         the second lottery, by using your index or middle finger.
         Immediately after your choice, we ask how certain you were
         about your choice from a scale from 1 (very uncertain)
-        to 4 (very certain).
+        to 4 (very certain).  
+
+        This is run {run}/4.
+
+        Press any of your buttons to continue.
 
         """
 
@@ -74,8 +78,8 @@ class IntroBlockTrial(Trial):
         text_height = self.session.settings['various'].get('text_height')
         piechart_width = self.session.settings['various'].get('piechart_width')
 
-        piechart_pos1 = .6 * -text_width - .5 * piechart_width, 1.5 * piechart_width
-        piechart_pos2 = .6 * -text_width - .5 * piechart_width, -1.5 * piechart_width
+        piechart_pos1 = .5 * -text_width - .25 * piechart_width, 1.5 * piechart_width
+        piechart_pos2 = .5 * -text_width - .25 * piechart_width, -1.5 * piechart_width
 
         self.piechart1 = ProbabilityPieChart(self.session.win, prob1, pos=piechart_pos1, size=piechart_width)
         self.piechart2 = ProbabilityPieChart(self.session.win, prob2, pos=piechart_pos2, size=piechart_width)
