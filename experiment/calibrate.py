@@ -47,16 +47,17 @@ class CalibrationSession(PileSession):
         jitter1 = self.settings['calibrate'].get('jitter1')
         jitter2 = self.settings['calibrate'].get('jitter2')
 
-        trial_settings = trial_settings[trial_settings.trial < 100]
-        for run, d in trial_settings.groupby(['run']):
+        trial_settings = trial_settings
+        for run, d in trial_settings.groupby(['run'], sort=False):
             self.trials.append(InstructionTrial(self, trial_nr=run,
                 txt=txt.format(run=run)))
-            for (p1, p2), d2 in d.groupby(['p1', 'p2']):
+            for (p1, p2), d2 in d.groupby(['p1', 'p2'], sort=False):
                 self.trials.append(IntroBlockTrial(session=self, trial_nr=run,
                     prob1=p1,
                     prob2=p2))
 
                 for ix, row in d2.iterrows():
+                    print(row)
                     self.trials.append(GambleTrial(self, row.trial,
                         prob1=row.p1, prob2=row.p2,
                         num1=int(row.n1), 
@@ -104,7 +105,7 @@ class GambleTrial(Trial):
 
 
         if phase_durations is None:
-            phase_durations = [.3, .5, .6, jitter1, .3, .5, .6, jitter2, 0.0] 
+            phase_durations = [.3, .5, .6, jitter1, .3, .5, .6, jitter2] 
         else:
             raise Exception("Don't directly set phase_durations for GambleTrial!")
 
@@ -184,12 +185,12 @@ class GambleTrial(Trial):
 
                         self.log(choice=self.choice)
 
-                elif (self.phase > 6) & (self.certainty is None):
+                elif (self.phase > 6) & (self.certainty is None) & ((self.session.clock.getTime() - self.certainty_time) < .5):
                     if key in self.buttons:
                         self.certainty_time = self.session.clock.getTime()
                         self.certainty = self.buttons.index(key)
                         self.certainty_stim.rectangles[self.certainty].opacity = 1.0
-                        self.log(certainty=self.certainty)
+                        self.log(certainty=self.certainty+1)
 
         return events
 
@@ -203,10 +204,10 @@ class GambleTrial(Trial):
 
         if choice:
             self.session.global_log.loc[idx, 'event_type'] = 'choice'
-            self.session.global_log.loc[idx, 'choice'] = self.choice
+            self.session.global_log.loc[idx, 'choice'] = choice
         if certainty:
             self.session.global_log.loc[idx, 'event_type'] = 'certainty'
-            self.session.global_log.loc[idx, 'certainty'] = self.certainty
+            self.session.global_log.loc[idx, 'certainty'] = certainty
 
 if __name__ == '__main__':
 
