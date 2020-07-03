@@ -4,7 +4,7 @@ from psychopy import visual
 
 class PileSession(PylinkEyetrackerSession):
     """ Simple session with x trials. """
-    def __init__(self, output_str, subject=None, output_dir=None, settings_file=None, eyetracker_on=False):
+    def __init__(self, output_str, subject=None, output_dir=None, settings_file=None, eyetracker_on=True):
         """ Initializes TestSession object. """
         super().__init__(output_str, output_dir=None, settings_file=settings_file, eyetracker_on=eyetracker_on)
         self.subject = subject
@@ -19,7 +19,7 @@ class PileSession(PylinkEyetrackerSession):
         self.image1 = visual.ImageStim(self.win, 
                 self.settings['pile'].get('image1'),
                 texRes=32,
-                size=self.settings['pile'].get('dot_radius'))
+                size=self.settings['pile'].get('dot_radius')*2)
 
     def run(self):
         """ Runs experiment. """

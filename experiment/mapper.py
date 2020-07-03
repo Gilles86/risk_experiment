@@ -24,11 +24,12 @@ class MapperTrial(Trial):
         super().__init__(session, trial_nr, phase_durations, **kwargs)
 
         self.parameters['n_dots'] = n_dots
+        print("COLORS TRIAL", colors)
         self.colors = colors
 
         self.stimulus_arrays = [_create_stimulus_array(self.session.win, n_dots,
-            self.session.settings['pile'].get('aperture_size'),
-            self.session.settings['pile'].get('dot_size')/2.,
+            self.session.settings['pile'].get('aperture_radius'),
+            self.session.settings['pile'].get('dot_radius'),
             image=[self.session.image1, self.session.image2][color])  \
                     for i, color in enumerate(self.colors)]
 
@@ -53,7 +54,7 @@ class MapperSession(PileSession):
         self.image2 = visual.ImageStim(self.win, 
                 self.settings['pile'].get('image2'),
                 texRes=32,
-                size=self.settings['pile'].get('dot_size'))
+                size=self.settings['pile'].get('dot_radius')*2)
 
     def create_trials(self):
 
@@ -77,6 +78,7 @@ class MapperSession(PileSession):
         n_repeats_stimulus = self.settings['mapper'].get('n_repeats_stimulus')
 
         colors = sample_isis(n_blocks * block_length * n_repeats_stimulus)
+        print("COLORS", colors)
 
         for block in range(n_blocks):
             for trial_nr, n_dots in enumerate(design):

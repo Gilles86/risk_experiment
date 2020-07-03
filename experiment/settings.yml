@@ -12,7 +12,7 @@ window:
   winType: pyglet
   viewPos: [0, 10]
   #waitBlanking: True
-  screen: 1
+  screen: 0
   #refreshHz: 30
   viewPos: [0, 0]
   #viewScale: [.5, .5]
@@ -68,7 +68,7 @@ various:
   piechart_width: 1 
   text_width: 14
   text_height: .5
-  buttons: ['j', 'k', 'l', 'semicolon']
+  buttons: ['b', 'z', 'r', 'g']
   button_size: 2
 
 
