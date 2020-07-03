@@ -1,0 +1,5 @@
+Original coin was 0.04 of "1franc_new_png.png"
+
+Resolution was 800x600
+
+radius of fov was 210

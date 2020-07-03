@@ -1,4 +1,4 @@
-# Experimental paradigm
+ Experimental paradigm
 3T
 
 Mapper:
@@ -11,7 +11,5 @@ TSE 05:10
 T2*w 5:15
 T1w 11:08
 Mapper ~ 4:55 (4 times?)
-
-
 
 
