@@ -4,13 +4,14 @@ preferences:
     units: deg
 
 window:
-  #size: [800, 600]
-  pos: [0, 0]
+  size: [1280, 400]
+  pos: [0, 200]
   color: [0, 0, 0]
-  fullscr: False
+  fullscr: True
   winType: pyglet
+  viewPos: [0, 10]
   #waitBlanking: True
-  screen: 1
+  screen: 0
   #refreshHz: 30
 
 monitor:
@@ -25,8 +26,9 @@ mouse:
 
 eyetracker:
   model: eyelink
-  CNUM: 9
-  MIN_CALIB_FIX: 1000
+  CNUM: 5
+  MIN_CALIB_FIX: 500
+  dot_size: .5
 
 mri:
   simulate: True
