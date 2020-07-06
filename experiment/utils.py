@@ -3,10 +3,12 @@ import argparse
 import numpy as np
 import scipy.stats as ss
 
-def run_experiment(session_cls, name, *args, **kwargs):
+def run_experiment(session_cls, task, use_runs=False, *args, **kwargs):
+
     parser = argparse.ArgumentParser()
     parser.add_argument('subject', default=None, nargs='?')
     parser.add_argument('session', default=None, nargs='?')
+    parser.add_argument('run', default=None, nargs='?')
     args = parser.parse_args()
     
     if args.subject is None:
@@ -21,8 +23,36 @@ def run_experiment(session_cls, name, *args, **kwargs):
     else:
         session = args.session
 
+    if args.run is None:
+        run = input('Run? (None): ')
+        run = None if run  == '' else run
+    elif args.run == '0':
+        run = None
+    else:
+        run = args.run
+
     settings = op.join(op.dirname(__file__), 'settings.yml')
-    session = session_cls(f'sub-{subject}_ses-{name}_{session}', settings_file=settings, subject=subject)
+    output_dir = op.join(op.dirname(__file__), 'logs', f'sub-{subject}')
+
+    if session:
+        output_dir = op.join(output_dir, f'ses-{session}')
+        output_str = f'sub-{subject}_ses-{session}_task-{task}'
+    else:
+        output_str = f'sub-{subject}_task-{task}'
+
+    if run:
+        output_str += f'_run-{run}'
+
+    log_file = op.join(output_dir, output_str + '_log.txt')
+
+    if op.exists(log_file):
+        overwrite = input(f'{log_file} already exists! Are you sure you want to continue? ')
+        if overwrite != 'y':
+            raise Exception('Run cancelled: file already exists')
+
+    session = session_cls(output_str=output_str,
+            output_dir=output_dir,
+            settings_file=settings, subject=subject)
     session.create_trials()
     session.run()
     session.quit()

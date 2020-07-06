@@ -48,6 +48,7 @@ class CalibrationSession(PileSession):
         jitter2 = self.settings['calibrate'].get('jitter2')
 
         trial_settings = trial_settings
+        trial_settings = trial_settings.iloc[:10]
         for run, d in trial_settings.groupby(['run'], sort=False):
             self.trials.append(InstructionTrial(self, trial_nr=run,
                 txt=txt.format(run=run)))
@@ -57,7 +58,6 @@ class CalibrationSession(PileSession):
                     prob2=p2))
 
                 for ix, row in d2.iterrows():
-                    print(row)
                     self.trials.append(GambleTrial(self, row.trial,
                         prob1=row.p1, prob2=row.p2,
                         num1=int(row.n1), 
@@ -212,5 +212,5 @@ class GambleTrial(Trial):
 if __name__ == '__main__':
 
     session_cls = CalibrationSession
-    name = 'calibration'
-    run_experiment(session_cls, name)
+    task = 'calibration'
+    run_experiment(session_cls, task=task)
