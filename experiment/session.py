@@ -1,6 +1,7 @@
 from stimuli import FixationLines
 from exptools2.core import Session
-from psychopy import visual
+from psychopy import visual, logging
+import os.path as op
 
 class PileSession(Session):
     """ Simple session with x trials. """
@@ -20,6 +21,11 @@ class PileSession(Session):
                 self.settings['pile'].get('image1'),
                 texRes=32,
                 size=self.settings['pile'].get('dot_radius'))
+
+    def _create_logfile(self):
+        """ Creates a logfile. """
+        log_path = op.join(self.output_dir, self.output_str + '_log.txt')
+        return logging.LogFile(f=log_path, filemode='w', level=logging.WARNING) 
 
     def run(self):
         """ Runs experiment. """

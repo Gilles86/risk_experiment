@@ -98,7 +98,6 @@ class MapperSession(PileSession):
 
 
 if __name__ == '__main__':
-
     session_cls = MapperSession
     task = 'mapper'
     run_experiment(session_cls, task=task)
