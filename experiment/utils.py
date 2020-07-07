@@ -11,6 +11,7 @@ def run_experiment(session_cls, task, use_runs=False, *args, **kwargs):
     parser.add_argument('subject', default=None, nargs='?')
     parser.add_argument('session', default=None, nargs='?')
     parser.add_argument('run', default=None, nargs='?')
+    parser.add_argument('--settings', default='default', nargs='?')
     args = parser.parse_args()
 
     if args.subject is None:
@@ -33,7 +34,7 @@ def run_experiment(session_cls, task, use_runs=False, *args, **kwargs):
     else:
         run = args.run
 
-    settings = op.join(op.dirname(__file__), 'settings.yml')
+    settings = op.join(op.dirname(__file__), 'settings', f'{args.settings}.yml')
     output_dir = op.join(op.dirname(__file__), 'logs', f'sub-{subject}')
 
     if session:
