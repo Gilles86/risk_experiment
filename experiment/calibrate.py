@@ -215,7 +215,7 @@ class CalibrationSession(PileSession):
         jitter2 = self.settings['calibrate'].get('jitter2')
 
         trial_settings = trial_settings
-        trial_settings = trial_settings.iloc[:10]
+
         for run, d in trial_settings.groupby(['run'], sort=False):
             self.trials.append(InstructionTrial(self, trial_nr=run,
                 txt=txt.format(run=run)))
