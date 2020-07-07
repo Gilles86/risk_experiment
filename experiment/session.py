@@ -47,8 +47,5 @@ class PileSession(Session):
 
         array_log = pd.concat(array_log)
 
-        array_log.to_csv(op.join(self.output_dir, self.output_str + '_stimarray_locations.tsv'), sep='\t')
-
-
-
-
+        array_log.to_csv(op.join(
+            self.output_dir, self.output_str + '_stimarray_locations.tsv'), sep='\t')

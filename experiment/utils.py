@@ -35,7 +35,8 @@ def run_experiment(session_cls, task, use_runs=False, *args, **kwargs):
     else:
         run = args.run
 
-    settings = op.join(op.dirname(__file__), 'settings', f'{args.settings}.yml')
+    settings = op.join(op.dirname(__file__), 'settings',
+                       f'{args.settings}.yml')
     logging.warn(f'Using {settings} as settings')
     output_dir = op.join(op.dirname(__file__), 'logs', f'sub-{subject}')
     logging.warn(f'Writing results to  {output_dir}')
@@ -83,7 +84,7 @@ def create_stimulus_array_log_df(stimulus_arrays, index=None):
     stimuli = [pd.DataFrame(sa.xys, columns=['x', 'y'],
                             index=pd.Index(np.arange(1, len(sa.xys)+1), name='stimulus')) for sa in stimulus_arrays]
 
-    stimuli = pd.concat(stimuli, ignore_index=True) 
+    stimuli = pd.concat(stimuli, ignore_index=True)
 
     if index is not None:
         stimuli.index = index
