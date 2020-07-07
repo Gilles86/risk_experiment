@@ -211,7 +211,9 @@ class CalibrationSession(PileSession):
 
         """
 
-        trial_settings = pd.read_csv(op.abspath(op.join('settings',
+        calibrate_settings_folder = op.abspath(
+            op.join('settings', 'calibration'))
+        trial_settings = pd.read_csv(op.abspath(op.join(calibrate_settings_folder,
                                                         f'sub-{self.subject}_ses-calibrate.tsv')), sep='\t')
 
         self.trials = []
