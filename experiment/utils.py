@@ -3,6 +3,7 @@ import argparse
 import numpy as np
 import scipy.stats as ss
 import pandas as pd
+from psychopy import logging
 
 
 def run_experiment(session_cls, task, use_runs=False, *args, **kwargs):
@@ -35,7 +36,9 @@ def run_experiment(session_cls, task, use_runs=False, *args, **kwargs):
         run = args.run
 
     settings = op.join(op.dirname(__file__), 'settings', f'{args.settings}.yml')
+    logging.warn(f'Using {settings} as settings')
     output_dir = op.join(op.dirname(__file__), 'logs', f'sub-{subject}')
+    logging.warn(f'Writing results to  {output_dir}')
 
     if session:
         output_dir = op.join(output_dir, f'ses-{session}')
