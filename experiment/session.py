@@ -10,11 +10,8 @@ class PileSession(Session):
 
     def __init__(self, output_str, subject=None, output_dir=None, settings_file=None):
         """ Initializes TestSession object. """
-        print(output_dir)
         super().__init__(output_str, output_dir=output_dir, settings_file=settings_file)
         self.subject = subject
-
-        print(self.settings)
 
         self.fixation_lines = FixationLines(self.win,
                                             self.settings['pile'].get(
