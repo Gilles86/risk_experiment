@@ -10,60 +10,6 @@ from psychopy import logging
 import os.path as op
 import pandas as pd
 
-class CalibrationSession(PileSession):
-
-    
-    def create_trials(self):
-
-        n_dummies = self.settings['mri'].get('n_dummy_scans')
-        phase_durations = [np.inf] * (n_dummies + 1)
-
-        txt = """
-        In this task, you will see two piles of swiss Franc coins in
-        succession. Both piles are combined with a pie chart in.
-        The part of the pie chart that is lightly colored indicates
-        the probability of a lottery you will gain the amount of 
-        Swiss Francs represented by the pile.
-        There is always one pile that has a probability of 100% for payout.
-        The other probability changes every 16 trials.
-
-        Your task is to either select the first lottery or
-        the second lottery, by using your index or middle finger.
-        Immediately after your choice, we ask how certain you were
-        about your choice from a scale from 1 (very uncertain)
-        to 4 (very certain).  
-
-        This is run {run}/4.
-
-        Press any of your buttons to continue.
-
-        """
-
-        trial_settings = pd.read_csv(op.abspath(op.join('settings',
-            f'sub-{self.subject}_ses-calibrate.tsv')), sep='\t')
-
-        self.trials = []
-
-        jitter1 = self.settings['calibrate'].get('jitter1')
-        jitter2 = self.settings['calibrate'].get('jitter2')
-
-        trial_settings = trial_settings
-        trial_settings = trial_settings.iloc[:10]
-        for run, d in trial_settings.groupby(['run'], sort=False):
-            self.trials.append(InstructionTrial(self, trial_nr=run,
-                txt=txt.format(run=run)))
-            for (p1, p2), d2 in d.groupby(['p1', 'p2'], sort=False):
-                self.trials.append(IntroBlockTrial(session=self, trial_nr=run,
-                    prob1=p1,
-                    prob2=p2))
-
-                for ix, row in d2.iterrows():
-                    self.trials.append(GambleTrial(self, row.trial,
-                        prob1=row.p1, prob2=row.p2,
-                        num1=int(row.n1), 
-                        num2=int(row.n2),
-                        jitter1=jitter1,
-                        jitter2=jitter2))
 
 class IntroBlockTrial(Trial):
 
@@ -194,20 +140,97 @@ class GambleTrial(Trial):
 
         return events
 
-    def log(self, choice=None, certainty=None):
-        onset = self.session.clock.getTime()
-        idx = self.session.global_log.shape[0]
-        self.session.global_log.loc[idx, 'trial_nr'] = self.trial_nr
-        self.session.global_log.loc[idx, 'onset'] = onset
-        self.session.global_log.loc[idx, 'phase'] = self.phase
-        self.session.global_log.loc[idx, 'nr_frames'] = self.session.nr_frames
+    def get_stimulus_array_log(self):
 
-        if choice:
+        n_repeats = len(self.colors)
+        n_dots = self.parameters['n_dots']
+
+        # trial_ix, stim_array, color, stimulus_ix
+        trial_ix = np.ones(n_repeats * n_dots) * self.trial_nr
+        array_ix = np.repeat(np.arange(n_repeats) + 1, n_dots)
+        color_ix = np.repeat(self.colors, n_dots)
+        stim_ix = np.tile(np.arange(n_dots) + 1, n_repeats)
+
+        index = pd.MultiIndex.from_arrays([trial_ix, array_ix, color_ix, stim_ix],
+                                          names=('trial_nr', 'array_nr', 'color', 'stim_nr'))
+
+        log = create_stimulus_array_log_df(self.stimulus_arrays, index=index)
+
+        return log
+
+    def log(self, choice=None, certainty=None):
+
+        if (choice is not None) or (certainty is not None):
+            onset = self.session.clock.getTime()
+            idx = self.session.global_log.shape[0]
+            self.session.global_log.loc[idx, 'trial_nr'] = self.trial_nr
+            self.session.global_log.loc[idx, 'onset'] = onset
+            self.session.global_log.loc[idx, 'phase'] = self.phase
+            self.session.global_log.loc[idx, 'nr_frames'] = self.session.nr_frames
+
+        if choice is not None:
             self.session.global_log.loc[idx, 'event_type'] = 'choice'
             self.session.global_log.loc[idx, 'choice'] = choice
-        if certainty:
+        if certainty is not None:
             self.session.global_log.loc[idx, 'event_type'] = 'certainty'
             self.session.global_log.loc[idx, 'certainty'] = certainty
+
+class CalibrationSession(PileSession):
+
+    
+    Trial = GambleTrial
+
+    def create_trials(self):
+
+        n_dummies = self.settings['mri'].get('n_dummy_scans')
+        phase_durations = [np.inf] * (n_dummies + 1)
+
+        txt = """
+        In this task, you will see two piles of swiss Franc coins in
+        succession. Both piles are combined with a pie chart in.
+        The part of the pie chart that is lightly colored indicates
+        the probability of a lottery you will gain the amount of 
+        Swiss Francs represented by the pile.
+        There is always one pile that has a probability of 100% for payout.
+        The other probability changes every 16 trials.
+
+        Your task is to either select the first lottery or
+        the second lottery, by using your index or middle finger.
+        Immediately after your choice, we ask how certain you were
+        about your choice from a scale from 1 (very uncertain)
+        to 4 (very certain).  
+
+        This is run {run}/4.
+
+        Press any of your buttons to continue.
+
+        """
+
+        trial_settings = pd.read_csv(op.abspath(op.join('settings',
+            f'sub-{self.subject}_ses-calibrate.tsv')), sep='\t')
+
+        self.trials = []
+
+        jitter1 = self.settings['calibrate'].get('jitter1')
+        jitter2 = self.settings['calibrate'].get('jitter2')
+
+        trial_settings = trial_settings
+        trial_settings = trial_settings.iloc[:10]
+        for run, d in trial_settings.groupby(['run'], sort=False):
+            self.trials.append(InstructionTrial(self, trial_nr=run,
+                txt=txt.format(run=run)))
+            for (p1, p2), d2 in d.groupby(['p1', 'p2'], sort=False):
+                self.trials.append(IntroBlockTrial(session=self, trial_nr=run,
+                    prob1=p1,
+                    prob2=p2))
+
+                for ix, row in d2.iterrows():
+                    self.trials.append(GambleTrial(self, row.trial,
+                        prob1=row.p1, prob2=row.p2,
+                        num1=int(row.n1), 
+                        num2=int(row.n2),
+                        jitter1=jitter1,
+                        jitter2=jitter2))
 
 if __name__ == '__main__':
 
