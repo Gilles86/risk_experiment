@@ -12,10 +12,8 @@ def main(subject):
     h = np.arange(1, 9)
     fractions = 2**(h/4)
     base = np.array([5, 7, 10, 14, 20, 28])
-    prob1 = [1., .45, .55, .67]
-    prob2 = [.55, 1., 1., 1.]
-
-    design = list(product(fractions, base, prob1))
+    prob1 = [1., .55]
+    prob2 = [.55, 1.]
 
     df = []
     for ix, p in enumerate(prob1):
@@ -56,8 +54,13 @@ def main(subject):
         os.makedirs(calibrate_settings_folder)
 
     df['trial'] = np.arange(1, len(df)+1)
-    df.to_csv(op.abspath(op.join(calibrate_settings_folder,
-                                 f'sub-{subject}_ses-calibrate.tsv')), sep='\t')
+
+    n_trials = len(df)
+    fn = op.abspath(op.join(calibrate_settings_folder,
+                                 f'sub-{subject}_ses-calibrate.tsv'))
+    df.to_csv(fn, sep='\t')
+
+    print(f'Wrote {n_trials} trials to {fn}')
 
 
 if __name__ == '__main__':

@@ -205,7 +205,7 @@ class CalibrationSession(PileSession):
         about your choice from a scale from 1 (very uncertain)
         to 4 (very certain).
 
-        This is run {run}/4.
+        This is run {run}/3.
 
         Press any of your buttons to continue.
 

@@ -23,3 +23,12 @@ Mapper ~ 4:55 (4 times?)
 
 ## Functionsl session
 870 sesconds
+
+
+# Calibration
+jitter1, jitter2 = 2.5, 4.
+phase_durations = [.3, .5, .6, jitter1, .3, .5, .6, jitter2]
+np.sum(phase_durations) = 9.3
+
+96 * 9.3 -= 892 seconds ~= 15 minutes
+
