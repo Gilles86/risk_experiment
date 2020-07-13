@@ -1,0 +1,116 @@
+calibrate:
+    jitter1: 1.5
+    jitter2: 3.5
+    p_stim1:
+    - 1
+    - 0.43
+    - 0.55
+    - 0.71
+    p_stim2:
+    - 1
+    - 0.43
+    - 0.55
+    - 0.71
+eyetracker:
+    CNUM: 9
+    MIN_CALIB_FIX: 1000
+    address: 100.1.1.1
+    dot_size: 0.1
+    model: eyelink
+    options:
+        active_eye: left
+        automatic_calibration_pacing: 1000
+        autothreshold_click: true
+        autothreshold_repeat: true
+        binocular_enabled: false
+        calibration_type: HV9
+        enable_automatic_calibration: true
+        enable_camera_position_detect: true
+        enable_search_limits: true
+        file_event_filter: LEFT,RIGHT,FIXATION,SACCADE,BLINK,MESSAGE,BUTTON,INPUT
+        heuristic_filter: 2
+        link_event_filter: LEFT,RIGHT,FIXATION,SACCADE,BLINK,BUTTON
+        link_sample_data: LEFT,RIGHT,GAZE,GAZERES,AREA,STATUS,HTARGET
+        pupil_size_diameter: true
+        sample_rate: 1000
+        track_search_limits: true
+        x_gaze_constraint: AUTO
+        y_gaze_constraint: AUTO
+mapper:
+    design:
+    - 80
+    - 5
+    - 7
+    - 10
+    - 14
+    - 20
+    - 28
+    - 40
+    - 56
+    - 80
+    - 56
+    - 40
+    - 28
+    - 20
+    - 14
+    - 10
+    - 7
+    - 5
+    n_repeats_blocks: 4
+    n_repeats_stimulus: 6
+    off_duration: 0.4
+    on_duration: 0.3
+    p_oddball: 0.1
+monitor:
+    distance: 125
+    gamma: 1
+    name: default
+    width: 42
+mouse:
+    visible: true
+mri:
+    TA: 2.0
+    TR: 2.0
+    n_dummy_scans: 4
+    simulate: false
+    skip: 10
+    sound: false
+    sync: t
+    volumes: 10
+pile:
+    aperture_radius: 5.25
+    dot_radius: 0.3
+    image1: assets/onefranc_v4.png
+    image2: assets/onefranc_v4_neg.png
+preferences:
+    general:
+        audioLib: sounddevice
+        units: deg
+various:
+    button_size: 2
+    buttons:
+    - j
+    - k
+    - l
+    - semicolon
+    piechart_width: 1
+    text_height: 0.5
+    text_width: 14
+window:
+    color:
+    - 0
+    - 0
+    - 0
+    fullscr: false
+    pos:
+    - 0
+    - 0
+    screen: 1
+    size:
+    - 800
+    - 600
+    viewPos:
+    - 0
+    - 0
+    waitBlanking: true
+    winType: pyglet

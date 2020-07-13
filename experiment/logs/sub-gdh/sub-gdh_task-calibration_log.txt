@@ -1,0 +1,9 @@
+0.1342 	WARNING 	We strongly recommend you activate the PTB sound engine in PsychoPy prefs as the preferred audio engine. Its timing is vastly superior. Your prefs are currently set to use ['sounddevice', 'PTB', 'pyo', 'pygame'] (in that order).
+1.5488 	WARNING 	Using /Users/gdehol/git/risk_experiment/experiment/settings/default.yml as settings
+1.5488 	WARNING 	Writing results to  /Users/gdehol/git/risk_experiment/experiment/logs/sub-gdh
+2.7477 	WARNING 	t of last frame was 27.55ms (=1/36)
+2.9206 	WARNING 	Actual framerate: 59.65371 (1 frame = 0.01676)
+5.6156 	WARNING 	t of last frame was 61.20ms (=1/16)
+5.6556 	WARNING 	t of last frame was 34.35ms (=1/29)
+5.6874 	WARNING 	t of last frame was 31.73ms (=1/31)
+5.7206 	WARNING 	Multiple dropped frames have occurred - I'll stop bothering you about them!
