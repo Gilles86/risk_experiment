@@ -48,7 +48,7 @@ class GambleTrial(Trial):
                  jitter1=2.5, jitter2=4.0, **kwargs):
 
         if phase_durations is None:
-            phase_durations = [.3, .5, .6, jitter1, .3, .5, .6, jitter2]
+            phase_durations = [.25, .5, .3, .5, .6, jitter1, .3, .5, .6, jitter2]
         else:
             raise Exception(
                 "Don't directly set phase_durations for GambleTrial!")
@@ -98,24 +98,30 @@ class GambleTrial(Trial):
         self.certainty_time = np.inf
 
     def draw(self):
+
         self.session.fixation_lines.draw()
 
         if self.phase == 0:
-            self.piechart1.draw()
+            self.session.fixation_lines.setColor((-1, 1, -1))
+        elif self.phase == 1:
+            self.session.fixation_lines.setColor((1, -1, -1))
         elif self.phase == 2:
-            self.pile1.draw()
+            self.piechart1.draw()
         elif self.phase == 4:
-            self.piechart2.draw()
+            self.pile1.draw()
         elif self.phase == 6:
+            self.piechart2.draw()
+        elif self.phase == 8:
             self.pile2.draw()
 
-        if self.phase == 7:
+        if self.phase == 9:
             if self.choice is not None:
                 if (self.session.clock.getTime() - self.choice_time) < .5:
                     self.choice_stim.draw()
                 else:
                     if (self.session.clock.getTime() - self.certainty_time) < .5:
                         self.certainty_stim.draw()
+
 
     def get_events(self):
         events = super().get_events()

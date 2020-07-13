@@ -55,7 +55,7 @@ class TaskSession(PileSession):
         print(settings)
         settings = settings.set_index(['run'])
         print(settings)
-        settings = settings.loc[self.settings['run']]
+        settings = settings.loc[int(self.settings['run'])]
         print(settings)
 
         n_dummies = self.settings['mri'].get('n_dummy_scans')

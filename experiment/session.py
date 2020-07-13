@@ -10,9 +10,9 @@ class PileSession(PylinkEyetrackerSession):
 
     def __init__(self, output_str, subject=None, output_dir=None, settings_file=None, run=None, eyetracker_on=True):
         """ Initializes TestSession object. """
-        super().__init__(output_str, output_dir=output_dir, settings_file=settings_file, eyetracker_on=True)
+        super().__init__(output_str, output_dir=output_dir, settings_file=settings_file, eyetracker_on=eyetracker_on)
         self.subject = subject
-        self.settings['run'] = int(run)
+        self.settings['run'] = run
         print(self.settings)
 
         self.fixation_lines = FixationLines(self.win,

@@ -14,6 +14,10 @@ class FixationLines(object):
         self.line1.draw()
         self.line2.draw()
 
+    def setColor(self, color):
+        self.line1.color = color
+        self.line2.color = color
+
 
 class ImageArrayStim(object):
 

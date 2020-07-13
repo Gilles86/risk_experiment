@@ -10,8 +10,8 @@ END OF RUNS SHOULD BE FIXATION CROSS
 Run and session seem conflated for logs of task?
 
 Irma:
-Unclear when trial starts
-ISI too long
+Unclear when trial starts -> Green cross
+ISI too long -> Equal to Miguel's?
 ITI shorter
 Whole experiment too long
 Insist on break?

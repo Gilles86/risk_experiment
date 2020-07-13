@@ -14,7 +14,6 @@ def run_experiment(session_cls, task, use_runs=False, *args, **kwargs):
     parser.add_argument('session', default=None, nargs='?')
     parser.add_argument('run', default=None, nargs='?')
     parser.add_argument('--settings', default='default', nargs='?')
-    parser.add_argument('--eyetracker', action='store_true')
     args = parser.parse_args()
 
     if args.subject is None:
@@ -45,8 +44,10 @@ def run_experiment(session_cls, task, use_runs=False, *args, **kwargs):
 
     if 'eyetracker' in settings_.keys():
         eyetracker_on = True
+        logging.warn("Using eyetracker")
     else:
         eyetracker_on = False
+        logging.warn("Using NO eyetracker")
 
 
     logging.warn(f'Using {settings_fn} as settings')
