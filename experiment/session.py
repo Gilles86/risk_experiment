@@ -8,10 +8,12 @@ import os.path as op
 class PileSession(Session):
     """ Simple session with x trials. """
 
-    def __init__(self, output_str, subject=None, output_dir=None, settings_file=None):
+    def __init__(self, output_str, subject=None, output_dir=None, settings_file=None, run=None):
         """ Initializes TestSession object. """
         super().__init__(output_str, output_dir=output_dir, settings_file=settings_file)
         self.subject = subject
+        self.settings['run'] = int(run)
+        print(self.settings)
 
         self.fixation_lines = FixationLines(self.win,
                                             self.settings['pile'].get(
@@ -45,7 +47,8 @@ class PileSession(Session):
             if isinstance(trial, self.Trial):
                 array_log.append(trial.get_stimulus_array_log())
 
-        array_log = pd.concat(array_log)
+        if len(array_log) > 0:
+            array_log = pd.concat(array_log)
 
-        array_log.to_csv(op.join(
-            self.output_dir, self.output_str + '_stimarray_locations.tsv'), sep='\t')
+            array_log.to_csv(op.join(
+                self.output_dir, self.output_str + '_stimarray_locations.tsv'), sep='\t')

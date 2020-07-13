@@ -61,7 +61,8 @@ def run_experiment(session_cls, task, use_runs=False, *args, **kwargs):
 
     session = session_cls(output_str=output_str,
                           output_dir=output_dir,
-                          settings_file=settings, subject=subject)
+                          settings_file=settings, subject=subject,
+                          run=run)
     session.create_trials()
     session.run()
     session.quit()
