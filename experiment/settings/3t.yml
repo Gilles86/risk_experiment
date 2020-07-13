@@ -4,26 +4,28 @@ preferences:
     units: deg
 
 window:
-  size: [800, 600]
+  size: [1280, 1024]
   pos: [0, 0]
   color: [0, 0, 0]
   fullscr: False
   winType: pyglet
-  #waitBlanking: True
   screen: 1
-  #refreshHz: 30
   viewPos: [0, 0]
-  #viewScale: [.5, .5]
 
 monitor:
   name: default
-  width: 42  # in cm
-  distance: 125  # in cm
+  width: 53.5898384862
+  distance: 100  # in cm
   gamma: 1
 
 mouse:
   visible: True
-  
+
+eyetracker:
+  model: eyelink
+  CNUM: 9
+  MIN_CALIB_FIX: 1000
+
 mri:
   simulate: False
   TR: 2.0  # seconds between volume acquisitions

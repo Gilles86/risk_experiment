@@ -5,7 +5,7 @@ import scipy.stats as ss
 import pandas as pd
 from psychopy import logging
 from itertools import product
-
+import yaml
 
 def run_experiment(session_cls, task, use_runs=False, *args, **kwargs):
 
@@ -14,6 +14,7 @@ def run_experiment(session_cls, task, use_runs=False, *args, **kwargs):
     parser.add_argument('session', default=None, nargs='?')
     parser.add_argument('run', default=None, nargs='?')
     parser.add_argument('--settings', default='default', nargs='?')
+    parser.add_argument('--eyetracker', action='store_true')
     args = parser.parse_args()
 
     if args.subject is None:
@@ -36,9 +37,19 @@ def run_experiment(session_cls, task, use_runs=False, *args, **kwargs):
     else:
         run = args.run
 
-    settings = op.join(op.dirname(__file__), 'settings',
+    settings_fn = op.join(op.dirname(__file__), 'settings',
                        f'{args.settings}.yml')
-    logging.warn(f'Using {settings} as settings')
+
+    with open(settings_fn, 'r') as f_in:
+        settings_ = yaml.safe_load(f_in)
+
+    if 'eyetracker' in settings_.keys():
+        eyetracker_on = True
+    else:
+        eyetracker_on = False
+
+
+    logging.warn(f'Using {settings_fn} as settings')
     output_dir = op.join(op.dirname(__file__), 'logs', f'sub-{subject}')
     logging.warn(f'Writing results to  {output_dir}')
 
@@ -61,8 +72,9 @@ def run_experiment(session_cls, task, use_runs=False, *args, **kwargs):
 
     session = session_cls(output_str=output_str,
                           output_dir=output_dir,
-                          settings_file=settings, subject=subject,
-                          run=run)
+                          settings_file=settings_fn, subject=subject,
+                          run=run,
+                          eyetracker_on=eyetracker_on)
     session.create_trials()
     session.run()
     session.quit()

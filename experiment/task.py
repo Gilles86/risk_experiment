@@ -14,10 +14,10 @@ class TaskSession(PileSession):
 
     Trial = GambleTrial
 
-    def __init__(self, output_str, subject=None, output_dir=None, settings_file=None, run=None):
+    def __init__(self, output_str, subject=None, output_dir=None, settings_file=None, run=None, eyetracker_on=False):
         print(settings_file)
         super().__init__(output_str, subject=subject,
-                         output_dir=output_dir, settings_file=settings_file, run=run)
+                         output_dir=output_dir, settings_file=settings_file, run=run, eyetracker_on=eyetracker_on)
 
         logging.warn(self.settings['run'])
 

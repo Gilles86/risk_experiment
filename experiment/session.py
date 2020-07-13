@@ -1,16 +1,16 @@
 from stimuli import FixationLines
-from exptools2.core import Session
+from exptools2.core import Session, PylinkEyetrackerSession
 from psychopy import visual, logging
 import pandas as pd
 import os.path as op
 
 
-class PileSession(Session):
+class PileSession(PylinkEyetrackerSession):
     """ Simple session with x trials. """
 
-    def __init__(self, output_str, subject=None, output_dir=None, settings_file=None, run=None):
+    def __init__(self, output_str, subject=None, output_dir=None, settings_file=None, run=None, eyetracker_on=False):
         """ Initializes TestSession object. """
-        super().__init__(output_str, output_dir=output_dir, settings_file=settings_file)
+        super().__init__(output_str, output_dir=output_dir, settings_file=settings_file, eyetracker_on=eyetracker_on)
         self.subject = subject
         self.settings['run'] = int(run)
         print(self.settings)
@@ -52,3 +52,8 @@ class PileSession(Session):
 
             array_log.to_csv(op.join(
                 self.output_dir, self.output_str + '_stimarray_locations.tsv'), sep='\t')
+
+
+class PileEyeTrackerSession(PileSession, PylinkEyetrackerSession):
+    pass
+
