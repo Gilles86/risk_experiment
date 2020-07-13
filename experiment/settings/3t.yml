@@ -7,15 +7,15 @@ window:
   size: [1280, 1024]
   pos: [0, 0]
   color: [0, 0, 0]
-  fullscr: False
+  fullscr: True
   winType: pyglet
-  screen: 1
+  screen: 0
   viewPos: [0, 0]
 
 monitor:
   name: default
-  width: 53.5898384862
-  distance: 100  # in cm
+  width: 42
+  distance: 125  # in cm
   gamma: 1
 
 mouse:
@@ -23,7 +23,7 @@ mouse:
 
 eyetracker:
   model: eyelink
-  CNUM: 9
+  CNUM: 5
   MIN_CALIB_FIX: 1000
 
 mri:
@@ -61,7 +61,7 @@ various:
   piechart_width: 1 
   text_width: 14
   text_height: .5
-  buttons: ['j', 'k', 'l', 'semicolon']
+  buttons: ['b', 'z', 'g', 'r']
   button_size: 2
 
 
