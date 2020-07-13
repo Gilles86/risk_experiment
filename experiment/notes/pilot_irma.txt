@@ -1,0 +1,20 @@
+
+ script has issues with ses- task- for trial design script
+
+Mapper has to be only 126 volumes instead of 130?
+
+
+END OF RUNS SHOULD BE FIXATION CROSS
+
+
+Run and session seem conflated for logs of task?
+
+Irma:
+Unclear when trial starts
+ISI too long
+ITI shorter
+Whole experiment too long
+Insist on break?
+Make clear that real money is on the line.
+Make main task shorter (i.e., 6 runs (?))
+Implement easy script to calculate payout
