@@ -12,4 +12,14 @@ T2*w 5:15
 T1w 11:08
 Mapper ~ 4:55 (4 times?)
 
+# 7T
+## Anatomical session
+FLASH T2* S2 0 13:44
+MPRAGE 1.0 mm - 3:47
+TSE 5 min
+20 minutes
+Mapper ~ 4:55 (4 times?)
+40 minutes
 
+## Functionsl session
+870 sesconds
