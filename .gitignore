@@ -1,3 +1,4 @@
 */logs/*
 *.tsv
 **/__pycache__/*
+*.pyc
