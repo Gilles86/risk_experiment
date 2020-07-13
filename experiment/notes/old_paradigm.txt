@@ -1,0 +1,15 @@
+Original coin was 0.04 of "1franc_new_png.png"
+
+611 * 24 pixels
+
+24 / 800 = 0.03
+0.03 * 20 = 0.6 degrees of diameter
+
+Resolution was 800x600
+
+radius of fov was 210
+210/800 * 20 = 5.25 degrees-of-visual-field
+
+
+0.6 degrees is 0.02 of 30 degrees 0.02 of 800pixels is 16 pixels
+
