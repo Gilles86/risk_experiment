@@ -4,6 +4,7 @@ import numpy as np
 import scipy.stats as ss
 import pandas as pd
 from psychopy import logging
+from itertools import product
 
 
 def run_experiment(session_cls, task, use_runs=False, *args, **kwargs):
@@ -90,3 +91,48 @@ def create_stimulus_array_log_df(stimulus_arrays, index=None):
         stimuli.index = index
 
     return stimuli
+
+
+def create_design(prob1, prob2, fractions,
+                  base=[5, 7, 10, 14, 20, 28], repetitions=1, n_runs=3):
+
+    base = np.array(base)
+    repetition = range(1, repetitions+1)
+
+    df = []
+    for ix, p in enumerate(prob1):
+        tmp = pd.DataFrame(product(base, fractions, repetition), columns=[
+                           'base number', 'fraction', 'repetition'])
+        tmp['p1'] = p
+        tmp['p2'] = prob2[ix]
+
+        df.append(tmp)
+
+    df = pd.concat(df).reset_index(drop=True)
+
+    df.loc[df['p1'] == 1.0, 'n1'] = df['base number']
+    df.loc[df['p1'] != 1.0, 'n2'] = df['base number']
+    df.loc[df['p1'] == 1.0, 'n2'] = (
+        df['fraction'] * df['base number']).astype(int)
+    df.loc[df['p1'] != 1.0, 'n1'] = (
+        df['fraction'] * df['base number']).astype(int)
+
+    df['n1'] = df['n1'].astype(int)
+    df['n2'] = df['n2'].astype(int)
+
+    # Shuffle _within_ p1's
+    df = df.groupby('p1', as_index=False).apply(
+        lambda d: d.sample(frac=1)).reset_index(level=0, drop=True)
+
+    # Get run numbers
+    df['run'] = df.groupby('p1').p1.transform(lambda p: np.ceil(
+        (np.arange(len(p))+1) / (len(p) / n_runs))).astype(int)
+
+    df = df.set_index(['run', 'p1'])
+    ixs = np.random.permutation(df.index.unique())
+    df = df.loc[ixs].sort_index(
+        level='run', sort_remaining=False).reset_index('p1')
+
+    df['trial'] = np.arange(1, len(df)+1)
+
+    return df
