@@ -48,7 +48,7 @@ class GambleTrial(Trial):
                  jitter1=2.5, jitter2=4.0, **kwargs):
 
         if phase_durations is None:
-            phase_durations = [.25, .5, .3, .5, .6, jitter1, .3, .5, .6, jitter2]
+            phase_durations = [.25, .3, .3, .5, .6, jitter1, .3, .3, .6, jitter2]
         else:
             raise Exception(
                 "Don't directly set phase_durations for GambleTrial!")

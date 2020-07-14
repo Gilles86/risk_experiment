@@ -3,14 +3,28 @@
 
 Mapper:
 The design is 18 elements long. Every element takes .7 * 6 repetitions = 75.6 seconds
-4 blocks plus 10 seconds outro makes 312.4 seconds (plus 5 dummy scans!)
+3 blocks plus 10 seconds outro makes 236.8 seconds (plus 5 dummy scans!)
+
+# Calibration
+jitter1, jitter2 = 5, 4.
+phase_durations = [.25, .3, .3, .5, .6, jitter1, .3, .3, .6, jitter2]
+np.sum(phase_durations) = 12.15
+96 * 12.15 -= 1166 seconds ~= 19 minutes
+
+#Task
+jitter1 = 6.5
+jitter2 = np.mean(np.repeat(np.linspace(4, 6, 4), 128/4))
+np.sum([.25, .3, .3, .5, .6, jitter1, .3, .3, .6, jitter2])
+14.65 seconds
+
+128/4 * 14.65 = 468.8 seconds
 
 # Scans
 Survey 00:32
 TSE 05:10
 T2*w 5:15
 T1w 11:08
-Mapper ~ 4:55 (4 times?)
+Mapper ~ 4:10 (4 times?)
 
 # 7T
 ## Anatomical session
@@ -24,11 +38,4 @@ Mapper ~ 4:55 (4 times?)
 ## Functionsl session
 870 sesconds
 
-
-# Calibration
-jitter1, jitter2 = 2.5, 4.
-phase_durations = [.3, .5, .6, jitter1, .3, .5, .6, jitter2]
-np.sum(phase_durations) = 9.3
-
-96 * 9.3 -= 892 seconds ~= 15 minutes
 

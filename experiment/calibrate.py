@@ -7,6 +7,7 @@ from psychopy import logging
 import os.path as op
 import pandas as pd
 from gamble import IntroBlockTrial, GambleTrial, GambleInstructionTrial
+from trial import OutroTrial
 
 
 class CalibrationSession(PileSession):
@@ -43,6 +44,7 @@ class CalibrationSession(PileSession):
                                                    jitter1=jitter1,
                                                    jitter2=jitter2))
 
+        self.trials.append(OutroTrial(self, -1, phase_durations=[np.inf]))
 
 if __name__ == '__main__':
 

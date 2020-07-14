@@ -1,6 +1,7 @@
 import numpy as np
 from exptools2.core import Trial
 from psychopy.visual import TextStim
+from stimuli import FixationLines
 
 
 class InstructionTrial(Trial):
@@ -48,3 +49,15 @@ class DummyWaiterTrial(InstructionTrial):
             for key, t in events:
                 if key == self.session.mri_trigger:
                     self.stop_phase()
+
+class OutroTrial(InstructionTrial):
+    """ Simple trial with only fixation cross.  """
+
+    def __init__(self, session, trial_nr, phase_durations, **kwargs):
+
+        txt = '''Please lie still for a few moments.'''
+        super().__init__(session, trial_nr, phase_durations, txt=txt, **kwargs)
+
+    def draw(self):
+        self.session.fixation_lines.draw()
+        super().draw()

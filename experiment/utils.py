@@ -108,7 +108,7 @@ def create_stimulus_array_log_df(stimulus_arrays, index=None):
 
 
 def create_design(prob1, prob2, fractions,
-                  base=[5, 7, 10, 14, 20, 28], repetitions=1, n_runs=3):
+                  base=[5, 7, 10, 14, 20, 28], repetitions=1, n_runs=4):
 
     base = np.array(base)
     repetition = range(1, repetitions+1)
