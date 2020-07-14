@@ -1,0 +1,24 @@
+Put end screen in mapper
+Put end screen in task
+
+Note that tr is 2.298 seconds now
+
+Make a payout script
+
+Make better fallback for when subject shows very extreme behavior
+
+
+Use right pupil by default
+
+Use 500 Hz by default 
+
+Show the image of the pupil
+"Run 4/3" should be 4/4
+
+Change NSA for TSE
+
+Really sure that only t triggers
+
+Don't drink too much
+
+What about trials where you do not respond?
