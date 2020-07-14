@@ -1,9 +1,6 @@
  Experimental paradigm
 3T
 
-Mapper:
-The design is 18 elements long. Every element takes .7 * 6 repetitions = 75.6 seconds
-3 blocks plus 10 seconds outro makes 236.8 seconds (plus 5 dummy scans!)
 
 # Calibration
 jitter1, jitter2 = 5, 4.
@@ -11,13 +8,20 @@ phase_durations = [.25, .3, .3, .5, .6, jitter1, .3, .3, .6, jitter2]
 np.sum(phase_durations) = 12.15
 96 * 12.15 -= 1166 seconds ~= 19 minutes
 
+Mapper:
+The design is 18 elements long. Every element takes .7 * 6 repetitions = 75.6 seconds
+3 blocks plus 10 seconds outro makes 236.8 seconds (4 minutes) (plus 5 dummy scans!)
+236.8/2.5 + 20/2.5 + 5 = 107
+
 #Task
 jitter1 = 6.5
-jitter2 = np.mean(np.repeat(np.linspace(4, 6, 4), 128/4))
+jitter2 = np.mean(np.repeat(np.linspace(4, 6, 4), 128/4)) (5)
 np.sum([.25, .3, .3, .5, .6, jitter1, .3, .3, .6, jitter2])
 14.65 seconds
 
-128/4 * 14.65 = 468.8 seconds
+192/4 * 14.65 = 703.2 seconds
+
+703 / 2.5 + 20 / 2.5 + 5 = 294 volumes
 
 # Scans
 Survey 00:32
