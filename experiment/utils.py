@@ -7,34 +7,31 @@ from psychopy import logging
 from itertools import product
 import yaml
 
-def run_experiment(session_cls, task, use_runs=False, *args, **kwargs):
+def run_experiment(session_cls, task, use_runs=False, subject=None, run=None, settings='default', *args, **kwargs):
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('subject', default=None, nargs='?')
-    parser.add_argument('session', default=None, nargs='?')
-    parser.add_argument('run', default=None, nargs='?')
-    parser.add_argument('--settings', default='default', nargs='?')
-    args = parser.parse_args()
+    if subject is None:
+        parser = argparse.ArgumentParser()
+        parser.add_argument('subject', default=None, nargs='?')
+        parser.add_argument('session', default=None, nargs='?')
+        parser.add_argument('run', default=None, nargs='?')
+        parser.add_argument('--settings', default=settings, nargs='?')
+        args = parser.parse_args()
 
-    if args.subject is None:
+    subject, session, run = args.subject, args.session, args.run
+
+    if subject is None:
         subject = input('Subject? (999): ')
         subject = 999 if subject == '' else subject
-    else:
-        subject = args.subject
 
-    if args.subject is None:
+    if session is None:
         session = input('Session? (1): ')
         session = 1 if session == '' else session
-    else:
-        session = args.session
 
-    if args.run is None:
+    if run is None:
         run = input('Run? (None): ')
         run = None if run == '' else run
-    elif args.run == '0':
+    elif run == '0':
         run = None
-    else:
-        run = args.run
 
     settings_fn = op.join(op.dirname(__file__), 'settings',
                        f'{args.settings}.yml')
