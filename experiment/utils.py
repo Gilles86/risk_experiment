@@ -7,7 +7,7 @@ from psychopy import logging
 from itertools import product
 import yaml
 
-def run_experiment(session_cls, task, use_runs=False, subject=None, run=None, settings='default', *args, **kwargs):
+def run_experiment(session_cls, task, use_runs=False, subject=None, session=None, run=None, settings='default', *args, **kwargs):
 
     if subject is None:
         parser = argparse.ArgumentParser()
@@ -16,8 +16,7 @@ def run_experiment(session_cls, task, use_runs=False, subject=None, run=None, se
         parser.add_argument('run', default=None, nargs='?')
         parser.add_argument('--settings', default=settings, nargs='?')
         args = parser.parse_args()
-
-    subject, session, run = args.subject, args.session, args.run
+        subject, session, run, settings = args.subject, args.session, args.run, args.settings
 
     if subject is None:
         subject = input('Subject? (999): ')
@@ -27,14 +26,14 @@ def run_experiment(session_cls, task, use_runs=False, subject=None, run=None, se
         session = input('Session? (1): ')
         session = 1 if session == '' else session
 
-    if run is None:
+    if use_runs and (run is None):
         run = input('Run? (None): ')
         run = None if run == '' else run
     elif run == '0':
         run = None
 
     settings_fn = op.join(op.dirname(__file__), 'settings',
-                       f'{args.settings}.yml')
+                       f'{settings}.yml')
 
     with open(settings_fn, 'r') as f_in:
         settings_ = yaml.safe_load(f_in)
@@ -75,7 +74,9 @@ def run_experiment(session_cls, task, use_runs=False, subject=None, run=None, se
                           eyetracker_on=eyetracker_on)
     session.create_trials()
     session.run()
-    session.quit()
+    session.close()
+
+    return session
 
 
 def sample_isis(n, s=1.0, loc=0.0, scale=10, cut=30):
@@ -147,3 +148,66 @@ def create_design(prob1, prob2, fractions,
     df['trial'] = np.arange(1, len(df)+1)
 
     return df
+
+
+def fit_psychometric_curve(log_file, plot=False, thresholds=(1, 4)):
+    import statsmodels.api as sm
+    df = pd.read_table(log_file)
+
+    df = df[df.phase == 9]
+    df = df.pivot_table(index=['trial_nr'], values=['choice', 'certainty', 'n1', 'n2', 'prob1', 'prob2'])
+    df = df[~df.choice.isnull()]
+
+    df['log(risky/safe)'] = np.log(df['n1'] / df['n2'])
+    ix = df.prob1 == 1.0
+
+    print(df)
+
+    if ix.sum() > 0:
+        df.loc[ix, 'log(risky/safe)'] = np.log(df.loc[ix, 'n2'] / df.loc[ix, 'n1'])
+        df.loc[ix, 'chose risky'] = df.loc[ix, 'choice'] == 2
+
+    if (~ix).sum() > 0:
+        df.loc[~ix, 'log(risky/safe)'] = np.log(df.loc[~ix, 'n1'] / df.loc[~ix, 'n2'])
+        df.loc[~ix, 'chose risky'] = df.loc[~ix, 'choice'] == 1
+
+    df['chose risky'] = df['chose risky'].astype(bool)
+
+    if plot:
+        import seaborn as sns
+        import matplotlib.pyplot as plt
+        fac = sns.lmplot('log(risky/safe)', 'chose risky', data=df, logistic=True)
+
+        for color, x in zip(sns.color_palette()[:4], [np.log(1./.55)]):
+            
+            plt.axvline(x, color=color, ls='--')    
+            
+        plt.gcf().set_size_inches(14, 6)
+        plt.axhline(.5, c='k', ls='--')
+        x = np.linspace(0, 1.5, 17)
+        plt.xticks(x, [f'{e:0.2f}' for e in np.exp(x)], rotation='vertical')
+        plt.xlim(0, 1.5)
+        plt.show()
+
+    
+    # Fit probit
+    df['intercept'] = 1
+
+    try:
+        m = sm.Probit(df['chose risky'], df[['intercept', 'log(risky/safe)']])
+        r = m.fit()
+        x_lower = (ss.norm.ppf(.2) - r.params.intercept) / r.params['log(risky/safe)']
+        x_upper = (ss.norm.ppf(.8) - r.params.intercept) / r.params['log(risky/safe)']
+    except Exception as e:
+        print("Problem with calibration, using standard values")
+        x_lower = np.log(thresholds[0])
+        x_upper = np.log(thresholds[1])
+
+    print(f'Original bounds: {np.exp(x_lower)}, {np.exp(x_upper)}')
+    x_lower = np.exp(np.max((x_lower, np.log(thresholds[0]))))
+    x_upper = np.exp(np.min((x_upper, np.log(thresholds[1]))))
+    print(f'Final bounds: {x_lower}, {x_upper}')
+
+
+    return x_lower, x_upper
+

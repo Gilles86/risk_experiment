@@ -21,6 +21,8 @@ class CalibrationSession(PileSession):
         trial_settings = pd.read_csv(op.abspath(op.join(calibrate_settings_folder,
                                                         f'sub-{self.subject}_ses-calibrate.tsv')), sep='\t')
 
+        self.n_runs = trial_settings.run.unique().shape[0]
+
         self.trials = []
 
         jitter1 = self.settings['calibrate'].get('jitter1')
@@ -30,9 +32,12 @@ class CalibrationSession(PileSession):
 
         for run, d in trial_settings.groupby(['run'], sort=False):
             self.trials.append(GambleInstructionTrial(self, trial_nr=run,
-                                                run=run))
+                                                      n_runs=self.n_runs,
+                                                      run=run))
             for (p1, p2), d2 in d.groupby(['p1', 'p2'], sort=False):
+                n_trials_in_miniblock = len(d2)
                 self.trials.append(IntroBlockTrial(session=self, trial_nr=run,
+                                                   n_trials=n_trials_in_miniblock,
                                                    prob1=p1,
                                                    prob2=p2))
 
@@ -44,7 +49,7 @@ class CalibrationSession(PileSession):
                                                    jitter1=jitter1,
                                                    jitter2=jitter2))
 
-        self.trials.append(OutroTrial(self, -1, phase_durations=[np.inf]))
+
 
 if __name__ == '__main__':
 

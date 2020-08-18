@@ -23,9 +23,6 @@ class TaskSession(PileSession):
 
     def create_trials(self):
 
-        n_dummies = self.settings['mri'].get('n_dummy_scans')
-        phase_durations = [np.inf] * (n_dummies + 1)
-
         txt = """
         In this task, you will see two piles of swiss Franc coins in
         succession. Both piles are combined with a pie chart in.
@@ -50,25 +47,17 @@ class TaskSession(PileSession):
         task_settings_folder = op.abspath(op.join('settings', 'task'))
         fn = op.abspath(op.join(task_settings_folder,
                                 f'sub-{self.subject}_ses-task.tsv'))
+
         settings = pd.read_table(fn)
-
-        print(settings)
         settings = settings.set_index(['run'])
-        print(settings)
         settings = settings.loc[int(self.settings['run'])]
-        print(settings)
-
-        n_dummies = self.settings['mri'].get('n_dummy_scans')
-
-        self.trials = [GambleInstructionTrial(self, trial_nr=0, run=self.settings['run'])]
-
-        self.trials.append(DummyWaiterTrial(
-            session=self, n_triggers=n_dummies, trial_nr=0))
 
         jitter1 = np.repeat([5,6,7,8], 128/4)
         jitter2 = np.repeat(np.linspace(4, 6, 4), 128/4)
         np.random.shuffle(jitter1)
         np.random.shuffle(jitter2)
+
+        self.trials = [GambleInstructionTrial(self, trial_nr=0, run=self.settings['run'])]
 
         for j1, j2, (ix, row) in zip(jitter1, jitter2, settings.iterrows()):
             self.trials.append(GambleTrial(self, row.trial,
@@ -80,9 +69,20 @@ class TaskSession(PileSession):
 
         
 
+class TaskSessionMRI(TaskSession):
+
+    def create_trials(self):
+
+        super().create_trials()
+
+        n_dummies = self.settings['mri'].get('n_dummy_scans')
+
+        self.trials.insert(1, DummyWaiterTrial(session=self, n_triggers=n_dummies, trial_nr=0))
+
+        self.trials.append(OutroTrial(self, -1, phase_durations=[np.inf]))
 
 if __name__ == '__main__':
 
-    session_cls = TaskSession
+    session_cls = TaskSessionMRI
     task = 'task'
     run_experiment(session_cls, task=task)

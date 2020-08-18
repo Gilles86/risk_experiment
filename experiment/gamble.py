@@ -11,11 +11,11 @@ from trial import InstructionTrial
 class IntroBlockTrial(Trial):
 
     def __init__(self, session, trial_nr, phase_durations=[5.],
-                 prob1=0.55, prob2=1.0, **kwargs):
+                 prob1=0.55, prob2=1.0, n_trials=16, **kwargs):
         super().__init__(session, trial_nr, phase_durations, **kwargs)
 
         txt = f"""
-        In this block of 16 trials, the first option will have a
+        In this block of {n_trials} trials, the first option will have a
         winning change of {int(prob1*100):d}%.\n\n
         The second option will have a winning chance of {int(prob2*100):d}%.
         """
