@@ -28,7 +28,7 @@ def main(subject, session, settings, test=False):
     fn = make_trial_design(subject, x_lower, x_upper)
     logging.warn(fn)
 
-    task_session = run_experiment(TaskSession, task='task', session='task', settings=settings, subject=subject)
+    task_session = run_experiment(TaskSession, task='task', session=session, settings=settings, subject=subject)
 
 def make_trial_design(subject, x_lower, x_upper):
     import numpy as np
@@ -55,8 +55,8 @@ def make_trial_design(subject, x_lower, x_upper):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('subject', default=None, nargs='?')
-    parser.add_argument('session', default=None, nargs='?')
-    parser.add_argument('--settings', default='default', nargs='?')
+    parser.add_argument('session', default='blu', nargs='?')
+    parser.add_argument('--settings', default='blu', nargs='?')
     parser.add_argument('--test', action='store_true')
     args = parser.parse_args()
 

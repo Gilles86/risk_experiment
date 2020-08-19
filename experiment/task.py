@@ -22,28 +22,6 @@ class TaskSession(PileSession):
         logging.warn(self.settings['run'])
 
     def create_trials(self):
-
-        txt = """
-        In this task, you will see two piles of swiss Franc coins in
-        succession. Both piles are combined with a pie chart in.
-        The part of the pie chart that is lightly colored indicates
-        the probability of a lottery you will gain the amount of
-        Swiss Francs represented by the pile.
-        There is always one pile that has a probability of 100% for payout.
-        The other probability changes every 16 trials.
-
-        Your task is to either select the first lottery or
-        the second lottery, by using your index or middle finger.
-        Immediately after your choice, we ask how certain you were
-        about your choice from a scale from 1 (very uncertain)
-        to 4 (very certain).
-
-        This is run {run}/{self.n_runs}.
-
-        Press any of your buttons to continue.
-
-        """
-
         task_settings_folder = op.abspath(op.join('settings', 'task'))
         fn = op.abspath(op.join(task_settings_folder,
                                 f'sub-{self.subject}_ses-task.tsv'))

@@ -186,28 +186,28 @@ class GambleTrial(Trial):
 
 class GambleInstructionTrial(InstructionTrial):
     
-    def __init__(self, session, trial_nr, run, n_runs=3, phase_durations=[np.inf],
+    def __init__(self, session, trial_nr, run, txt=None, n_runs=3, phase_durations=[np.inf],
                  **kwargs):
 
-        txt = f"""
-        In this task, you will see two piles of swiss Franc coins in
-        succession. Both piles are combined with a pie chart in.
-        The part of the pie chart that is lightly colored indicates
-        the probability of a lottery you will gain the amount of
-        Swiss Francs represented by the pile.
-        There is always one pile that has a probability of 100% for payout.
-        The other probability changes every 16 trials.
+        if txt is None:
+            txt = f"""
+            This is run {run}/{n_runs} of the first part of the experiment.
 
-        Your task is to either select the first lottery or
-        the second lottery, by using your index or middle finger.
-        Immediately after your choice, we ask how certain you were
-        about your choice from a scale from 1 (very uncertain)
-        to 4 (very certain).
+            In this task, you will see two piles of Swiss Franc coins in
+            succession. Both piles are combined with a pie chart in.
+            The part of the pie chart that is lightly colored indicates
+            the probability of a lottery you will gain the amount of
+            Swiss Francs represented by the pile.
 
-        This is run {run}/{n_runs}.
+            Your task is to either select the first lottery or
+            the second lottery, by using your index or middle finger.
+            Immediately after your choice, we ask how certain you were
+            about your choice from a scale from 1 (very uncertain)
+            to 4 (very certain).
 
-        Press any of your buttons to continue.
 
-        """
+            Press any of your buttons to continue.
+
+            """
 
         super().__init__(session=session, trial_nr=trial_nr, phase_durations=phase_durations, txt=txt, **kwargs)
