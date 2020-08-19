@@ -191,7 +191,7 @@ class GambleInstructionTrial(InstructionTrial):
 
         if txt is None:
             txt = f"""
-            This is run {run}/{n_runs} of the first part of the experiment.
+            This is run {run}/{n_runs}.
 
             In this task, you will see two piles of Swiss Franc coins in
             succession. Both piles are combined with a pie chart in.
