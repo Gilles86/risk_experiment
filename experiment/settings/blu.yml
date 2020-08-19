@@ -24,7 +24,7 @@ monitor:
   gamma: 1
 
 mouse:
-  visible: True
+  visible: False
   
 mri:
   use_mri: False
