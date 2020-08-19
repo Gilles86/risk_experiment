@@ -71,7 +71,7 @@ def run_experiment(session_cls, task, use_runs=False, subject=None, session=None
                           output_dir=output_dir,
                           settings_file=settings_fn, subject=subject,
                           run=run,
-                          eyetracker_on=eyetracker_on)
+                          eyetracker_on=eyetracker_on, *args, **kwargs)
     session.create_trials()
     session.run()
     session.close()

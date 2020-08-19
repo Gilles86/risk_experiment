@@ -7,20 +7,20 @@ from psychopy import logging
 import os.path as op
 
 
-def main(subject, session, settings):
-    print('yo')
-    calibrate_session = run_experiment(CalibrationSession, task='calibrate',
-                                       subject=subject, session=session, settings=settings,
-                                       use_runs=False)
+def main(subject, session, settings, test=False):
 
-    print('YO2')
+    if test:
+        log_file = op.abspath('logs/test_log/sub-test_ses-test_task-calibrate_events.tsv')
 
-    logging.warn(op.join(calibrate_session.output_dir,
-                         calibrate_session.output_str))
-    log_file = op.join(calibrate_session.output_dir,
+    else:
+        calibrate_session = run_experiment(CalibrationSession, task='calibrate',
+                                           subject=subject, session=session, settings=settings,
+                                           use_runs=False)
+
+        logging.warn(op.join(calibrate_session.output_dir,
+                             calibrate_session.output_str))
+        log_file = op.join(calibrate_session.output_dir,
                        calibrate_session.output_str + '_events.tsv')
-
-    # log_file = op.abspath('logs/sub-test/ses-test/sub-test_ses-test_task-calibrate_events.tsv')
 
     x_lower, x_upper = fit_psychometric_curve(log_file)
 
@@ -28,8 +28,7 @@ def main(subject, session, settings):
     fn = make_trial_design(subject, x_lower, x_upper)
     logging.warn(fn)
 
-    for run in range(1, 5):
-        task_session = run_experiment(TaskSession, task='task', session='task', settings=settings, subject=subject, run=run)
+    task_session = run_experiment(TaskSession, task='task', session='task', settings=settings, subject=subject)
 
 def make_trial_design(subject, x_lower, x_upper):
     import numpy as np
@@ -58,6 +57,7 @@ if __name__ == '__main__':
     parser.add_argument('subject', default=None, nargs='?')
     parser.add_argument('session', default=None, nargs='?')
     parser.add_argument('--settings', default='default', nargs='?')
+    parser.add_argument('--test', action='store_true')
     args = parser.parse_args()
 
-    main(subject=args.subject, session=args.session, settings=args.settings)
+    main(subject=args.subject, session=args.session, settings=args.settings, test=args.test)

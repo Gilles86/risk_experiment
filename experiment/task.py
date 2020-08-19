@@ -38,7 +38,7 @@ class TaskSession(PileSession):
         about your choice from a scale from 1 (very uncertain)
         to 4 (very certain).
 
-        This is run {run}/3.
+        This is run {run}/{self.n_runs}.
 
         Press any of your buttons to continue.
 
@@ -49,23 +49,48 @@ class TaskSession(PileSession):
                                 f'sub-{self.subject}_ses-task.tsv'))
 
         settings = pd.read_table(fn)
-        settings = settings.set_index(['run'])
-        settings = settings.loc[int(self.settings['run'])]
 
-        jitter1 = np.repeat([5,6,7,8], 128/4)
-        jitter2 = np.repeat(np.linspace(4, 6, 4), 128/4)
+        if self.settings['run'] is not None:
+            settings = settings.set_index(['run'])
+            settings = settings.loc[int(self.settings['run'])]
+
+        print(settings)
+
+        jitter1 = self.settings['task'].get('jitter1')
+        jitter2 = self.settings['task'].get('jitter2')
+
+        jitter1 = np.repeat(jitter1, np.ceil(len(settings)/len(jitter1)))
+        jitter2 = np.repeat(jitter2, np.ceil(len(settings)/len(jitter2)))
+
         np.random.shuffle(jitter1)
         np.random.shuffle(jitter2)
 
-        self.trials = [GambleInstructionTrial(self, trial_nr=0, run=self.settings['run'])]
+        self.n_runs = settings.run.unique().shape[0]
 
-        for j1, j2, (ix, row) in zip(jitter1, jitter2, settings.iterrows()):
-            self.trials.append(GambleTrial(self, row.trial,
-                                           prob1=row.p1, prob2=row.p2,
-                                           num1=int(row.n1),
-                                           num2=int(row.n2),
-                                           jitter1=j1,
-                                           jitter2=j2))
+        settings['jitter1'] = jitter1[:len(settings)]
+        settings['jitter2'] = jitter2[:len(settings)]
+
+        self.trials = []
+
+        for run, d in settings.groupby(['run'], sort=False):
+            self.trials.append(GambleInstructionTrial(self, trial_nr=run,
+                                                      n_runs=self.n_runs,
+                                                      run=run))
+            for (p1, p2), d2 in d.groupby(['p1', 'p2'], sort=False):
+                n_trials_in_miniblock = len(d2)
+                self.trials.append(IntroBlockTrial(session=self, trial_nr=0,
+                                                   n_trials=n_trials_in_miniblock,
+                                                   prob1=p1,
+                                                   prob2=p2))
+
+
+                for ix, row in d2.iterrows():
+                    self.trials.append(GambleTrial(self, row.trial,
+                                                   prob1=row.p1, prob2=row.p2,
+                                                   num1=int(row.n1),
+                                                   num2=int(row.n2),
+                                                   jitter1=row.jitter1,
+                                                   jitter2=row.jitter2))
 
         
 

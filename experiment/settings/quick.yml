@@ -8,7 +8,7 @@ window:
   pos: [0, 0]
 
   color: [0, 0, 0]
-  fullscr: True
+  fullscr: False
   winType: pyglet
   viewPos: [0, 10]
   #waitBlanking: True
@@ -49,6 +49,10 @@ calibrate:
 
   jitter1: 1.5
   jitter2: 3
+
+task:
+  jitter1: [1.5]
+  jitter2: [3]
 
 various:
   piechart_width: 1 
