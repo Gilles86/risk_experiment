@@ -5,6 +5,7 @@ from task import TaskSession
 from utils import run_experiment, fit_psychometric_curve, create_design
 from psychopy import logging
 import os.path as op
+import os
 
 
 def main(subject, session, settings, test=False):
