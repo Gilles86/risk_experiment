@@ -58,4 +58,6 @@ various:
   buttons: ['j', 'k', 'l', 'semicolon']
   button_size: 2
 
+output:
+   payout_folder: '/Users/gdehol/'
 

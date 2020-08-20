@@ -3,7 +3,7 @@ import pandas as pd
 import os.path as op
 import numpy as np
 
-def main(subject):
+def get_payout(subject):
 
     log_calibrate = op.abspath(op.join('logs', f'sub-{subject}', 'ses-blu',
                             f'sub-{subject}_ses-blu_task-calibrate_events.tsv'))
@@ -27,36 +27,42 @@ def main(subject):
         txt = f'On the selected trial, you gave NO answer. '\
         'This means you will not get a bonus'
     else:
-        txt = f'''
-You chose between {int(row.prob1*100):d}% chance on {row.n1} CHF,
-or {int(row.prob2*100):d}% chance on {row.n2} CHF. You chose option
-{row.choice}.'''
+        txt = f'You chose between {int(row.prob1*100):d}% probability of ' \
+                f'winning {int(row.n1)} CHF, or {int(row.prob2*100):d}% probability ' \
+                f'of winning {int(row.n2)} CHF.'
 
         if ((row.choice == 1) and (row['prob1'] == 1)):
-            txt += '\nYou chose the safe option and get {row.n1} CHF'
+            txt += f'\nYou chose the safe option and get {row.n1} CHF'
+            payout = row.n1
 
         if ((row.choice == 2) and (row.prob2 == 1)):
-            txt += '\nYou chose the safe option and get {row.n2} CHF'
+            txt += f'\nYou chose the safe option and get {row.n2} CHF'
+            payout = row.n2
 
         if ((row.choice == 2) and (row.prob1 == 1)):
-            txt += '\n You chose the risky option (pile 2).'
-            die = np.random.randint(100) + 1
-            txt += 'The die turned out to be {die}'
-            if die > 55:
-                txt += 'So you got NO bonus'
-            else:
-                txt += 'So you got a bonus of {row.n2}'
-
-        if ((row.choice == 1) and (row.prob2 == 1)):
-            txt += '\n You chose the risky option (pile 1).'
+            txt += '\nYou chose the risky option (pile 2). '
             die = np.random.randint(100) + 1
             txt += f'The die turned out to be {die}. '
             if die > 55:
-                txt += 'So you got NO bonus'
+                txt += 'So you got NO bonus.'
+                payout = 0
             else:
-                txt += f'So you got a bonus of {row.n1} CHF.'
+                txt += f'So you got a bonus of {int(row.n2)} CHF. '
+                payout = row.n2
+
+        if ((row.choice == 1) and (row.prob2 == 1)):
+            txt += '\nYou chose the risky option (pile 1). '
+            die = np.random.randint(100) + 1
+            txt += f'The die turned out to be {die}. '
+            if die > 55:
+                txt += f'So you got NO bonus'
+                payout = 0
+            else:
+                txt += f'So you got a bonus of {int(row.n1)} CHF.'
+                payout = row.n1
 
     print(txt)
+    return txt, payout
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -64,4 +70,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    main(subject=args.subject)
+    get_payout(subject=args.subject)

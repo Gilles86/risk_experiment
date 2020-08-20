@@ -8,7 +8,7 @@ class InstructionTrial(Trial):
     """ Simple trial with instruction text. """
 
     def __init__(self, session, trial_nr, phase_durations=[np.inf],
-                 txt=None, **kwargs):
+                 txt=None, keys=None, **kwargs):
 
         super().__init__(session, trial_nr, phase_durations, **kwargs)
 
@@ -21,7 +21,7 @@ class InstructionTrial(Trial):
         self.text = TextStim(self.session.win, txt,
                              height=txt_height, wrapWidth=txt_width, **kwargs)
 
-        self.n_triggers = 0
+        self.keys = keys
 
     def draw(self):
         self.text.draw()
@@ -29,8 +29,13 @@ class InstructionTrial(Trial):
     def get_events(self):
         events = super().get_events()
 
-        if events:
-            self.stop_phase()
+        if self.keys is None:
+            if events:
+                self.stop_phase()
+        else:
+            for key, t in events:
+                if key in self.keys:
+                    self.stop_phase()
 
 
 class DummyWaiterTrial(InstructionTrial):

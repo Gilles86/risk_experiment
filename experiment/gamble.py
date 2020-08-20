@@ -184,30 +184,3 @@ class GambleTrial(Trial):
             self.session.global_log.loc[idx, 'certainty'] = certainty
 
 
-class GambleInstructionTrial(InstructionTrial):
-    
-    def __init__(self, session, trial_nr, run, txt=None, n_runs=3, phase_durations=[np.inf],
-                 **kwargs):
-
-        if txt is None:
-            txt = f"""
-            This is run {run}/{n_runs}.
-
-            In this task, you will see two piles of Swiss Franc coins in
-            succession. Both piles are combined with a pie chart in.
-            The part of the pie chart that is lightly colored indicates
-            the probability of a lottery you will gain the amount of
-            Swiss Francs represented by the pile.
-
-            Your task is to either select the first lottery or
-            the second lottery, by using your index or middle finger.
-            Immediately after your choice, we ask how certain you were
-            about your choice from a scale from 1 (very uncertain)
-            to 4 (very certain).
-
-
-            Press any of your buttons to continue.
-
-            """
-
-        super().__init__(session=session, trial_nr=trial_nr, phase_durations=phase_durations, txt=txt, **kwargs)

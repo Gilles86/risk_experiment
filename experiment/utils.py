@@ -45,19 +45,9 @@ def run_experiment(session_cls, task, use_runs=False, subject=None, session=None
         eyetracker_on = False
         logging.warn("Using NO eyetracker")
 
-
     logging.warn(f'Using {settings_fn} as settings')
-    output_dir = op.join(op.dirname(__file__), 'logs', f'sub-{subject}')
-    logging.warn(f'Writing results to  {output_dir}')
 
-    if session:
-        output_dir = op.join(output_dir, f'ses-{session}')
-        output_str = f'sub-{subject}_ses-{session}_task-{task}'
-    else:
-        output_str = f'sub-{subject}_task-{task}'
-
-    if run:
-        output_str += f'_run-{run}'
+    output_dir, output_str = get_output_dir_str(subject, session, task, run)
 
     log_file = op.join(output_dir, output_str + '_log.txt')
 
@@ -211,3 +201,17 @@ def fit_psychometric_curve(log_file, plot=False, thresholds=(1, 4)):
 
     return x_lower, x_upper
 
+def get_output_dir_str(subject, session, task, run):
+    output_dir = op.join(op.dirname(__file__), 'logs', f'sub-{subject}')
+    logging.warn(f'Writing results to  {output_dir}')
+
+    if session:
+        output_dir = op.join(output_dir, f'ses-{session}')
+        output_str = f'sub-{subject}_ses-{session}_task-{task}'
+    else:
+        output_str = f'sub-{subject}_task-{task}'
+
+    if run:
+        output_str += f'_run-{run}'
+
+    return output_dir, output_str

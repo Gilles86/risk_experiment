@@ -1,6 +1,6 @@
 from exptools2.core import Session
 from exptools2.core import Trial
-from gamble import IntroBlockTrial, GambleTrial, GambleInstructionTrial
+from gamble import IntroBlockTrial, GambleTrial
 from utils import run_experiment, create_stimulus_array_log_df
 from psychopy import logging
 from session import PileSession
@@ -51,7 +51,7 @@ class TaskSession(PileSession):
         self.trials = []
 
         for run, d in settings.groupby(['run'], sort=False):
-            self.trials.append(GambleInstructionTrial(self, trial_nr=run,
+            self.trials.append(TaskInstructionTrial(self, trial_nr=run,
                                                       n_runs=self.n_runs,
                                                       run=run))
             for (p1, p2), d2 in d.groupby(['p1', 'p2'], sort=False):
@@ -84,6 +84,35 @@ class TaskSessionMRI(TaskSession):
 
         self.trials.append(OutroTrial(self, -1, phase_durations=[np.inf]))
 
+class TaskInstructionTrial(InstructionTrial):
+    
+    def __init__(self, session, trial_nr, run, txt=None, n_runs=3, phase_durations=[np.inf],
+                 **kwargs):
+
+        if txt is None:
+            txt = f"""
+            This is run {run}/{n_runs} of the SECOND part of the experiment.
+
+            In this task, you will see two piles of Swiss Franc coins in
+            succession. Both piles are combined with a pie chart in.
+            The part of the pie chart that is lightly colored indicates
+            the probability of a lottery you will gain the amount of
+            Swiss Francs represented by the pile.
+
+            Your task is to either select the first lottery or
+            the second lottery, by using your index or middle finger.
+            Immediately after your choice, we ask how certain you were
+            about your choice from a scale from 1 (very uncertain)
+            to 4 (very certain).
+
+            NOTE: if you are to late in responding, or you do not 
+            respond. You will gain no money for that trial.
+
+            Press any of your buttons to continue.
+
+            """
+
+        super().__init__(session=session, trial_nr=trial_nr, phase_durations=phase_durations, txt=txt, **kwargs)
 if __name__ == '__main__':
 
     session_cls = TaskSessionMRI
