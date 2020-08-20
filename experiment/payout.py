@@ -33,11 +33,11 @@ def get_payout(subject):
                 f'of winning {int(row.n2)} CHF.'
 
         if ((row.choice == 1) and (row['prob1'] == 1)):
-            txt += f'\nYou chose the safe option and get {row.n1} CHF'
+            txt += f'\nYou chose the safe option and get {int(row.n1)} CHF'
             payout = row.n1
 
         if ((row.choice == 2) and (row.prob2 == 1)):
-            txt += f'\nYou chose the safe option and get {row.n2} CHF'
+            txt += f'\nYou chose the safe option and get {int(row.n2)} CHF'
             payout = row.n2
 
         if ((row.choice == 2) and (row.prob1 == 1)):
