@@ -33,6 +33,8 @@ class CalibrationInstructionTrial(InstructionTrial):
 
             NOTE: if you are to late in responding, or you do not 
             respond. You will gain no money for that trial.
+            
+            Take some time to take a break, if you want to.
 
             Press any of your buttons to continue.
 
