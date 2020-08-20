@@ -48,8 +48,8 @@ calibrate:
   jitter2: 4
 
 task:
-  jitter1: [4, 4.5, 5, 5.5]
-  jitter2: [0.0]
+  jitter1: [5, 6, 7, 8]
+  jitter2: [4, 4.5, 5, 5.5]
 
 various:
   piechart_width: 1 
