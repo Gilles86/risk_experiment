@@ -26,6 +26,7 @@ def get_payout(subject):
     if np.isnan(row.choice):
         txt = f'On the selected trial, you gave NO answer. '\
         'This means you will not get a bonus'
+        payout = 0
     else:
         txt = f'You chose between {int(row.prob1*100):d}% probability of ' \
                 f'winning {int(row.n1)} CHF, or {int(row.prob2*100):d}% probability ' \

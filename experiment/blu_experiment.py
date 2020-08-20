@@ -45,12 +45,11 @@ def main(subject, session, settings, test=False, skip_calibration=False):
 
     payout_folder = task_session.settings['output'].get('payout_folder')
 
-    payout_fn = op.join(payout_folder, f'sub-{subject}_payout.txt')
+    if op.exists(payout_folder):
+        payout_fn = op.join(payout_folder, f'sub-{subject}_payout.txt')
 
-    print(fn)
-
-    with open(payout_fn, 'w') as f:
-        f.write(str(payout))
+        with open(payout_fn, 'w') as f:
+            f.write(str(payout))
 
     payout_session = TextSession(txt=txt,
             output_str='txt',
