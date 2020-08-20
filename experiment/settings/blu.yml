@@ -55,7 +55,7 @@ various:
   piechart_width: 1 
   text_width: 14
   text_height: .5
-  buttons: ['j', 'k', 'l', 'semicolon']
+  buttons: ['j', 'k', 'l', 'ö']
   button_size: 2
 
 output:
