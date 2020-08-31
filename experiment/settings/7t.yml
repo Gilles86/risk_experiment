@@ -7,19 +7,20 @@ window:
   size: [800, 600]
   pos: [0, 0]
   color: [0, 0, 0]
-  fullscr: False
-  winType: pyglet
-  screen: 1
-  viewPos: [0, 0]
+  fullscr: True
+  winType: glfw
+  #waitBlanking: True
+  screen: 0
+  #refreshHz: 30
 
 monitor:
   name: default
-  width: 53.5898384862
-  distance: 100  # in cm
+  width: 100  # in cm
+  distance: 224  # in cm
   gamma: 1
 
 mouse:
-  visible: True
+  visible: False
   
 mri:
   simulate: False
