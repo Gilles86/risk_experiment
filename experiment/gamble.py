@@ -127,7 +127,7 @@ class GambleTrial(Trial):
         events = super().get_events()
 
         for key, t in events:
-            if self.phase > 5:
+            if self.phase > 7:
                 if self.choice is None:
                     if key in [self.buttons[0], self.buttons[1]]:
                         self.choice_time = self.session.clock.getTime()
@@ -139,7 +139,7 @@ class GambleTrial(Trial):
 
                         self.log(choice=self.choice)
 
-                elif (self.phase > 6) & (self.certainty is None) & ((self.session.clock.getTime() - self.certainty_time) < .5):
+                elif (self.phase > 8) & (self.certainty is None) & ((self.session.clock.getTime() - self.certainty_time) < .5):
                     if key in self.buttons:
                         self.certainty_time = self.session.clock.getTime()
                         self.certainty = self.buttons.index(key)
