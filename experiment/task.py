@@ -5,7 +5,7 @@ from utils import run_experiment, create_stimulus_array_log_df
 from psychopy import logging
 from session import PileSession
 import numpy as np
-from trial import InstructionTrial, DummyWaiterTrial
+from trial import InstructionTrial, DummyWaiterTrial, OutroTrial
 import os
 import os.path as op
 import pandas as pd
@@ -31,6 +31,9 @@ class TaskSession(PileSession):
         if self.settings['run'] is not None:
             settings = settings.set_index(['run'])
             settings = settings.loc[int(self.settings['run'])]
+            self.n_runs = 1
+        else:
+            yyyyyyyyyyy = settings.run.unique().shape[0]
 
         print(settings)
 
@@ -43,7 +46,6 @@ class TaskSession(PileSession):
         np.random.shuffle(jitter1)
         np.random.shuffle(jitter2)
 
-        self.n_runs = settings.run.unique().shape[0]
 
         settings['jitter1'] = jitter1[:len(settings)]
         settings['jitter2'] = jitter2[:len(settings)]
@@ -115,8 +117,9 @@ class TaskInstructionTrial(InstructionTrial):
             """
 
         super().__init__(session=session, trial_nr=trial_nr, phase_durations=phase_durations, txt=txt, **kwargs)
+
 if __name__ == '__main__':
 
     session_cls = TaskSessionMRI
     task = 'task'
-    run_experiment(session_cls, task=task)
+    run_experiment(session_cls, task=task, settings='7t')

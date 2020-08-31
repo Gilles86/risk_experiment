@@ -9,14 +9,18 @@ import yaml
 
 def run_experiment(session_cls, task, use_runs=False, subject=None, session=None, run=None, settings='default', *args, **kwargs):
 
+    print(run)
+
     if subject is None:
         parser = argparse.ArgumentParser()
         parser.add_argument('subject', default=None, nargs='?')
-        parser.add_argument('session', default=None, nargs='?')
-        parser.add_argument('run', default=None, nargs='?')
+        parser.add_argument('session', default=session, nargs='?')
+        parser.add_argument('run', default=run, nargs='?')
         parser.add_argument('--settings', default=settings, nargs='?')
-        args = parser.parse_args()
-        subject, session, run, settings = args.subject, args.session, args.run, args.settings
+        cmd_args = parser.parse_args()
+        subject, session, run, settings = cmd_args.subject, cmd_args.session, cmd_args.run, cmd_args.settings
+
+    print(run)
 
     if subject is None:
         subject = input('Subject? (999): ')

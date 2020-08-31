@@ -21,12 +21,6 @@ monitor:
 mouse:
   visible: True
   
-
-eyetracker:
-  model: eyelink
-  CNUM: 9
-  MIN_CALIB_FIX: 1000
-
 mri:
   simulate: False
   TR: 2.0  # seconds between volume acquisitions
@@ -65,4 +59,6 @@ various:
   buttons: ['j', 'k', 'l', 'semicolon']
   button_size: 2
 
-
+task:
+  jitter1: [5, 6, 7, 8]
+  jitter2: [4, 4.5, 5, 5.5]
