@@ -11,11 +11,11 @@ from trial import InstructionTrial
 class IntroBlockTrial(Trial):
 
     def __init__(self, session, trial_nr, phase_durations=[5.],
-                 prob1=0.55, prob2=1.0, **kwargs):
+                 prob1=0.55, prob2=1.0, n_trials=16, **kwargs):
         super().__init__(session, trial_nr, phase_durations, **kwargs)
 
         txt = f"""
-        In this block of 16 trials, the first option will have a
+        In this block of {n_trials} trials, the first option will have a
         winning change of {int(prob1*100):d}%.\n\n
         The second option will have a winning chance of {int(prob2*100):d}%.
         """
@@ -127,7 +127,7 @@ class GambleTrial(Trial):
         events = super().get_events()
 
         for key, t in events:
-            if self.phase > 5:
+            if self.phase > 7:
                 if self.choice is None:
                     if key in [self.buttons[0], self.buttons[1]]:
                         self.choice_time = self.session.clock.getTime()
@@ -139,7 +139,7 @@ class GambleTrial(Trial):
 
                         self.log(choice=self.choice)
 
-                elif (self.phase > 6) & (self.certainty is None) & ((self.session.clock.getTime() - self.certainty_time) < .5):
+                elif (self.phase > 8) & (self.certainty is None) & ((self.session.clock.getTime() - self.certainty_time) < .5):
                     if key in self.buttons:
                         self.certainty_time = self.session.clock.getTime()
                         self.certainty = self.buttons.index(key)
@@ -184,30 +184,3 @@ class GambleTrial(Trial):
             self.session.global_log.loc[idx, 'certainty'] = certainty
 
 
-class GambleInstructionTrial(InstructionTrial):
-    
-    def __init__(self, session, trial_nr, run, n_runs=3, phase_durations=[np.inf],
-                 **kwargs):
-
-        txt = f"""
-        In this task, you will see two piles of swiss Franc coins in
-        succession. Both piles are combined with a pie chart in.
-        The part of the pie chart that is lightly colored indicates
-        the probability of a lottery you will gain the amount of
-        Swiss Francs represented by the pile.
-        There is always one pile that has a probability of 100% for payout.
-        The other probability changes every 16 trials.
-
-        Your task is to either select the first lottery or
-        the second lottery, by using your index or middle finger.
-        Immediately after your choice, we ask how certain you were
-        about your choice from a scale from 1 (very uncertain)
-        to 4 (very certain).
-
-        This is run {run}/{n_runs}.
-
-        Press any of your buttons to continue.
-
-        """
-
-        super().__init__(session=session, trial_nr=trial_nr, phase_durations=phase_durations, txt=txt, **kwargs)
