@@ -13,7 +13,8 @@ def run_experiment(session_cls, task, use_runs=False, *args, **kwargs):
     parser.add_argument('subject', default=None, nargs='?')
     parser.add_argument('session', default=None, nargs='?')
     parser.add_argument('run', default=None, nargs='?')
-    parser.add_argument('--settings', default='default', nargs='?')
+    parser.add_argument('--settings', default='3t', nargs='?')
+    parser.add_argument('--overwrite', action='store_true')
     args = parser.parse_args()
 
     if args.subject is None:
@@ -65,11 +66,11 @@ def run_experiment(session_cls, task, use_runs=False, *args, **kwargs):
 
     log_file = op.join(output_dir, output_str + '_log.txt')
 
-    if op.exists(log_file):
+    if (not args.overwrite) and op.exists(log_file):
         overwrite = input(
             f'{log_file} already exists! Are you sure you want to continue? ')
         if overwrite != 'y':
-            raise Exception('Run cancelled: file already exists')
+            raise Exception('Run cancelled: file already exists') 
 
     session = session_cls(output_str=output_str,
                           output_dir=output_dir,

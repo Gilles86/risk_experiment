@@ -7,7 +7,7 @@ window:
   size: [1280, 1024]
   pos: [0, 0]
   color: [0, 0, 0]
-  fullscr: True
+  fullscr: False
   winType: pyglet
   screen: 0
   viewPos: [0, 0]
@@ -25,6 +25,10 @@ eyetracker:
   model: eyelink
   CNUM: 5
   MIN_CALIB_FIX: 1000
+  options:
+    active_eye: RIGHT
+    sample_rate: 500
+    calibration_type: HV5
 
 mri:
   simulate: False
