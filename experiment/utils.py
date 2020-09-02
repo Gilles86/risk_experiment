@@ -13,19 +13,10 @@ def run_experiment(session_cls, task, use_runs=False, subject=None, session=None
     parser.add_argument('subject', default=None, nargs='?')
     parser.add_argument('session', default=None, nargs='?')
     parser.add_argument('run', default=None, nargs='?')
-    parser.add_argument('--settings', default='3t', nargs='?')
+    parser.add_argument('--settings', default='default', nargs='?')
     parser.add_argument('--overwrite', action='store_true')
-    args = parser.parse_args()
-    print(run)
-
-    if subject is None:
-        parser = argparse.ArgumentParser()
-        parser.add_argument('subject', default=None, nargs='?')
-        parser.add_argument('session', default=session, nargs='?')
-        parser.add_argument('run', default=run, nargs='?')
-        parser.add_argument('--settings', default=settings, nargs='?')
-        cmd_args = parser.parse_args()
-        subject, session, run, settings = cmd_args.subject, cmd_args.session, cmd_args.run, cmd_args.settings
+    cmd_args = parser.parse_args()
+    subject, session, run, settings = cmd_args.subject, cmd_args.session, cmd_args.run, cmd_args.settings
 
     print(run)
 
@@ -62,7 +53,7 @@ def run_experiment(session_cls, task, use_runs=False, subject=None, session=None
 
     log_file = op.join(output_dir, output_str + '_log.txt')
 
-    if (not args.overwrite) and op.exists(log_file):
+    if (not cmd_args.overwrite) and op.exists(log_file):
         overwrite = input(
             f'{log_file} already exists! Are you sure you want to continue? ')
         if overwrite != 'y':
