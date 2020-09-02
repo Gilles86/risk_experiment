@@ -1,0 +1,3 @@
+How to implement Corona protocol?
+How do we know when you/Franek are available.
+When will the scanner be upgraded?

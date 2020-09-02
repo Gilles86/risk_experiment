@@ -1,0 +1,5 @@
+We start with the right pupil
+
+500
+ellipse
+calibrate with 5
