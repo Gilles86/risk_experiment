@@ -7,18 +7,16 @@ from psychopy import logging
 from itertools import product
 import yaml
 
-def run_experiment(session_cls, task, use_runs=False, subject=None, session=None, run=None, settings='default', *args, **kwargs):
+def run_experiment(session_cls, task, use_runs=False, subject=None, session=None, run=None, settings='default', n_runs=4, *args, **kwargs):
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('subject', default=None, nargs='?')
-    parser.add_argument('session', default=None, nargs='?')
-    parser.add_argument('run', default=None, nargs='?')
-    parser.add_argument('--settings', default='default', nargs='?')
+    parser.add_argument('subject', default=subject, nargs='?')
+    parser.add_argument('session', default=session, nargs='?')
+    parser.add_argument('run', default=run, nargs='?')
+    parser.add_argument('--settings', default=settings, nargs='?')
     parser.add_argument('--overwrite', action='store_true')
     cmd_args = parser.parse_args()
     subject, session, run, settings = cmd_args.subject, cmd_args.session, cmd_args.run, cmd_args.settings
-
-    print(run)
 
     if subject is None:
         subject = input('Subject? (999): ')
@@ -49,24 +47,32 @@ def run_experiment(session_cls, task, use_runs=False, subject=None, session=None
 
     logging.warn(f'Using {settings_fn} as settings')
 
-    output_dir, output_str = get_output_dir_str(subject, session, task, run)
 
-    log_file = op.join(output_dir, output_str + '_log.txt')
+    if run is None:
+        runs = range(1, n_runs + 1)
+    else:
+        runs = [run] 
 
-    if (not cmd_args.overwrite) and op.exists(log_file):
-        overwrite = input(
-            f'{log_file} already exists! Are you sure you want to continue? ')
-        if overwrite != 'y':
-            raise Exception('Run cancelled: file already exists') 
+    for run in runs:
+        output_dir, output_str = get_output_dir_str(subject, session, task, run)
 
-    session = session_cls(output_str=output_str,
-                          output_dir=output_dir,
-                          settings_file=settings_fn, subject=subject,
-                          run=run,
-                          eyetracker_on=eyetracker_on, *args, **kwargs)
-    session.create_trials()
-    session.run()
-    session.close()
+        log_file = op.join(output_dir, output_str + '_log.txt')
+        logging.warn(f'Writing results to: {log_file}')
+
+        if (not cmd_args.overwrite) and op.exists(log_file):
+            overwrite = input(
+                f'{log_file} already exists! Are you sure you want to continue? ')
+            if overwrite != 'y':
+                raise Exception('Run cancelled: file already exists') 
+        session_object = session_cls(output_str=output_str,
+                              output_dir=output_dir,
+                              settings_file=settings_fn, subject=subject,
+                              run=run,
+                              eyetracker_on=eyetracker_on, *args, **kwargs)
+        session_object.create_trials()
+        logging.warn(f'Writing results to: {op.join(session_object.output_dir, session_object.output_str)}')
+        session_object.run()
+        session_object.close()
 
     return session
 

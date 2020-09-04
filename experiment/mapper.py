@@ -6,7 +6,7 @@ import numpy as np
 import argparse
 from stimuli import _create_stimulus_array
 from session import PileSession
-from trial import InstructionTrial, DummyWaiterTrial
+from trial import InstructionTrial, DummyWaiterTrial, OutroTrial
 from utils import run_experiment, sample_isis, create_stimulus_array_log_df
 
 
@@ -72,7 +72,8 @@ class MapperSession(PileSession):
     Trial = MapperTrial
 
     def __init__(self, output_str, subject=None, output_dir=None, settings_file=None, run=None, **kwargs):
-        super().__init__(output_str, output_dir=output_dir, settings_file=settings_file, run=run, **kwargs)
+        super().__init__(output_str, output_dir=output_dir,
+                         settings_file=settings_file, run=run, **kwargs)
 
         self.image2 = visual.ImageStim(self.win,
                                        self.settings['pile'].get('image2'),
@@ -81,7 +82,9 @@ class MapperSession(PileSession):
 
     def create_trials(self):
 
-        txt = """
+        txt = f"""
+        This is run {self.settings['run']}/3.
+
         You will now see piles of one-CHF coins in rapid succession.
         Your task is to indicate every time you see coins that are a bit
         darker, by pressing the first button (index finger).\n
@@ -118,12 +121,12 @@ class MapperSession(PileSession):
                                verbose=True,)
                 )
 
-        outro_trial = InstructionTrial(session=self, trial_nr=n_blocks*len(design)+1,
-                                       phase_durations=[0, 10], txt='')
+        outro_trial = OutroTrial(session=self, trial_nr=n_blocks*len(design)+1,
+                                       phase_durations=[np.inf])
         self.trials.append(outro_trial)
 
 
 if __name__ == '__main__':
     session_cls = MapperSession
     task = 'mapper'
-    run_experiment(session_cls, task=task)
+    run_experiment(session_cls, task=task, n_runs=3)

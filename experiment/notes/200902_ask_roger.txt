@@ -1,3 +1,4 @@
-How to implement Corona protocol?
-How do we know when you/Franek are available.
-When will the scanner be upgraded?
+ * How to implement Corona protocol? Where to change clothes, etc.
+ * How do we know when you/Franek are available, so we can plan 7T slots.
+ * When will the scanner be upgraded?
+ * Is there a room to do a task practice round?

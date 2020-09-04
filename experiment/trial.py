@@ -66,3 +66,11 @@ class OutroTrial(InstructionTrial):
     def draw(self):
         self.session.fixation_lines.draw()
         super().draw()
+
+    def get_events(self):
+        events = Trial.get_events(self)
+
+        if events:
+            for key, t in events:
+                if key == 'space':
+                    self.stop_phase()

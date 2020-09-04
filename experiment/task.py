@@ -33,7 +33,7 @@ class TaskSession(PileSession):
             settings = settings.loc[int(self.settings['run'])]
             self.n_runs = 1
         else:
-            yyyyyyyyyyy = settings.run.unique().shape[0]
+            self.n_runs = settings.run.unique().shape[0]
 
         print(settings)
 
@@ -93,7 +93,7 @@ class TaskInstructionTrial(InstructionTrial):
 
         if txt is None:
             txt = f"""
-            This is run {run}/{n_runs} of the SECOND part of the experiment.
+            This is run {run}/4 of the SECOND part of the experiment.
 
             In this task, you will see two piles of Swiss Franc coins in
             succession. Both piles are combined with a pie chart in.
@@ -119,7 +119,6 @@ class TaskInstructionTrial(InstructionTrial):
         super().__init__(session=session, trial_nr=trial_nr, phase_durations=phase_durations, txt=txt, **kwargs)
 
 if __name__ == '__main__':
-
     session_cls = TaskSessionMRI
     task = 'task'
-    run_experiment(session_cls, task=task, settings='7t')
+    run_experiment(session_cls, task=task)

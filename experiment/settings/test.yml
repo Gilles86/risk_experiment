@@ -1,26 +1,31 @@
+
 preferences:
   general:
     audioLib: sounddevice
     units: deg
 
 window:
-  size: [800, 600]
+  size: [1280, 1024]
   pos: [0, 0]
+
   color: [0, 0, 0]
-  fullscr: True
-  winType: glfw
+  fullscr: False
+  winType: pyglet
+  viewPos: [0, 10]
   #waitBlanking: True
-  screen: 0
+  screen: 1
   #refreshHz: 30
+  viewPos: [0, 0]
+  #viewScale: [.5, .5]
 
 monitor:
   name: default
-  width: 100  # in cm
-  distance: 224  # in cm
+  width: 42  # in cm
+  distance: 125  # in cm
   gamma: 1
 
 mouse:
-  visible: False
+  visible: True
   
 mri:
   simulate: False
@@ -39,9 +44,9 @@ pile:
   image2: 'assets/onefranc_v4_neg.png'
 
 mapper:
-  design: [0, 0, 80, 5, 7, 10, 14, 20, 28, 40, 56, 80, 56, 40, 28, 20, 14, 10, 7, 5, 0, 0]
-  n_repeats_stimulus: 6
-  n_repeats_blocks: 4
+  design: [80]
+  n_repeats_stimulus: 2
+  n_repeats_blocks: 1
   on_duration: .3
   off_duration: .4
   p_oddball: .1
@@ -50,8 +55,8 @@ calibrate:
   p_stim1: [1, .43, .55, .71]
   p_stim2: [1, .43, .55, .71]
 
-  jitter1: 1.5
-  jitter2: 3.5
+  jitter1: 5
+  jitter2: 4
 
 task:
   jitter1: [5, 6, 7, 8]
@@ -64,6 +69,4 @@ various:
   buttons: ['j', 'k', 'l', 'semicolon']
   button_size: 2
 
-task:
-  jitter1: [5, 6, 7, 8]
-  jitter2: [4, 4.5, 5, 5.5]
+

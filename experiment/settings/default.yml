@@ -57,6 +57,10 @@ calibrate:
   jitter1: 5
   jitter2: 4
 
+task:
+  jitter1: [5, 6, 7, 8]
+  jitter2: [4, 4.5, 5, 5.5]
+
 various:
   piechart_width: 1 
   text_width: 14
