@@ -9,9 +9,11 @@ np.sum(phase_durations) = 12.15
 96 * 12.15 -= 1166 seconds ~= 19 minutes
 
 Mapper:
-The design is 18 elements long. Every element takes .7 * 6 repetitions = 75.6 seconds
-3 blocks plus 10 seconds outro makes 236.8 seconds (4 minutes) (plus 5 dummy scans!)
-236.8/2.5 + 20/2.5 + 5 = 107
+The design is 22 elements long.
+22 elements times .7 * 6 repetitions = 92.39 seconds
+3 blocks is 277.2 seconds (4.6 minutes)
+
+277.2 / 2.3 + 5 ~=  121 volumes
 
 #Task
 jitter1 = 6.5
