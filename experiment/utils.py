@@ -7,7 +7,7 @@ from psychopy import logging
 from itertools import product
 import yaml
 
-def run_experiment(session_cls, task, use_runs=False, subject=None, session=None, run=None, settings='default', n_runs=4, *args, **kwargs):
+def run_experiment(session_cls, task, use_runs=False, subject=None, session=None, run=None, settings='7t', n_runs=4, *args, **kwargs):
 
     parser = argparse.ArgumentParser()
     parser.add_argument('subject', default=subject, nargs='?')
