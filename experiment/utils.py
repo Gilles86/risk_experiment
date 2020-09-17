@@ -71,6 +71,7 @@ def run_experiment(session_cls, task, use_runs=False, subject=None, session=None
                               eyetracker_on=eyetracker_on, *args, **kwargs)
         session_object.create_trials()
         logging.warn(f'Writing results to: {op.join(session_object.output_dir, session_object.output_str)}')
+        session_object.win.mouseVisible = False
         session_object.run()
         session_object.close()
 
