@@ -9,13 +9,30 @@ import statsmodels.api as sm
 from utils import create_design
 import matplotlib.pyplot as plt
 
-def main(subject):
+def main(subject, session=None, run=None):
 
-    log_file = op.abspath(op.join('logs', f'sub-{subject}', f'sub-{subject}_task-calibration_events.tsv'))
+    log_file = op.abspath(op.join('logs', f'sub-{subject}'))
+
+    if session:
+    	log_file = op.join(log_file, f'ses-{session}')
+
+    log_file = op.join(log_file, f'sub-{subject}')
+
+    if session:
+    	log_file += f'_ses-{session}'
+
+    log_file += '_task-calibration'
+
+    if run:
+    	log_file += f'_run-{run}'
+
+    log_file += '_events.tsv'
+
+    print(log_file)
 
     df = pd.read_table(log_file)
 
-    df = df[df.phase == 7]
+    df = df[df.phase == 9]
     df = df.pivot_table(index=['trial_nr'], values=['choice', 'certainty', 'n1', 'n2', 'prob1', 'prob2'])
 
     df['log(risky/safe)'] = np.log(df['n1'] / df['n2'])
@@ -73,6 +90,8 @@ def main(subject):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('subject', default=None, nargs='?')
+    parser.add_argument('session', default=None, nargs='?')
+    parser.add_argument('run', default=None, nargs='?')
     args = parser.parse_args()
 
-    main(subject=args.subject)
+    main(subject=args.subject, session=args.session, run=args.run)
