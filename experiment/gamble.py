@@ -130,8 +130,7 @@ class GambleTrial(Trial):
         events = super().get_events()
 
         for key, t in events:
-
-            if t - self.last_key_responses[key] > 0.1:
+            if t - self.last_key_responses[key] > 0.5:
                 if self.phase > 7:
                     if self.choice is None:
                         if key in [self.buttons[0], self.buttons[1]]:
@@ -150,6 +149,8 @@ class GambleTrial(Trial):
                             self.certainty = self.buttons.index(key)
                             self.certainty_stim.rectangles[self.certainty].opacity = 1.0
                             self.log(certainty=self.certainty+1)
+
+            self.last_key_responses[key] = t
 
         return events
 

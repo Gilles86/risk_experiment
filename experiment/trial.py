@@ -47,13 +47,17 @@ class DummyWaiterTrial(InstructionTrial):
 
         super().__init__(session, trial_nr, phase_durations, txt, **kwargs)
 
+        self.last_trigger = 0.0
+
     def get_events(self):
-        events = super().get_events()
+        events = Trial.get_events(self)
 
         if events:
             for key, t in events:
                 if key == self.session.mri_trigger:
-                    self.stop_phase()
+                    if t - self.last_trigger > .5:
+                        self.stop_phase()
+                        self.last_trigger = t
 
 class OutroTrial(InstructionTrial):
     """ Simple trial with only fixation cross.  """
