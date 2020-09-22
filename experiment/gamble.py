@@ -130,6 +130,9 @@ class GambleTrial(Trial):
         events = super().get_events()
 
         for key, t in events:
+            if key not in self.last_key_responses:
+                self.last_key_responses[key] = t - 0.6
+
             if t - self.last_key_responses[key] > 0.5:
                 if self.phase > 7:
                     if self.choice is None:
