@@ -76,7 +76,7 @@ class CertaintyStimulus(object):
                                     text=n+1) for n in range(n_responses)]
 
         self.description_text = TextStim(window, pos=(0, 1.5 * response_size[1]), wrapWidth=response_size[0] * 8.8,
-                                         text='How certain are you about your choice (1=very uncertain,  4= very certain)')
+                                         text='How certain are you about your choice (1=very certain,  4= very uncertain)')
 
     def draw(self):
         for rect in self.rectangles:
