@@ -49,6 +49,8 @@ class GambleTrial(Trial):
 
         if phase_durations is None:
             phase_durations = [.25, .3, .3, .5, .6, jitter1, .3, .3, .6, jitter2]
+        elif len(phase_durations) == 12:
+            phase_durations = phase_durations
         else:
             raise Exception(
                 "Don't directly set phase_durations for GambleTrial!")
