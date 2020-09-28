@@ -1,0 +1,14 @@
+More general overview in instructions
+
+Start -> Gyrotools -> PacknGo
+Latest subject is at the bottom
+Export to E:\Export olnly parrecs needed
+k
+\\gyro70\\Export
+
+
+Calibration doesn't work well: it starts again after 4 runs
+INCLUDE OUTRO thingy
+
+
+LETTERS HAVE TO BE BIGGER

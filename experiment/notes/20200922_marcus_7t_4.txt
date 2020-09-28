@@ -1,0 +1,4 @@
+ * Invert certainty scale
+
+Patch: Franek -> Read Manual Shim
+MAKE NEW Protocol!
