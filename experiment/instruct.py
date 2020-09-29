@@ -118,7 +118,7 @@ class InstructionSession(PileSession):
 
         During the course of the experiment, you will make many different choices. After each session, we will randomly select one such choice you made during the task. When you selected the 55%-lottery option, we will perform a digital lottery that determines whether you win the offered amount.
 
-        *** wE WILL ADD UP THE AMOUNTS YOU COLLECTED ACROSS THE FOUR SESSIONS AND YOU WILL BE PAID OUT THE AVERAGE OF THOSE AMOUNTS AFTER THE FOURTH SESSION. ***
+        *** WE WILL ADD UP THE AMOUNTS YOU COLLECTED ACROSS THE FOUR SESSIONS AND YOU WILL BE PAID OUT THE AVERAGE OF THOSE AMOUNTS AFTER THE FOURTH SESSION. ***
 
         Press key 1 to continue
         """
