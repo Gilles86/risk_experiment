@@ -220,7 +220,7 @@ class InstructionSession(PileSession):
         trial16.choice_stim.text = f'You chose pile {trial16.choice}'
         self.trials.append(trial16)
 
-        txt = "after your choice, you should also indicate from a scale of one to four how certain you were."
+        txt = "after your choice, you should also indicate from a scale of one to four how certain you were about your choice."
         bottom_txt = "Press key 1 to indicate you were very certain of your choice"
 
         self.trials.append(GambleInstructTrial(
