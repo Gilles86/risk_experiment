@@ -25,13 +25,14 @@ class GambleInstructTrial(GambleTrial):
         txt_width = self.session.settings['various'].get('text_width')
 
         self.text = TextStim(session.win, txt,
-                             pos=(0.0, 6.0), height=txt_height, wrapWidth=txt_width)
+                             pos=(0.0, 6.0), height=txt_height, wrapWidth=txt_width, color=(0, 1, 0))
 
         if bottom_txt is None:
             bottom_txt = "Press any button to continue"
 
         self.text2 = TextStim(session.win, bottom_txt, pos=(
-            0.0, -6.0), height=txt_height, wrapWidth=txt_width)
+            0.0, -6.0), height=txt_height, wrapWidth=txt_width,
+            color=(0, 1, 0))
 
     def get_events(self):
 
