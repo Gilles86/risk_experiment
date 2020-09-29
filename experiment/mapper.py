@@ -83,7 +83,7 @@ class MapperSession(PileSession):
     def create_trials(self):
 
         txt = f"""
-        This is run {self.settings['run']}/3.
+        This is run {self.settings['run']}/4.
 
         You will now see piles of one-CHF coins in rapid succession.
         Your task is to indicate every time you see coins that are a bit
