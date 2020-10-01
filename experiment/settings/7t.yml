@@ -55,8 +55,8 @@ calibrate:
 
 various:
   piechart_width: 1 
-  text_width: 14
-  text_height: .5
+  text_width: 20
+  text_height: .75
   buttons: ['r', 'g', 'z', 'b']
   button_size: 2
 
