@@ -19,22 +19,11 @@ class CalibrationInstructionTrial(InstructionTrial):
             txt = f"""
             This is run {run}/{n_runs} of the FIRST part of the experiment.
 
-            In this task, you will see two piles of Swiss Franc coins in
-            succession. Both piles are combined with a pie chart in.
-            The part of the pie chart that is lightly colored indicates
-            the probability of a lottery you will gain the amount of
-            Swiss Francs represented by the pile.
+            In this task, you will see two piles of Swiss Franc coins in succession. Both piles are combined with a pie chart. The part of the pie chart that is lightly colored indicates the probability of a lottery you will gain the amount of Swiss Francs represented by the pile.
 
-            Your task is to either select the first lottery or
-            the second lottery, by using your index or middle finger.
-            Immediately after your choice, we ask how certain you were
-            about your choice from a scale from 1 (very CERTAIN)
-            to 4 (very UNCERTAIN).
+            Your task is to either select the first lottery or the second lottery, by using your index or middle finger. Immediately after your choice, we ask how certain you were about your choice from a scale from 1 (very CERTAIN) to 4 (very UNCERTAIN).
 
-            NOTE: if you are to late in responding, or you do not 
-            respond. You will gain no money for that trial.
-            
-            Take some time to take a break, if you want to.
+            NOTE: if you are too late in responding, or you do not respond. You will gain no money for that trial. Take some time to take a break, if you want to.
 
             Press any of your buttons to continue.
 
@@ -82,7 +71,11 @@ class CalibrationSession(PileSession):
                                                    jitter2=jitter2))
 
 
+        outro_trial = OutroTrial(session=self, trial_nr=row.trial+1,
+                                       phase_durations=[np.inf])
 
+        self.trials.append(outro_trial)
+        
 if __name__ == '__main__':
 
     session_cls = CalibrationSession
