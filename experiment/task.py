@@ -73,6 +73,9 @@ class TaskSession(PileSession):
                                                    jitter2=row.jitter2))
 
         
+        outro_trial = OutroTrial(session=self, trial_nr=row.trial+1,
+                                       phase_durations=[np.inf])
+        self.trials.append(outro_trial)
 
 class TaskSessionMRI(TaskSession):
 
