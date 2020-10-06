@@ -16,7 +16,7 @@ class IntroBlockTrial(Trial):
 
         txt = f"""
         In this block of {n_trials} trials, the first option will have a
-        winning change of {int(prob1*100):d}%.\n\n
+        winning chance of {int(prob1*100):d}%.\n\n
         The second option will have a winning chance of {int(prob2*100):d}%.
         """
 
