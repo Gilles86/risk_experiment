@@ -82,7 +82,7 @@ def main(subject, session=None, run=None):
     fn = op.abspath(op.join(task_settings_folder,
                             f'sub-{subject}_ses-task.tsv'))
 
-    df = create_design(prob1, prob2, fractions, repetitions=2)
+    df = create_design(prob1, prob2, fractions, repetitions=2, n_runs=6)
 
     df.to_csv(fn, sep='\t')
     plt.show()
