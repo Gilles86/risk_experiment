@@ -93,7 +93,7 @@ class TaskInstructionTrial(InstructionTrial):
 
         if txt is None:
             txt = f"""
-            This is run {run}/6.
+            This is run {run}/8.
 
             In this task, you will see two piles of Swiss Franc coins in
             succession. Both piles are combined with a pie chart in.
