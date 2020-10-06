@@ -14,7 +14,7 @@ The design is 22 elements long.
 3 blocks is 277.2 seconds (4.6 minutes)
 
 277.2 / 2.3 + 5 ~=  121 volumes
-plus 2 dummy scans is 123
+plus 4 dummy scans is 125
 
 #Task
 jitter1 = 6.5
