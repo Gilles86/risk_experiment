@@ -22,10 +22,9 @@ jitter2 = np.mean(np.repeat(np.linspace(4, 6, 4), 128/4)) (5)
 np.sum([.25, .3, .3, .5, .6, jitter1, .3, .3, .6, jitter2])
 14.65 seconds
 
-192/4 * 14.65 = 703.2 seconds
-351.6
+192/6 * 14.65 = 468.8 seconds
 
-703 / 2.5 + 20 / 2.5 + 5 = 294 volumes
+468.8 / 2.3 + 10 / 2.3 + 5 = 213 volumes
 
 # Scans
 Survey 00:32
