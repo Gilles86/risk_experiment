@@ -9,7 +9,6 @@ from warnings import warn
 import json
 from nilearn import image
 
-
 def main(subject, session, bids_folder, sourcedata=None, overwrite=True):
 
     if sourcedata is None:
@@ -43,23 +42,32 @@ def main(subject, session, bids_folder, sourcedata=None, overwrite=True):
 
     if fieldstrength == 7:
         nii_reg = re.compile(
-            f'.*/ri_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_ses-{session}_(?P<label>(task-(?P<task>[a-z]+)_)?(run-(?P<run>[0-9]+)_)?(?P<suffix>.+))V4.nii')
+            f'.*/ri_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_ses-{session}(?P<label>(_task-(?P<task>calibration|mapper))?(_run-(?P<run>[0-9]+))?(_(?P<suffix>.+))?)V4.nii')
     else:
         nii_reg = re.compile(
-            f'.*/sn_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_ses-{session}_(?P<label>(task-(?P<task>[a-z]+)_)?(run-(?P<run>[0-9]+)_)?(?P<suffix>.+))_spli(ts)?.nii')
+            f'.*/sn_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_ses-{session}_(?P<label>(task-(?P<task>[a-z]+)_)?(run-(?P<run>[0-9]+)_)?(?P<suffix>.+))(_spli[ts]*).nii')
 
 
     df = []
     for fn in nii_files:
         # print(nii_reg)
-        # print(fn)
+        print(fn)
         if nii_reg.match(fn):
             print(fn)
             df.append(nii_reg.match(fn).groupdict())
             df[-1]['fn'] = fn
 
-    df = pd.DataFrame(df).set_index(['suffix'])
+    df = pd.DataFrame(df)
+
+    df.loc[df.suffix.isnull(), 'suffix'] = 'bold'
+    mapper = {'t1w':'T1w', 'tse':'TSE', 't2starw':'T2starw'}
+    df['suffix'] = df['suffix'].map(lambda suffix: mapper[suffix] if suffix in mapper else suffix)
+    df = df.set_index('suffix')
+    df = df.sort_values('acq')
     print(df)
+
+    if len(df.loc['T1w']) > 1:
+        df.loc['T1w', 'run'] = range(1, len(df.loc['T1w']) + 1)
 
     if fieldstrength == 7:
         sidecar_json = {
@@ -147,8 +155,12 @@ def main(subject, session, bids_folder, sourcedata=None, overwrite=True):
     tmp = df.drop('bold')
     
     for suffix, row in tmp.iterrows():
-        shutil.copy(row.fn,
-                    op.join(bids_folder, 'anat', f'sub-{subject}_ses-{session}_{row.label}.nii'))
+        if row.run is None:
+            shutil.copy(row.fn,
+                        op.join(bids_folder, 'anat', f'sub-{subject}_ses-{session}_{row.name}.nii'))
+        else:
+            shutil.copy(row.fn,
+                        op.join(bids_folder, 'anat', f'sub-{subject}_ses-{session}_run-{row.run}_{row.name}.nii'))
 
 
 
