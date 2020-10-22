@@ -16,11 +16,12 @@ def get_payout(subject, session, settings='default'):
         'logs', f'sub-{subject}', f'ses-{session}', f'sub-{subject}_ses-{session}_task-calibration_run-*_events.tsv')))
     print(op.abspath(op.join('logs', f'sub-{subject}', f'ses-{session}',
                              f'sub-{subject}_ses-{session}_task-calibrate_run-*_events.tsv')))
+    print(logs_calibrate)
     logs_task = glob.glob(op.abspath(op.join(
         'logs', f'sub-{subject}', f'ses-{session}', f'sub-{subject}_ses-{session}_task-task_run-*_events.tsv')))
 
     reg = re.compile(
-        '.*/sub-(?P<subject>.+)_ses-(?P<session>.+)_task-(?P<task>.+)_run-(?P<run>[0-9]+)_events\.tsv')
+        '.*sub-(?P<subject>.+)_ses-(?P<session>.+)_task-(?P<task>.+)_run-(?P<run>[0-9]+)_events\.tsv')
     df = []
 
     for l in (logs_calibrate + logs_task):
@@ -31,7 +32,7 @@ def get_payout(subject, session, settings='default'):
         df.append(d)
 
     df = pd.concat(df)
-    df = df[df.phase == 9]
+    df = df[np.in1d(df.phase, [8, 9])]
     df = df.pivot_table(index=['task', 'trial_nr'], values=[
                         'choice', 'certainty', 'n1', 'n2', 'prob1', 'prob2'])
 
