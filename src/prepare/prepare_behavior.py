@@ -23,7 +23,10 @@ def main(subject, session, bids_folder, max_rt=1.0):
 
             behavior = pd.read_table(op.join(sourcedata, f'sub-{subject}/behavior/ses-{session}/sub-{subject}_ses-{session}_task-mapper_run-{run}_events.tsv'))
 
-            pulses = behavior[behavior.event_type == 'pulse'].iloc[::2].set_index(np.arange(1, n_volumes+1))[['trial_nr', 'onset']]
+            pulses = behavior[behavior.event_type == 'pulse'][['trial_nr', 'onset']]
+            pulses['ipi'] = pulses['onset'].diff()
+            pulses = pulses[(pulses['ipi'] > .2) | pulses.ipi.isnull()]
+            pulses = pulses.set_index(np.arange(1, n_volumes+1))[['trial_nr', 'onset']]
             t0 = pulses.loc[1, 'onset']
 
             targets = behavior[(behavior.color == 1.0) & (behavior.event_type == 'stim') & (behavior.n_dots > 0.0) & (behavior['phase'] % 2 == 0)]
