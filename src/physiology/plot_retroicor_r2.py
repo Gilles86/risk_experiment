@@ -82,16 +82,16 @@ def main(subject, session, sourcedata='/data2/ds-risk'):
         n_slices = r2_all.shape[2]
         slices = 8
 
-        plotting.plot_stat_map(r2_cardiac, t1w, display_mode='z', threshold=0.2, figure=1, axes=(0, .66, 1, .33),
+        plotting.plot_stat_map(r2_cardiac, t1w, display_mode='z', threshold=0.2, figure=run, axes=(0, .66, 1, .33),
                 vmax=.8,
                               cut_coords=slices)
 
-        plotting.plot_stat_map(r2_resp, t1w, display_mode='z', threshold=0.2, cmap='viridis', figure=1, 
+        plotting.plot_stat_map(r2_resp, t1w, display_mode='z', threshold=0.2, cmap='viridis', figure=run, 
                               axes=(0., 0.33, 1, .33),
                               vmax=.8,
                             cut_coords=slices)
 
-        plotting.plot_stat_map(r2_interaction, t1w, display_mode='z', threshold=0.125, cmap='Blues', figure=1, 
+        plotting.plot_stat_map(r2_interaction, t1w, display_mode='z', threshold=0.125, cmap='Blues', figure=run, 
                               axes=(0., 0.0, 1, .33),
                               vmax=.8,
                                cut_coords=slices)
