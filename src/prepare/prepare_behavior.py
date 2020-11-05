@@ -67,7 +67,7 @@ def main(subject, session, bids_folder, max_rt=1.0):
             events = pd.concat((all_stimuli, responses, targets), ignore_index=True)
 
 
-            fn = op.join(target_dir, f'sub-{subject}-{session}-mapper_run-{run}_bold.tsv')
+            fn = op.join(target_dir, f'sub-{subject}_ses-{session}_task-mapper_run-{run}_events.tsv')
             events.to_csv(fn, index=False, sep='\t')
 
     else:

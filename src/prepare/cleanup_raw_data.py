@@ -41,7 +41,7 @@ def main(subject, session, bids_folder, sourcedata=None, overwrite=True, physiol
     if not physiology_only:
         if fieldstrength == 7:
             nii_reg = re.compile(
-                f'.*/ri_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_ses-{session}(?P<label>(_task-(?P<task>calibration|mapper|task))?(_run-(?P<run>[0-9]+))?(_(?P<suffix>.+))?)V4.nii')
+                f'.*/(ri|su)_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_ses-{session}(?P<label>(_task-(?P<task>calibration|mapper|task))?(_run-(?P<run>[0-9]+))?(_(?P<suffix>.+))?)V4.nii')
         else:
             nii_reg = re.compile(
                 f'.*/sn_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_ses{session}_(?P<label>.+)\.nii')
@@ -206,7 +206,7 @@ def main(subject, session, bids_folder, sourcedata=None, overwrite=True, physiol
 
     if fieldstrength == 7:
         log_reg = re.compile(
-            f'.*/SCANPHYSLOG_ri_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_ses-{session}_task-(?P<task>task|mapper)_run-(?P<run>[0-9]+)V4\.log')
+            f'.*/SCANPHYSLOG_(ri|su)_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_ses-{session}_task-(?P<task>task|mapper)_run-(?P<run>[0-9]+)V4\.log')
     else:
         log_reg = re.compile(
         f'.*/sn_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_(?P<task>.+)_run(?P<run>[0-9]+)_spli_scanphyslog.+')
