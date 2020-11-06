@@ -28,8 +28,8 @@ class CalibrationInstructionTrial(InstructionTrial):
             Your task is to either select the first lottery or
             the second lottery, by using your index or middle finger.
             Immediately after your choice, we ask how certain you were
-            about your choice from a scale from 1 (very uncertain)
-            to 4 (very certain).
+            about your choice from a scale from 1 (very CERTAIN)
+            to 4 (very UNCERTAIN).
 
             NOTE: if you are to late in responding, or you do not 
             respond. You will gain no money for that trial.

@@ -16,7 +16,7 @@ class IntroBlockTrial(Trial):
 
         txt = f"""
         In this block of {n_trials} trials, the first option will have a
-        winning change of {int(prob1*100):d}%.\n\n
+        winning chance of {int(prob1*100):d}%.\n\n
         The second option will have a winning chance of {int(prob2*100):d}%.
         """
 
@@ -49,6 +49,8 @@ class GambleTrial(Trial):
 
         if phase_durations is None:
             phase_durations = [.25, .3, .3, .5, .6, jitter1, .3, .3, .6, jitter2]
+        elif len(phase_durations) == 12:
+            phase_durations = phase_durations
         else:
             raise Exception(
                 "Don't directly set phase_durations for GambleTrial!")
@@ -97,6 +99,8 @@ class GambleTrial(Trial):
         self.certainty = None
         self.certainty_time = np.inf
 
+        self.last_key_responses = dict(zip(self.buttons + [self.session.mri_trigger], [0.0] * 5))
+
     def draw(self):
 
         self.session.fixation_lines.draw()
@@ -127,24 +131,30 @@ class GambleTrial(Trial):
         events = super().get_events()
 
         for key, t in events:
-            if self.phase > 7:
-                if self.choice is None:
-                    if key in [self.buttons[0], self.buttons[1]]:
-                        self.choice_time = self.session.clock.getTime()
-                        if key == self.buttons[0]:
-                            self.choice = 1
-                        elif key == self.buttons[1]:
-                            self.choice = 2
-                        self.choice_stim.text = f'You chose pile {self.choice}'
+            if key not in self.last_key_responses:
+                self.last_key_responses[key] = t - 0.6
 
-                        self.log(choice=self.choice)
+            if t - self.last_key_responses[key] > 0.5:
+                if self.phase > 7:
+                    if self.choice is None:
+                        if key in [self.buttons[0], self.buttons[1]]:
+                            self.choice_time = self.session.clock.getTime()
+                            if key == self.buttons[0]:
+                                self.choice = 1
+                            elif key == self.buttons[1]:
+                                self.choice = 2
+                            self.choice_stim.text = f'You chose pile {self.choice}'
 
-                elif (self.phase > 8) & (self.certainty is None) & ((self.session.clock.getTime() - self.certainty_time) < .5):
-                    if key in self.buttons:
-                        self.certainty_time = self.session.clock.getTime()
-                        self.certainty = self.buttons.index(key)
-                        self.certainty_stim.rectangles[self.certainty].opacity = 1.0
-                        self.log(certainty=self.certainty+1)
+                            self.log(choice=self.choice)
+
+                    elif (self.phase > 8) & (self.certainty is None) & ((self.session.clock.getTime() - self.certainty_time) < .5):
+                        if key in self.buttons:
+                            self.certainty_time = self.session.clock.getTime()
+                            self.certainty = self.buttons.index(key)
+                            self.certainty_stim.rectangles[self.certainty].opacity = 1.0
+                            self.log(certainty=self.certainty+1)
+
+            self.last_key_responses[key] = t
 
         return events
 
