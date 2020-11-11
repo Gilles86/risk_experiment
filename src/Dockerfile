@@ -1,4 +1,4 @@
-# Timestamp: 2020/11/10 14:32:20 UTC
+# Timestamp: 2020/11/11 09:12:52 UTC
 # 
 # Thank you for using Neurodocker. If you discover any issues
 # or ways to improve this software, please submit an issue or
@@ -215,6 +215,8 @@ COPY ["braincoder", "/braincoder"]
 
 RUN bash -c 'source activate neuro && cd /braincoder && python setup.py develop --no-deps'
 
+COPY ["./nipype.cfg", "/root/.nipype/nipype.cfg"]
+
 RUN echo '{ \
     \n  "pkg_manager": "apt", \
     \n  "instructions": [ \
@@ -307,6 +309,13 @@ RUN echo '{ \
     \n    [ \
     \n      "run_bash", \
     \n      "source activate neuro && cd /braincoder && python setup.py develop --no-deps" \
+    \n    ], \
+    \n    [ \
+    \n      "copy", \
+    \n      [ \
+    \n        "./nipype.cfg", \
+    \n        "/root/.nipype/nipype.cfg" \
+    \n      ] \
     \n    ] \
     \n  ] \
     \n}' > /neurodocker/neurodocker_specs.json
