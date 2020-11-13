@@ -62,7 +62,7 @@ def main(subject, session, bids_folder, sourcedata=None, overwrite=True, physiol
         df.loc[df.suffix.isnull(), 'suffix'] = 'bold'
 
 
-        mapper = {'t1w':'T1w', 'tse':'TSE', 't2starw':'T2starw'}
+        mapper = {'t1w':'T1w', 'tse':'TSE', 't2starw':'T2starw', 'mtw':'MTw'}
         df['suffix'] = df['suffix'].map(lambda suffix: mapper[suffix] if suffix in mapper else suffix)
         df['label'] = df['label'].apply(lambda x: x[1:] if x[0] == '_' else x)
         df = df.set_index('suffix')
