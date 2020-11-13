@@ -196,7 +196,7 @@ def main(subject, session, bids_folder):
                                     name='transformer_to_mni2')
         workflow.connect(convert_dtype, 'out_file',
                          transformer_to_mni2, 'input_image')
-        workflow.connect(mask_node_mni, 'mask',
+        workflow.connect(gen_grid_node_mni, 'out_file',
                          transformer_to_mni2, 'reference_image')
         workflow.connect(concat_transforms, 'out',
                          transformer_to_mni2, 'transforms')
