@@ -5,7 +5,7 @@ neurodocker generate docker --base ubuntu --pkg-manager apt --freesurfer version
        	--output=$DIR/Dockerfile \
 	--freesurfer version=6.0.1 \
 	--fsl version=6.0.1 \
-	--ants version=2.3.1 \
+	--ants version=2.3.4 \
   --install zsh wget git build-essential \
     --miniconda \
       conda_install="python=3.7 pandas matplotlib scikit-learn seaborn ipython tensorflow pytables" \
@@ -13,7 +13,7 @@ neurodocker generate docker --base ubuntu --pkg-manager apt --freesurfer version
 		nipype
                   pybids
 		  nistats
-		  niworkflows
+		  https://github.com/Gilles86/niworkflows/archive/risk_project.zip 
 		  tensorflow_probability
 		  https://github.com/Gilles86/hedfpy/archive/refactor_gilles.zip" \
       create_env="neuro" \
@@ -24,3 +24,4 @@ neurodocker generate docker --base ubuntu --pkg-manager apt --freesurfer version
    --workdir /src \
    --copy braincoder /braincoder \
    --run-bash "source activate neuro && cd /braincoder && python setup.py develop --no-deps" \
+   --copy ./nipype.cfg /root/.nipype/nipype.cfg
