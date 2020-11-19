@@ -14,7 +14,7 @@ from niworkflows.interfaces.utils import GenerateSamplingReference
 import logging
 
 
-def main(subject, session, bids_folder):
+def main(subject, session, bids_folder, modalities):
 
     # logger = logging.getLogger('spam_application')
     # logger.setLevel(logging.INFO)
@@ -36,7 +36,7 @@ def main(subject, session, bids_folder):
                          f'sub-{subject}', 'anat', f'sub-{subject}_space-MNI152NLin2009cAsym_desc-preproc_T1w.nii.gz')
 
     mni_brain_mask = op.join(bids_folder, 'derivatives', 'fmriprep',
-                         f'sub-{subject}', 'anat', f'sub-{subject}_space-MNI152NLin2009cAsym_desc-brain_mask.nii.gz')
+                             f'sub-{subject}', 'anat', f'sub-{subject}_space-MNI152NLin2009cAsym_desc-brain_mask.nii.gz')
 
     if len(init_regs) > 0:
         init_reg = init_regs[0]
@@ -82,7 +82,7 @@ def main(subject, session, bids_folder):
 
         workflow.connect(convert_dtype, 'out_file', inu_n4, 'input_image')
 
-        register = pe.Node(Registration(from_file='linear_precise.json', num_threads=n4_nthreads),
+        register = pe.Node(Registration(from_file='linear_precise.json', num_threads=n4_nthreads, verbose=True),
                            name='registration')
 
         workflow.connect(inu_n4, 'output_image', register, 'moving_image')
@@ -122,7 +122,7 @@ def main(subject, session, bids_folder):
         workflow.connect(input_node, 'target', gen_grid_node, 'fixed_image')
 
         datasink_image_t1w = pe.Node(DerivativesDataSink(out_path_base='registration',
-            compress=True,
+                                                         compress=True,
                                                          base_directory=op.join(bids_folder, 'derivatives')),
                                      name='datasink_nii')
         datasink_image_t1w.inputs.source_file = input_file
@@ -139,6 +139,15 @@ def main(subject, session, bids_folder):
         workflow.connect(register, 'composite_transform',
                          transformer, 'transforms')
 
+        if init_reg:
+            transformer_init = pe.Node(ApplyTransforms(interpolation='LanczosWindowedSinc'),
+                                  name='transformer_init')
+            workflow.connect(convert_dtype, 'out_file', transformer_init, 'input_image')
+            workflow.connect(gen_grid_node, 'out_file',
+                             transformer_init, 'reference_image')
+            workflow.connect(input_node, 'init_reg', transformer_init,
+                             'transforms')
+
         concat_transforms = pe.Node(niu.Merge(2), name='concat_transforms')
         workflow.connect(register, 'composite_transform',
                          concat_transforms, 'in2')
@@ -146,7 +155,7 @@ def main(subject, session, bids_folder):
                          concat_transforms, 'in1')
 
         transformer_to_mni1 = pe.Node(ApplyTransforms(interpolation='LanczosWindowedSinc'),
-                                    name='transformer_to_mni1')
+                                      name='transformer_to_mni1')
         workflow.connect(convert_dtype, 'out_file',
                          transformer_to_mni1, 'input_image')
         workflow.connect(input_node, 't1w_in_mni',
@@ -177,23 +186,25 @@ def main(subject, session, bids_folder):
             return new_fn
 
         combine_masks_node = pe.Node(niu.Function(function=join_masks,
-                input_names=['mask1', 'mask2'],
-                output_names=['combined_mask']), name = 'combine_mask_node')
+                                                  input_names=[
+                                                      'mask1', 'mask2'],
+                                                  output_names=['combined_mask']), name='combine_mask_node')
 
         workflow.connect(mask_node_mni, 'mask', combine_masks_node, 'mask1')
-        workflow.connect(input_node, 'mni_brain_mask', combine_masks_node, 'mask2')
+        workflow.connect(input_node, 'mni_brain_mask',
+                         combine_masks_node, 'mask2')
 
-
-        gen_grid_node_mni=pe.Node(GenerateSamplingReference(),
-                                    name = 'gen_grid_node_mni')
-        workflow.connect(combine_masks_node, 'combined_mask', gen_grid_node_mni, 'fov_mask')
+        gen_grid_node_mni = pe.Node(GenerateSamplingReference(),
+                                    name='gen_grid_node_mni')
+        workflow.connect(combine_masks_node, 'combined_mask',
+                         gen_grid_node_mni, 'fov_mask')
         workflow.connect(convert_dtype, 'out_file',
                          gen_grid_node_mni, 'moving_image')
         workflow.connect(input_node, 't1w_in_mni',
                          gen_grid_node_mni, 'fixed_image')
 
         transformer_to_mni2 = pe.Node(ApplyTransforms(interpolation='LanczosWindowedSinc'),
-                                    name='transformer_to_mni2')
+                                      name='transformer_to_mni2')
         workflow.connect(convert_dtype, 'out_file',
                          transformer_to_mni2, 'input_image')
         workflow.connect(gen_grid_node_mni, 'out_file',
@@ -202,7 +213,7 @@ def main(subject, session, bids_folder):
                          transformer_to_mni2, 'transforms')
 
         datasink_image_mni = pe.Node(DerivativesDataSink(out_path_base='registration',
-            compress=True,
+                                                         compress=True,
                                                          base_directory=op.join(bids_folder, 'derivatives')),
                                      name='datasink_mni')
         datasink_image_mni.inputs.source_file = input_file
@@ -219,10 +230,8 @@ def main(subject, session, bids_folder):
     if 'acquisition' in df.columns:
         df = df[~((df.suffix == 'T2starw') & (df.acquisition != 'average'))]
 
-    # df = df[np.in1d(df['suffix'], ['T2starw', 'MTw', 'TSE'])]
-    df = df[np.in1d(df['suffix'], ['T2starw', 'MTw', 'TSE'])]
-
     print(df)
+    df = df[np.in1d(df['suffix'], modalities)]
 
     for ix, row in df.iterrows():
         logging.info('Registering {row.path}')
@@ -242,6 +251,8 @@ if __name__ == '__main__':
     parser.add_argument('session', default=None)
     parser.add_argument(
         '--bids_folder', default='/data')
+    parser.add_argument(
+        '--modalities', default=['T2starw', 'MTw', 'Tse'], nargs="+")
     args = parser.parse_args()
 
-    main(args.subject, args.session, args.bids_folder)
+    main(args.subject, args.session, args.bids_folder, args.modalities)
