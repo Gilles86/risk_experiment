@@ -92,7 +92,7 @@ if __name__ == '__main__':
     parser.add_argument('subject', default=None)
     parser.add_argument('session', default=None)
     parser.add_argument(
-        '--bids_folder', default='/data2/ds-risk/')
+        '--bids_folder', default='/data')
     args = parser.parse_args()
 
     main(args.subject, args.session, args.bids_folder)
