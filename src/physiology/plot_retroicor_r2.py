@@ -23,6 +23,7 @@ def main(subject, session, sourcedata='/data2/ds-risk'):
     t1w = op.join(derivatives, 'fmriprep', f'sub-{subject}', 'anat', f'sub-{subject}_desc-preproc_T1w.nii.gz')
 
     if not op.exists(t1w):
+        print(f'{t1w} does not exist!')
         t1w = op.join(derivatives, 'fmriprep', f'sub-{subject}', 'ses-7t1', 'anat', f'sub-{subject}_ses-7t1_desc-preproc_T1w.nii.gz')
             
     t1w_mask = op.join(derivatives, 'fmriprep', f'sub-{subject}', 'anat', f'sub-{subject}_desc-brain_mask.nii.gz')
@@ -109,7 +110,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('subject', default=None)
     parser.add_argument('session', default=None)
-    parser.add_argument('--sourcedata', default='/data2/ds-risk')
+    parser.add_argument('--sourcedata', default='/data')
     args = parser.parse_args()
 
     main(args.subject, args.session, sourcedata=args.sourcedata)
