@@ -24,6 +24,7 @@ def main(subject, session, bids_folder, sourcedata=None, overwrite=True, physiol
         sourcedata, f'sub-{subject}', 'behavior', f'ses-{session}')
 
     nii_files = glob.glob(op.join(sourcedata_mri, '*.nii'))
+    print(nii_files)
 
     def create_bids_folder(bids_folder, modalities):
         if (not overwrite) & op.exists(bids_folder):
@@ -43,18 +44,25 @@ def main(subject, session, bids_folder, sourcedata=None, overwrite=True, physiol
             nii_reg = re.compile(
                 f'.*/(ri|su)_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_ses-{session}(?P<label>(_task-(?P<task>calibration|mapper|task))?(_run-(?P<run>[0-9]+))?(_(?P<suffix>.+))?)V4.nii')
         else:
-            nii_reg = re.compile(
-                f'.*/sn_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_ses{session}_(?P<label>.+)\.nii')
+            if session == '3t2':
+                nii_reg = re.compile(
+                f'.*/sn_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_(wip)?ses{session}_(?P<label>.*)\.nii')
+            else:
+                nii_reg = re.compile(
+                f'.*/sn_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_(wip)?(?P<label>(?P<suffix>t1w3danat|t2w_1mm|t2w_1mm_spl|t1w_tse_ori)|mapper_run(?P<run>[0-9]+))(_spli|_4_neur|_4|_splits)?_?\.nii')
 
 
 
         df = []
+        print(nii_files)
         for fn in nii_files:
+            print(fn, nii_reg.match(fn))
             if nii_reg.match(fn):
                 df.append(nii_reg.match(fn).groupdict())
                 df[-1]['fn'] = fn
 
         df = pd.DataFrame(df)
+        print(df)
 
         if 'suffix' not in df.columns:
             df['suffix'] = np.nan
@@ -62,11 +70,16 @@ def main(subject, session, bids_folder, sourcedata=None, overwrite=True, physiol
         df.loc[df.suffix.isnull(), 'suffix'] = 'bold'
 
 
-        mapper = {'t1w':'T1w', 'tse':'TSE', 't2starw':'T2starw', 'mtw':'MTw'}
+        mapper = {'t1w':'T1w', 'tse':'TSE', 't2starw':'T2starw', 'mtw':'MTw',
+                't1w3danat':'T1w', 't2w_1mm':'T2starw', 't1w_tse_ori':'TSE',
+                't2w_1mm_spl':'T2starw'}
         df['suffix'] = df['suffix'].map(lambda suffix: mapper[suffix] if suffix in mapper else suffix)
         df['label'] = df['label'].apply(lambda x: x[1:] if x[0] == '_' else x)
         df = df.set_index('suffix')
+        df['acq'] = df['acq'].astype(int)
         df = df.sort_values('acq')
+
+        print(df)
 
         if 'run' not in df.columns:
             bold = df.loc['bold']
@@ -79,22 +92,35 @@ def main(subject, session, bids_folder, sourcedata=None, overwrite=True, physiol
 
             df.loc['bold', 'label'] = df.loc['bold'].apply(lambda row: f'task-{row.task}_run-{row.run}', 1)
 
-        if ('T1w' in df.index) and (len(df.loc['T1w']) > 1):
+        if ('T1w' in df.index) and (len(df.loc[['T1w']]) > 1):
             df.loc['T1w', 'run'] = range(1, len(df.loc['T1w']) + 1)
 
         if fieldstrength == 7:
+
+            n_slices = 76
+            tr = 2.3
+            frametimes = np.linspace(0, tr, int(n_slices/2), endpoint=False)
+            slice_times = np.zeros(n_slices)
+            slice_times[::2] = np.tile(frametimes[:int(n_slices/4)], 2)
+            slice_times[1::2] = np.tile(frametimes[int(n_slices/4):], 2)
+
             sidecar_json = {
                 "MagneticFieldStrength": 7,
                 "ParallelReductionFactorInPlane": 3,
                 "RepetitionTime": 2.3,
                 "TotalReadoutTime": 0.04,
+                "SliceTiming": list(slice_times),
                 "TaskName": "Numerosity mapper"}
         else:
+
+            tr = 2.298
+            n_slices = 39
             sidecar_json = {
                 "MagneticFieldStrength": 3,
                 "ParallelReductionFactorInPlane": 2,
-                "RepetitionTime": 2.3,
+                "RepetitionTime": tr,
                 "TotalReadoutTime": 0.04,
+                "SliceTiming": list(np.linspace(0, tr, n_slices, endpoint=False)),
                 "TaskName": "Numerosity mapper"}
 
         for ix, row in df.loc['bold'].iterrows():
@@ -171,7 +197,8 @@ def main(subject, session, bids_folder, sourcedata=None, overwrite=True, physiol
             # T2star-weighted
             if suffix == 'T2starw':
                 im = image.load_img(row.fn) 
-                if im.shape[-1] == 1:
+                print('T2star', im.shape)
+                if (im.shape[-1] == 1) or (len(im.shape) == 3):
                     shutil.copy(row.fn,
                                 op.join(bids_folder, 'anat', f'sub-{subject}_ses-{session}_{row.name}.nii'))
                 elif im.shape[-1] == 6:
@@ -209,11 +236,11 @@ def main(subject, session, bids_folder, sourcedata=None, overwrite=True, physiol
             f'.*/SCANPHYSLOG_(ri|su)_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_ses-{session}_task-(?P<task>task|mapper)_run-(?P<run>[0-9]+)V4\.log')
     else:
         log_reg = re.compile(
-        f'.*/sn_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_(?P<task>.+)_run(?P<run>[0-9]+)_spli_scanphyslog.+')
+        f'.*/sn_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_(?P<task>.+)_run(?P<run>[0-9]+)(_spli|_)_scanphyslog.+')
 
     if session == '3t2':
         log_reg = re.compile(
-        f'.*\/sn_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_ses3t2_tasktas_scanphyslog[0-9]+.log')
+        f'.*\/sn_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_(wip)?ses3t2_(run(?P<run>[0-9]+)_sp|tasktas)__?scanphyslog[0-9]+.log')
 
         df = []
         for fn in log_files:
@@ -223,10 +250,14 @@ def main(subject, session, bids_folder, sourcedata=None, overwrite=True, physiol
                 d['fn'] = fn
                 df.append(d)
 
-        df = pd.DataFrame(df).sort_values('acq')
+        df = pd.DataFrame(df)
+        df['acq'] = df['acq'].astype(int)
+        df = df.sort_values('acq')
         print(df)
-        df['run'] = range(1, len(df)+1)
+        if 'run' not in df.columns:
+            df['run'] = range(1, len(df)+1)
         df = df.set_index(['run'])
+        print(df)
 
         for run, row in df.iterrows():
             new_fn = op.join(bids_folder, 'func', f'sub-{subject}_ses-{session}_task-task_run-{run}_physio.log')
@@ -249,7 +280,7 @@ if __name__ == '__main__':
     parser.add_argument('session', default=None)
     parser.add_argument('--physiology_only', action='store_true')
     parser.add_argument(
-        '--bids_folder', default='/data2/ds-risk/')
+        '--bids_folder', default='/data')
     parser.add_argument('--sourcedata', default=None)
     args = parser.parse_args()
 
