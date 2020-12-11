@@ -252,7 +252,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--bids_folder', default='/data')
     parser.add_argument(
-        '--modalities', default=['T2starw', 'MTw', 'Tse'], nargs="+")
+        '--modalities', default=['T2starw', 'MTw', 'TSE'], nargs="+")
     args = parser.parse_args()
 
     main(args.subject, args.session, args.bids_folder, args.modalities)
