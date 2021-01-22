@@ -207,7 +207,7 @@ def main(subject, session, bids_folder, modalities, registration_scheme='linear_
         workflow.connect(input_node, 't1w_in_mni',
                          gen_grid_node_mni, 'fixed_image')
 
-        transformer_to_mni2 = pe.Node(ApplyTransforms(interpolation='LanczosWindowedSinc', generate_report=True),
+        transformer_to_mni2 = pe.Node(ApplyTransforms(interpolation='LanczosWindowedSinc', generate_report=False),
                                       name='transformer_to_mni2')
         workflow.connect(inu_n4, 'output_image',
                          transformer_to_mni2, 'input_image')
@@ -229,16 +229,6 @@ def main(subject, session, bids_folder, modalities, registration_scheme='linear_
         workflow.connect(transformer_to_mni2, 'output_image',
                          datasink_image_mni, 'in_file')
 
-        datasink_report_mni = pe.Node(DerivativesDataSink(out_path_base='registration',
-            datatype='figures',
-            space='MNI152NLin2009cAsym',
-                                                         base_directory=op.join(bids_folder, 'derivatives')),
-                                     name='datasink_report_mni')
-
-        workflow.connect(input_node, 'input_file',
-                         datasink_report_mni, 'source_file')
-        workflow.connect(transformer_to_mni2, 'out_report',
-                         datasink_report_mni, 'in_file')
         return workflow
 
     df = BIDSLayout(anat_dir, validate=False).to_df()
