@@ -8,16 +8,14 @@ import nipype.interfaces.utility as niu
 from nipype.interfaces import fsl
 from niworkflows.interfaces.bids import DerivativesDataSink
 from niworkflows.interfaces.fixes import (FixN4BiasFieldCorrection as N4BiasFieldCorrection,
-                                          FixHeaderApplyTransforms as ApplyTransforms,
                                           FixHeaderRegistration as Registration)
+# from niworkflows.interfaces.registration import fmap2ref_reg
 from niworkflows.interfaces.utils import GenerateSamplingReference
+from niworkflows.interfaces.registration import ANTSApplyTransformsRPT as ApplyTransforms
 import logging
 
 
-def main(subject, session, bids_folder, modalities):
-
-    # logger = logging.getLogger('spam_application')
-    # logger.setLevel(logging.INFO)
+def main(subject, session, bids_folder, modalities, registration_scheme='linear_precise'):
 
     anat_dir = op.join(bids_folder, f'sub-{subject}', f'ses-{session}', 'anat')
 
@@ -27,7 +25,7 @@ def main(subject, session, bids_folder, modalities):
                           f'sub-{subject}', 'anat', f'sub-{subject}_desc-brain_mask.nii.gz')
 
     init_regs = glob.glob(op.join(bids_folder, 'derivatives', 'fmriprep',
-                                  f'sub-{subject}', f'ses-{session}', 'anat', '*.txt'))
+                                  f'sub-{subject}', f'ses-{session}', 'anat', '*from-orig_to-T1w_*.txt'))
 
     t1w_to_mni_transform = op.join(bids_folder, 'derivatives', 'fmriprep',
                                    f'sub-{subject}', 'anat', f'sub-{subject}_from-T1w_to-MNI152NLin2009cAsym_mode-image_xfm.h5')
@@ -42,6 +40,8 @@ def main(subject, session, bids_folder, modalities):
         init_reg = init_regs[0]
     else:
         init_reg = None
+
+    print(f'INITIAL TRANSFORM: {init_reg}')
 
     def make_registration_wf(input_file, name, subject=subject, target=target,
                              target_mask=target_mask, init_reg=init_reg, t1w_to_mni_transform=t1w_to_mni_transform,
@@ -82,7 +82,7 @@ def main(subject, session, bids_folder, modalities):
 
         workflow.connect(convert_dtype, 'out_file', inu_n4, 'input_image')
 
-        register = pe.Node(Registration(from_file='linear_precise.json', num_threads=n4_nthreads, verbose=True),
+        register = pe.Node(Registration(from_file=f'{registration_scheme}.json', num_threads=n4_nthreads, verbose=True),
                            name='registration')
 
         workflow.connect(inu_n4, 'output_image', register, 'moving_image')
@@ -117,46 +117,50 @@ def main(subject, session, bids_folder, modalities):
                                 name='gen_grid_node')
 
         workflow.connect(mask_node, 'mask', gen_grid_node, 'fov_mask')
-        workflow.connect(convert_dtype, 'out_file',
+        workflow.connect(inu_n4, 'output_image',
                          gen_grid_node, 'moving_image')
         workflow.connect(input_node, 'target', gen_grid_node, 'fixed_image')
 
         datasink_image_t1w = pe.Node(DerivativesDataSink(out_path_base='registration',
                                                          compress=True,
                                                          base_directory=op.join(bids_folder, 'derivatives')),
-                                     name='datasink_nii')
-        datasink_image_t1w.inputs.source_file = input_file
+                                     name='datasink_image_t1w')
+        workflow.connect(input_node, 'input_file', datasink_image_t1w, 'source_file')
         datasink_image_t1w.inputs.space = 'T1w'
         datasink_image_t1w.inputs.desc = 'registered'
 
-        transformer = pe.Node(ApplyTransforms(interpolation='LanczosWindowedSinc'),
+        datasink_report_t1w = pe.Node(DerivativesDataSink(
+            out_path_base='registration',
+            space='T1w',
+            base_directory=op.join(bids_folder, 'derivatives'),
+            datatype='figures'),
+                                  name='datasink_report_t1w')
+
+        workflow.connect(input_node, 'input_file', datasink_report_t1w, 'source_file')
+        datasink_report_t1w.inputs.space = 'T1w'
+
+        transformer = pe.Node(ApplyTransforms(interpolation='LanczosWindowedSinc', generate_report=True),
                               name='transformer')
         workflow.connect(transformer, 'output_image',
                          datasink_image_t1w, 'in_file')
-        workflow.connect(convert_dtype, 'out_file', transformer, 'input_image')
+        workflow.connect(transformer, 'out_report',
+                         datasink_report_t1w, 'in_file')
+        workflow.connect(inu_n4, 'output_image', transformer, 'input_image')
         workflow.connect(gen_grid_node, 'out_file',
                          transformer, 'reference_image')
         workflow.connect(register, 'composite_transform',
                          transformer, 'transforms')
 
-        if init_reg:
-            transformer_init = pe.Node(ApplyTransforms(interpolation='LanczosWindowedSinc'),
-                                  name='transformer_init')
-            workflow.connect(convert_dtype, 'out_file', transformer_init, 'input_image')
-            workflow.connect(gen_grid_node, 'out_file',
-                             transformer_init, 'reference_image')
-            workflow.connect(input_node, 'init_reg', transformer_init,
-                             'transforms')
-
         concat_transforms = pe.Node(niu.Merge(2), name='concat_transforms')
+
         workflow.connect(register, 'composite_transform',
                          concat_transforms, 'in2')
         workflow.connect(input_node, 't1w_to_mni_transform',
                          concat_transforms, 'in1')
 
-        transformer_to_mni1 = pe.Node(ApplyTransforms(interpolation='LanczosWindowedSinc'),
+        transformer_to_mni1 = pe.Node(ApplyTransforms(interpolation='LanczosWindowedSinc', generate_report=False),
                                       name='transformer_to_mni1')
-        workflow.connect(convert_dtype, 'out_file',
+        workflow.connect(inu_n4, 'output_image',
                          transformer_to_mni1, 'input_image')
         workflow.connect(input_node, 't1w_in_mni',
                          transformer_to_mni1, 'reference_image')
@@ -198,14 +202,14 @@ def main(subject, session, bids_folder, modalities):
                                     name='gen_grid_node_mni')
         workflow.connect(combine_masks_node, 'combined_mask',
                          gen_grid_node_mni, 'fov_mask')
-        workflow.connect(convert_dtype, 'out_file',
+        workflow.connect(inu_n4, 'output_image',
                          gen_grid_node_mni, 'moving_image')
         workflow.connect(input_node, 't1w_in_mni',
                          gen_grid_node_mni, 'fixed_image')
 
-        transformer_to_mni2 = pe.Node(ApplyTransforms(interpolation='LanczosWindowedSinc'),
+        transformer_to_mni2 = pe.Node(ApplyTransforms(interpolation='LanczosWindowedSinc', generate_report=True),
                                       name='transformer_to_mni2')
-        workflow.connect(convert_dtype, 'out_file',
+        workflow.connect(inu_n4, 'output_image',
                          transformer_to_mni2, 'input_image')
         workflow.connect(gen_grid_node_mni, 'out_file',
                          transformer_to_mni2, 'reference_image')
@@ -220,8 +224,21 @@ def main(subject, session, bids_folder, modalities):
         datasink_image_mni.inputs.space = 'MNI152NLin2009cAsym'
         datasink_image_mni.inputs.desc = 'registered'
 
+        workflow.connect(input_node, 'input_file',
+                         datasink_image_mni, 'source_file')
         workflow.connect(transformer_to_mni2, 'output_image',
                          datasink_image_mni, 'in_file')
+
+        datasink_report_mni = pe.Node(DerivativesDataSink(out_path_base='registration',
+            datatype='figures',
+            space='MNI152NLin2009cAsym',
+                                                         base_directory=op.join(bids_folder, 'derivatives')),
+                                     name='datasink_report_mni')
+
+        workflow.connect(input_node, 'input_file',
+                         datasink_report_mni, 'source_file')
+        workflow.connect(transformer_to_mni2, 'out_report',
+                         datasink_report_mni, 'in_file')
         return workflow
 
     df = BIDSLayout(anat_dir, validate=False).to_df()
@@ -252,7 +269,9 @@ if __name__ == '__main__':
     parser.add_argument(
         '--bids_folder', default='/data')
     parser.add_argument(
+        '--registration_scheme', default='linear_precise')
+    parser.add_argument(
         '--modalities', default=['T2starw', 'MTw', 'TSE'], nargs="+")
     args = parser.parse_args()
 
-    main(args.subject, args.session, args.bids_folder, args.modalities)
+    main(args.subject, args.session, args.bids_folder, args.modalities, args.registration_scheme)
