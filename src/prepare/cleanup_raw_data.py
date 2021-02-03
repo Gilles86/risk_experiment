@@ -23,7 +23,7 @@ def main(subject, session, bids_folder, sourcedata=None, overwrite=True, physiol
     sourcedata_behavior = op.join(
         sourcedata, f'sub-{subject}', 'behavior', f'ses-{session}')
 
-    nii_files = glob.glob(op.join(sourcedata_mri, '*.nii'))
+    nii_files = glob.glob(op.join(sourcedata_mri, '*.nii.gz'))
     print(nii_files)
 
     def create_bids_folder(bids_folder, modalities):
@@ -42,14 +42,23 @@ def main(subject, session, bids_folder, sourcedata=None, overwrite=True, physiol
     if not physiology_only:
         if fieldstrength == 7:
             nii_reg = re.compile(
-                f'.*/(ri|su)_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_ses-{session}(?P<label>(_task-(?P<task>calibration|mapper|task))?(_run-(?P<run>[0-9]+))?(_(?P<suffix>.+))?)V4.nii')
+                f'.*/(ri|su)_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_ses-{session}(?P<label>(_task-(?P<task>calibration|mapper|task))?(_run-(?P<run>[0-9]+))?(_(?P<suffix>.+))?)V4.nii.gz')
         else:
             if session == '3t2':
-                nii_reg = re.compile(
-                f'.*/sn_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_(wip)?ses{session}_(?P<label>.*)\.nii')
+                if subject in ['05']:
+                    nii_reg = re.compile(
+                    f'.*/sn_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_(wip)?ses-{session}_(?P<label>.*)\.nii.gz')
+                else:
+                    nii_reg = re.compile(
+                    f'.*/sn_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_(wip)?ses{session}_(?P<label>.*)\.nii.gz')
             else:
-                nii_reg = re.compile(
-                f'.*/sn_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_(wip)?(?P<label>(?P<suffix>t1w3danat|t2w_1mm|t2w_1mm_spl|t1w_tse_ori)|mapper_run(?P<run>[0-9]+))(_spli|_4_neur|_4|_splits)?_?\.nii')
+                if subject in ['04', '05', '06', '09']:
+                    nii_reg = re.compile(
+                    f'.*/sn_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_(wip)?(?P<label>(?P<suffix>t1w3danat|t2w_1mm|t2w_1mm_spl|t1w_tse_ori)|ses-3t1_task-mapper_run-(?P<run>[0-9]+)_bold)(_spli|_4_neur|_4|_splits|_split)?_?\.nii.gz')
+
+                else:
+                    nii_reg = re.compile(
+                    f'.*/sn_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_(wip)?(?P<label>(?P<suffix>t1w3danat|t2w_1mm|t2w_1mm_spl|t1w_tse_ori)|mapper_run(?P<run>[0-9]+))(_spli|_4_neur|_4|_splits)?_?\.nii.gz')
 
 
 
@@ -95,6 +104,7 @@ def main(subject, session, bids_folder, sourcedata=None, overwrite=True, physiol
         if ('T1w' in df.index) and (len(df.loc[['T1w']]) > 1):
             df.loc['T1w', 'run'] = range(1, len(df.loc['T1w']) + 1)
 
+        print(df)
         if fieldstrength == 7:
 
             n_slices = 76
@@ -134,7 +144,7 @@ def main(subject, session, bids_folder, sourcedata=None, overwrite=True, physiol
                 json.dump(sidecar_json, fp)
 
             shutil.copy(row.fn,
-                        op.join(bids_folder, 'func', f'sub-{subject}_ses-{session}_{row.label}_bold.nii'))
+                        op.join(bids_folder, 'func', f'sub-{subject}_ses-{session}_{row.label}_bold.nii.gz'))
 
         runs = [run for run in sorted(df.loc['bold'].run.unique())]
         tmp = df.loc['bold'].set_index('run')
@@ -155,7 +165,7 @@ def main(subject, session, bids_folder, sourcedata=None, overwrite=True, physiol
             else:
                 sidecar_json['PhaseEncodingDirection'] = 'i'
 
-            intended_for_bold = op.join('func', f'sub-{subject}_ses-{session}_{tmp.loc[intended_for_run].label}_bold.nii')
+            intended_for_bold = op.join('func', f'sub-{subject}_ses-{session}_{tmp.loc[intended_for_run].label}_bold.nii.gz')
 
             sidecar_json['IntendedFor'] = intended_for_bold
 
@@ -164,7 +174,7 @@ def main(subject, session, bids_folder, sourcedata=None, overwrite=True, physiol
             with open(fn + '.json', 'w') as fp:
                 json.dump(sidecar_json, fp)
 
-            topup.to_filename(fn + '.nii')
+            topup.to_filename(fn + '.nii.gz')
 
 
         # Use before-last run as topup for final run
@@ -178,7 +188,7 @@ def main(subject, session, bids_folder, sourcedata=None, overwrite=True, physiol
         else:
             sidecar_json['PhaseEncodingDirection'] = 'i'
 
-        intended_for_bold = op.join(f'ses-{session}', 'func', f'sub-{subject}_ses-{session}_{tmp.loc[intended_for_run].label}_bold.nii')
+        intended_for_bold = op.join(f'ses-{session}', 'func', f'sub-{subject}_ses-{session}_{tmp.loc[intended_for_run].label}_bold.nii.gz')
 
         sidecar_json['IntendedFor'] = intended_for_bold
 
@@ -187,7 +197,7 @@ def main(subject, session, bids_folder, sourcedata=None, overwrite=True, physiol
         with open(fn + '.json', 'w') as fp:
             json.dump(sidecar_json, fp)
 
-        topup.to_filename(fn + '.nii')
+        topup.to_filename(fn + '.nii.gz')
 
 
         tmp = df.drop('bold')
@@ -200,30 +210,31 @@ def main(subject, session, bids_folder, sourcedata=None, overwrite=True, physiol
                 print('T2star', im.shape)
                 if (im.shape[-1] == 1) or (len(im.shape) == 3):
                     shutil.copy(row.fn,
-                                op.join(bids_folder, 'anat', f'sub-{subject}_ses-{session}_{row.name}.nii'))
+                                op.join(bids_folder, 'anat', f'sub-{subject}_ses-{session}_{row.name}.nii.gz'))
                 elif im.shape[-1] == 6:
                     for i, (part, echo) in enumerate(product(['mag', 'phase'], [1,2,3])):
                         im_ = image.index_img(im, i)
-                        im_.to_filename(op.join(bids_folder, 'anat', f'sub-{subject}_ses-{session}_echo-{echo}_part-{part}_T2starw.nii'))
+                        im_.to_filename(op.join(bids_folder, 'anat', f'sub-{subject}_ses-{session}_echo-{echo}_part-{part}_T2starw.nii.gz'))
 
                     mean_t2starw = image.mean_img(image.index_img(im, [0,1,2]))
-                    mean_t2starw.to_filename(op.join(bids_folder, 'anat', f'sub-{subject}_ses-{session}_acq-average_T2starw.nii'))
+                    mean_t2starw.to_filename(op.join(bids_folder, 'anat', f'sub-{subject}_ses-{session}_acq-average_T2starw.nii.gz'))
 
                 elif (im.shape[-1] == 3):
                     for i, echo in enumerate(range(1, 4)):
                         im_ = image.index_img(im, i)
-                        im_.to_filename(op.join(bids_folder, 'anat', f'sub-{subject}_ses-{session}_echo-{echo}_part-{part}_T2starw.nii'))
+                        im_.to_filename(op.join(bids_folder, 'anat', f'sub-{subject}_ses-{session}_echo-{echo}_part-magnitude_T2starw.nii.gz'))
 
-                    mean_t2starw.to_filename(op.join(bids_folder, 'anat', f'sub-{subject}_ses-{session}_acq-average_T2starw.nii'))
+                    mean_t2starw = image.mean_img(im)
+                    mean_t2starw.to_filename(op.join(bids_folder, 'anat', f'sub-{subject}_ses-{session}_acq-average_T2starw.nii.gz'))
 
             # Everything else anatomical
             else:
                 if row.run is None:
                     shutil.copy(row.fn,
-                                op.join(bids_folder, 'anat', f'sub-{subject}_ses-{session}_{row.name}.nii'))
+                                op.join(bids_folder, 'anat', f'sub-{subject}_ses-{session}_{row.name}.nii.gz'))
                 else:
                     shutil.copy(row.fn,
-                                op.join(bids_folder, 'anat', f'sub-{subject}_ses-{session}_run-{row.run}_{row.name}.nii'))
+                                op.join(bids_folder, 'anat', f'sub-{subject}_ses-{session}_run-{row.run}_{row.name}.nii.gz'))
 
 
 
@@ -239,9 +250,11 @@ def main(subject, session, bids_folder, sourcedata=None, overwrite=True, physiol
         f'.*/sn_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_(?P<task>.+)_run(?P<run>[0-9]+)(_spli|_)_scanphyslog.+')
 
     if session == '3t2':
+        # sn_09122020_122009_3_1_ses3t2_run2_sp_scanphyslog20201209121910.log
+        # sn_07102020_103234_2_1_ses3t2_tasktas_scanphyslog20201007103135.log
         log_reg = re.compile(
-        f'.*\/sn_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_(wip)?ses3t2_(run(?P<run>[0-9]+)_sp|tasktas)__?scanphyslog[0-9]+.log')
-
+            f'.*\/sn_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_(wip)?ses3t2_(run-?(?P<run>[0-9]+)|run|_sp|tasktas)_(_|sp_)?scanphyslog[0-9]+.log')
+        # f'.*\/sn_[0-9]+_[0-9]+_(?P<acq>[0-9]+)_[0-9]+_(wip)?ses3t2_(run-?(?P<run>[0-9]+)_sp|tasktas)__?scanphyslog[0-9]+.log')
         df = []
         for fn in log_files:
             print(fn, log_reg.match(fn))
@@ -254,7 +267,7 @@ def main(subject, session, bids_folder, sourcedata=None, overwrite=True, physiol
         df['acq'] = df['acq'].astype(int)
         df = df.sort_values('acq')
         print(df)
-        if 'run' not in df.columns:
+        if ('run' not in df.columns) | (df['run'].isnull().all()):
             df['run'] = range(1, len(df)+1)
         df = df.set_index(['run'])
         print(df)
