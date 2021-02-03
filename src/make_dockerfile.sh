@@ -13,9 +13,10 @@ neurodocker generate docker --base ubuntu --pkg-manager apt --freesurfer version
 		nipype
                   pybids
 		  nistats
-		  https://github.com/Gilles86/niworkflows/archive/risk_project.zip 
+		  https://github.com/Gilles86/niworkflows/archive/risk_project.zip
 		  tensorflow_probability
-		  https://github.com/Gilles86/hedfpy/archive/refactor_gilles.zip" \
+		  https://github.com/Gilles86/hedfpy/archive/refactor_gilles.zip
+		  svgutils==0.3.1" \
       create_env="neuro" \
       activate=true \
    --run 'wget https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh -O - | zsh || true' \
@@ -24,4 +25,4 @@ neurodocker generate docker --base ubuntu --pkg-manager apt --freesurfer version
    --workdir /src \
    --copy braincoder /braincoder \
    --run-bash "source activate neuro && cd /braincoder && python setup.py develop --no-deps" \
-   --copy ./nipype.cfg /root/.nipype/nipype.cfg
+   --copy ./nipype.cfg /root/.nipype/nipype.cfg \

@@ -7,6 +7,6 @@ services:
             - SUBJECTS_DIR=/data/derivatives/freesurfer
     volumes:
       - .:/src
-      - /Volumes/Samsung_T5/ds-risk:/data
+      - $DATA_DIR/ds-risk:/data
       - $FREESURFER_HOME/license.txt:/opt/freesurfer-6.0.1/license.txt
       - /tmp:/tmp
