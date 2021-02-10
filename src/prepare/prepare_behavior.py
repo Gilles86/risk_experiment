@@ -17,7 +17,7 @@ def main(subject, session, bids_folder, max_rt=1.0):
 
         for run in range(1, 5):
 
-            nii = op.join(target_dir, f'sub-{subject}_ses-{session}_task-mapper_run-{run}_bold.nii')
+            nii = op.join(target_dir, f'sub-{subject}_ses-{session}_task-mapper_run-{run}_bold.nii.gz')
             n_volumes = image.load_img(nii).shape[-1]
 
 
