@@ -7,7 +7,7 @@
 # 
 #     https://github.com/ReproNim/neurodocker
 # 
-# Timestamp: 2021/01/22 14:48:24 UTC
+# Timestamp: 2021/02/19 15:26:48 UTC
 
 FROM ubuntu
 
@@ -190,7 +190,6 @@ RUN export PATH="/opt/miniconda-latest/bin:$PATH" \
            "scikit-learn" \
            "seaborn" \
            "ipython" \
-           "tensorflow" \
            "pytables" \
     && sync && conda clean -y --all && sync \
     && bash -c "source activate neuro \
@@ -202,6 +201,8 @@ RUN export PATH="/opt/miniconda-latest/bin:$PATH" \
              "https://github.com/Gilles86/niworkflows/archive/risk_project.zip" \
              "tensorflow_probability" \
              "https://github.com/Gilles86/hedfpy/archive/refactor_gilles.zip" \
+             "tensorflow==2.4" \
+             "pytest" \
              "svgutils==0.3.1"" \
     && rm -rf ~/.cache/pip/* \
     && sync \
@@ -271,7 +272,6 @@ RUN echo '{ \
     \n          "scikit-learn", \
     \n          "seaborn", \
     \n          "ipython", \
-    \n          "tensorflow", \
     \n          "pytables" \
     \n        ], \
     \n        "pip_install": [ \
@@ -282,6 +282,8 @@ RUN echo '{ \
     \n          "https://github.com/Gilles86/niworkflows/archive/risk_project.zip", \
     \n          "tensorflow_probability", \
     \n          "https://github.com/Gilles86/hedfpy/archive/refactor_gilles.zip", \
+    \n          "tensorflow==2.4", \
+    \n          "pytest", \
     \n          "svgutils==0.3.1" \
     \n        ], \
     \n        "create_env": "neuro", \

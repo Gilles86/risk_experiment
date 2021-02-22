@@ -53,8 +53,8 @@ def main(subject, session, sourcedata):
     # avg_data = avg_data.loc[:, avg_data.var() != 0].astype(np.float32) 
 
     # SET UP GRID
-    mus = np.linspace(0, np.log(80), 10, dtype=np.float32)
-    sds = np.linspace(0, 2, 10, dtype=np.float32)
+    mus = np.linspace(0, np.log(80), 20, dtype=np.float32)
+    sds = np.linspace(0, 2, 20, dtype=np.float32)
     amplitudes = np.linspace(0, 1, 10, dtype=np.float32)
     baselines = np.array([0], dtype=np.float32)
 

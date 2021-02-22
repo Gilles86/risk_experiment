@@ -15,7 +15,13 @@ from niworkflows.interfaces.registration import ANTSApplyTransformsRPT as ApplyT
 import logging
 
 
-def main(subject, session, bids_folder, modalities, registration_scheme='linear_precise'):
+def main(subject, session, bids_folder, modalities=None, registration_scheme='linear_precise'):
+
+    if modalities is None:
+        modalities = ['T2starw', 'MTw', 'TSE']
+
+    curdir = op.dirname(op.realpath(__file__))
+    registration_scheme = op.join(curdir, f'{registration_scheme}.json')
 
     anat_dir = op.join(bids_folder, f'sub-{subject}', f'ses-{session}', 'anat')
 
@@ -47,7 +53,7 @@ def main(subject, session, bids_folder, modalities, registration_scheme='linear_
                              target_mask=target_mask, init_reg=init_reg, t1w_to_mni_transform=t1w_to_mni_transform,
                              t1w_in_mni=t1w_in_mni,
                              mni_brain_mask=mni_brain_mask,
-                             n4_nthreads=6):
+                             ants_numthreads=8):
 
         workflow = pe.Workflow(base_dir='/tmp/workflow_folders',
                                name=name)
@@ -73,16 +79,16 @@ def main(subject, session, bids_folder, modalities, registration_scheme='linear_
             N4BiasFieldCorrection(
                 dimension=3,
                 save_bias=True,
-                num_threads=n4_nthreads,
+                num_threads=ants_numthreads,
                 rescale_intensities=True,
                 copy_header=True,
             ),
-            n_procs=n4_nthreads,
+            n_procs=ants_numthreads,
             name="inu_n4",)
 
         workflow.connect(convert_dtype, 'out_file', inu_n4, 'input_image')
 
-        register = pe.Node(Registration(from_file=f'{registration_scheme}.json', num_threads=n4_nthreads, verbose=True),
+        register = pe.Node(Registration(from_file=registration_scheme, num_threads=ants_numthreads, verbose=True),
                            name='registration')
 
         workflow.connect(inu_n4, 'output_image', register, 'moving_image')
@@ -125,7 +131,8 @@ def main(subject, session, bids_folder, modalities, registration_scheme='linear_
                                                          compress=True,
                                                          base_directory=op.join(bids_folder, 'derivatives')),
                                      name='datasink_image_t1w')
-        workflow.connect(input_node, 'input_file', datasink_image_t1w, 'source_file')
+        workflow.connect(input_node, 'input_file',
+                         datasink_image_t1w, 'source_file')
         datasink_image_t1w.inputs.space = 'T1w'
         datasink_image_t1w.inputs.desc = 'registered'
 
@@ -134,12 +141,14 @@ def main(subject, session, bids_folder, modalities, registration_scheme='linear_
             space='T1w',
             base_directory=op.join(bids_folder, 'derivatives'),
             datatype='figures'),
-                                  name='datasink_report_t1w')
+            name='datasink_report_t1w')
 
-        workflow.connect(input_node, 'input_file', datasink_report_t1w, 'source_file')
+        workflow.connect(input_node, 'input_file',
+                         datasink_report_t1w, 'source_file')
         datasink_report_t1w.inputs.space = 'T1w'
 
-        transformer = pe.Node(ApplyTransforms(interpolation='LanczosWindowedSinc', generate_report=True),
+        transformer = pe.Node(ApplyTransforms(interpolation='LanczosWindowedSinc', generate_report=True, num_threads=ants_numthreads),
+                              n_procs=ants_numthreads,
                               name='transformer')
         workflow.connect(transformer, 'output_image',
                          datasink_image_t1w, 'in_file')
@@ -158,7 +167,8 @@ def main(subject, session, bids_folder, modalities, registration_scheme='linear_
         workflow.connect(input_node, 't1w_to_mni_transform',
                          concat_transforms, 'in1')
 
-        transformer_to_mni1 = pe.Node(ApplyTransforms(interpolation='LanczosWindowedSinc', generate_report=False),
+        transformer_to_mni1 = pe.Node(ApplyTransforms(interpolation='LanczosWindowedSinc', generate_report=False, num_threads=ants_numthreads),
+                                      n_procs=ants_numthreads,
                                       name='transformer_to_mni1')
         workflow.connect(inu_n4, 'output_image',
                          transformer_to_mni1, 'input_image')
@@ -207,7 +217,8 @@ def main(subject, session, bids_folder, modalities, registration_scheme='linear_
         workflow.connect(input_node, 't1w_in_mni',
                          gen_grid_node_mni, 'fixed_image')
 
-        transformer_to_mni2 = pe.Node(ApplyTransforms(interpolation='LanczosWindowedSinc', generate_report=False),
+        transformer_to_mni2 = pe.Node(ApplyTransforms(interpolation='LanczosWindowedSinc', generate_report=False, num_threads=ants_numthreads),
+                                      n_procs=ants_numthreads,
                                       name='transformer_to_mni2')
         workflow.connect(inu_n4, 'output_image',
                          transformer_to_mni2, 'input_image')
@@ -264,4 +275,5 @@ if __name__ == '__main__':
         '--modalities', default=['T2starw', 'MTw', 'TSE'], nargs="+")
     args = parser.parse_args()
 
-    main(args.subject, args.session, args.bids_folder, args.modalities, args.registration_scheme)
+    main(args.subject, args.session, args.bids_folder,
+         args.modalities, args.registration_scheme)

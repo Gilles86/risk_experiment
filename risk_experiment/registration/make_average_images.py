@@ -8,10 +8,15 @@ from tqdm import tqdm
 
 def main(modality, field_strength, bids_folder):
 
-    source = op.join(bids_folder, 'derivatives', 'registration')
 
-    template = op.join(source, 'sub-*', f'ses-{field_strength}*',
-            'anat', f'sub-*_ses-*_space-MNI152NLin2009cAsym_desc-registered_{modality}.nii.gz')
+    if modality == 'T1w':
+        source = op.join(bids_folder, 'derivatives', 'fmriprep')
+        template = op.join(source, 'sub-*',
+                'anat', f'sub-*_space-MNI152NLin2009cAsym_desc-preproc_{modality}.nii.gz')
+    else:
+        source = op.join(bids_folder, 'derivatives', 'registration')
+        template = op.join(source, 'sub-*', f'ses-{field_strength}*',
+                'anat', f'sub-*_ses-*_space-MNI152NLin2009cAsym_desc-registered_{modality}.nii.gz')
 
     ims = [image.load_img(im) for im in glob.glob(template)]
 
@@ -26,16 +31,21 @@ def main(modality, field_strength, bids_folder):
     ims = deque(ims)
     ims.rotate(-largest_fov)
 
+    ims = [image.math_img('im / np.mean(im[im!=0])', im=im) for im in ims]
+
     mean_img = ims[0]
+    sum_img = image.new_img_like(ims[0], np.zeros(ims[0].shape) )
 
     for ix in tqdm(range(1, len(ims))):
+        im = image.resample_to_img(ims[ix], mean_img)
         mean_img = image.math_img('mean_img + im',
                 mean_img=mean_img,
-                im=image.resample_to_img(ims[ix], mean_img))
+                im=im)
+        sum_img = image.math_img('sum_img + (im != 0)', sum_img=sum_img, im=im)
         ims[ix].uncache()
 
-    mean_img = image.math_img(f'mean_img / {len(ims)}',
-            mean_img=mean_img)
+    mean_img = image.math_img(f'np.nan_to_num(np.clip(mean_img / sum_img, 0, 10))',
+            mean_img=mean_img, sum_img=sum_img)
 
     target_fn = op.join(source, 'group')
 

@@ -10,3 +10,4 @@ services:
       - $DATA_DIR/ds-risk:/data
       - $FREESURFER_HOME/license.txt:/opt/freesurfer-6.0.1/license.txt
       - /tmp:/tmp
+      - ./braincoder:/braincoder
