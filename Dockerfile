@@ -7,7 +7,7 @@
 # 
 #     https://github.com/ReproNim/neurodocker
 # 
-# Timestamp: 2021/02/19 15:26:48 UTC
+# Timestamp: 2021/02/22 15:17:08 UTC
 
 FROM ubuntu
 
@@ -214,11 +214,17 @@ RUN conda init zsh
 
 RUN echo "conda activate neuro" >> ~/.zshrc && conda init
 
-WORKDIR /src
+WORKDIR /risk_experiment
 
-COPY ["braincoder", "/braincoder"]
+COPY ["risk_experiment/braincoder", "/braincoder"]
 
 RUN bash -c 'source activate neuro && cd /braincoder && python setup.py develop --no-deps'
+
+COPY ["risk_experiment", "/risk_experiment"]
+
+COPY ["setup.py", "/setup.py"]
+
+RUN bash -c 'source activate neuro && cd / && python setup.py develop --no-deps'
 
 COPY ["./nipype.cfg", "/root/.nipype/nipype.cfg"]
 
@@ -304,18 +310,36 @@ RUN echo '{ \
     \n    ], \
     \n    [ \
     \n      "workdir", \
-    \n      "/src" \
+    \n      "/risk_experiment" \
     \n    ], \
     \n    [ \
     \n      "copy", \
     \n      [ \
-    \n        "braincoder", \
+    \n        "risk_experiment/braincoder", \
     \n        "/braincoder" \
     \n      ] \
     \n    ], \
     \n    [ \
     \n      "run_bash", \
     \n      "source activate neuro && cd /braincoder && python setup.py develop --no-deps" \
+    \n    ], \
+    \n    [ \
+    \n      "copy", \
+    \n      [ \
+    \n        "risk_experiment", \
+    \n        "/risk_experiment" \
+    \n      ] \
+    \n    ], \
+    \n    [ \
+    \n      "copy", \
+    \n      [ \
+    \n        "setup.py", \
+    \n        "/setup.py" \
+    \n      ] \
+    \n    ], \
+    \n    [ \
+    \n      "run_bash", \
+    \n      "source activate neuro && cd / && python setup.py develop --no-deps" \
     \n    ], \
     \n    [ \
     \n      "copy", \

@@ -17,10 +17,13 @@ from braincoder.models import GaussianPRFWithHRF, GaussianPRF
 from braincoder.hrf import SPMHRFModel
 from braincoder.optimize import ParameterOptimizer
 
-def main(subject, session, sourcedata):
+def main(subject, session, sourcedata, smoothed=True):
 
     print('yo')
     target_dir = get_target_dir(subject, session, sourcedata, 'encoding_model')
+    if smoothed:
+        target_dir += '.smoothed'
+        print('SMOOTHED DATA')
 
     # Create confounds
     fmriprep_confounds = get_fmriprep_confounds(subject, session, sourcedata)
@@ -31,8 +34,7 @@ def main(subject, session, sourcedata):
         response_hrf), axis=1)
 
     # Get surface data
-    surf = get_surf_data(subject, session, sourcedata)
-
+    surf = get_surf_data(subject, session, sourcedata, smoothed=smoothed)
 
     # # clean surface data
     surf_cleaned = pd.DataFrame(None, columns=surf.columns)
@@ -86,6 +88,7 @@ if __name__ == '__main__':
     parser.add_argument('subject', default=None)
     parser.add_argument('session', default=None)
     parser.add_argument('--sourcedata', default='/data')
+    parser.add_argument('--smoothed', action='store_true')
     args = parser.parse_args()
 
     main(args.subject, args.session, sourcedata=args.sourcedata)

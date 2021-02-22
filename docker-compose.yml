@@ -6,7 +6,7 @@ services:
     environment:
             - SUBJECTS_DIR=/data/derivatives/freesurfer
     volumes:
-      - .:/src
+      - ./risk_experiment:/risk_experiment
       - $DATA_DIR/ds-risk:/data
       - $FREESURFER_HOME/license.txt:/opt/freesurfer-6.0.1/license.txt
       - /tmp:/tmp

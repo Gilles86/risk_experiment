@@ -24,7 +24,10 @@ neurodocker generate docker --base ubuntu --pkg-manager apt --freesurfer version
    --run 'wget https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh -O - | zsh || true' \
    --run 'conda init zsh' \
    --run 'echo "conda activate neuro" >> ~/.zshrc && conda init' \
-   --workdir /src \
+   --workdir /risk_experiment \
    --copy braincoder /braincoder \
    --run-bash "source activate neuro && cd /braincoder && python setup.py develop --no-deps" \
+   --copy risk_experiment /risk_experiment \
+   --copy setup.py /setup.py \
+   --run-bash "source activate neuro && cd / && python setup.py develop --no-deps" \
    --copy ./nipype.cfg /root/.nipype/nipype.cfg \

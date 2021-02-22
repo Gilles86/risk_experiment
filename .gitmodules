@@ -3,5 +3,5 @@
 	url = git@github.com:Gilles86/exptools2.git
 	branch = master
 [submodule "risk_experiment/braincoder"]
-	path = risk_experiment/braincoder
+	path = braincoder
 	url = git@github.com:Gilles86/braincoder.git

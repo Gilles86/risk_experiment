@@ -134,13 +134,38 @@ def get_mapper_response_hrf(subject, session, sourcedata):
     
     return response_hrf[['response']]
 
+def get_surf_file(subject, session, run, sourcedata,
+        hemi='lh', space='fsnative'):
 
-def get_surf_data(subject, session, sourcedata, space='fsnative'):
+    if session[-1] == '1':
+        task = 'mapper'
+    elif session[-1] == '2':
+        task = 'task'
+
+
+    if hemi == 'lh':
+        hemi = 'L'
+    elif hemi == 'rh':
+        hemi = 'R'
+
+    dir_ = op.join(sourcedata, 'derivatives', 'fmriprep', f'sub-{subject}',
+            f'ses-{session}', 'func')
+
+    fn = op.join(dir_, f'sub-{subject}_ses-{session}_task-{task}_run-{run}_space-{space}_hemi-{hemi}_bold.func.gii')
+
+    return fn
+
+
+def get_surf_data(subject, session, sourcedata, smoothed=False, space='fsnative'):
 
     runs  = get_runs(subject, session)
 
-    dir_ = op.join(sourcedata, 'derivatives', 'fmriprep', f'sub-{subject}',
-            f'ses-{session}', 'func',)
+    if smoothed:
+        dir_ = op.join(sourcedata, 'derivatives', 'smoothed', f'sub-{subject}',
+                f'ses-{session}', 'func',)
+    else:
+        dir_ = op.join(sourcedata, 'derivatives', 'fmriprep', f'sub-{subject}',
+                f'ses-{session}', 'func',)
 
     frametimes = get_frametimes(subject, session)
 
@@ -148,8 +173,12 @@ def get_surf_data(subject, session, sourcedata, space='fsnative'):
     for run in runs:
         d_ = []
         for hemi in ['L', 'R']:
-            d =  op.join(dir_,
-                    f'sub-{subject}_ses-{session}_task-mapper_run-{run}_space-{space}_hemi-{hemi}_bold.func.gii')
+            if smoothed:
+                d =  op.join(dir_,
+                        f'sub-{subject}_ses-{session}_task-mapper_run-{run}_space-{space}_hemi-{hemi}_desc-smoothed_bold.func.gii')
+            else:
+                d =  op.join(dir_,
+                        f'sub-{subject}_ses-{session}_task-mapper_run-{run}_space-{space}_hemi-{hemi}_bold.func.gii')
             d = surface.load_surf_data(d).T
             columns = pd.MultiIndex.from_product([[hemi], np.arange(d.shape[1])], names=['hemi', 'vertex'])
             index = pd.MultiIndex.from_product([[run], frametimes], names=['run', None])
