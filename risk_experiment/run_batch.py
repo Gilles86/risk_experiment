@@ -29,7 +29,7 @@ def main(session_list, script, bids_folder, **kwargs):
 
     print(sessions)
 
-    mod = import_module(script, 'main_package')
+    mod = import_module(f'risk_experiment.{script}')
 
     for ix, row in sessions.iterrows():
         print(row)
