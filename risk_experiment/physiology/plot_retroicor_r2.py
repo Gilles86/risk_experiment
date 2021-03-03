@@ -6,9 +6,9 @@ import os.path as op
 import os
 import matplotlib.pyplot as plt
 
-def main(subject, session, sourcedata='/data2/ds-risk'):
+def main(subject, session, bids_folder='/data2/ds-risk'):
 
-    derivatives = op.join(sourcedata, 'derivatives')
+    derivatives = op.join(bids_folder, 'derivatives')
 
     #Make columns
     columns = []
