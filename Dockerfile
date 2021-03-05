@@ -7,7 +7,7 @@
 # 
 #     https://github.com/ReproNim/neurodocker
 # 
-# Timestamp: 2021/02/22 15:17:08 UTC
+# Timestamp: 2021/03/05 15:02:36 UTC
 
 FROM ubuntu
 
@@ -216,7 +216,7 @@ RUN echo "conda activate neuro" >> ~/.zshrc && conda init
 
 WORKDIR /risk_experiment
 
-COPY ["risk_experiment/braincoder", "/braincoder"]
+COPY ["braincoder", "/braincoder"]
 
 RUN bash -c 'source activate neuro && cd /braincoder && python setup.py develop --no-deps'
 
@@ -315,7 +315,7 @@ RUN echo '{ \
     \n    [ \
     \n      "copy", \
     \n      [ \
-    \n        "risk_experiment/braincoder", \
+    \n        "braincoder", \
     \n        "/braincoder" \
     \n      ] \
     \n    ], \
