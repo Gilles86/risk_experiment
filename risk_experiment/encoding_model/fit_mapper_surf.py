@@ -4,37 +4,43 @@ import argparse
 import os
 import os.path as op
 import sys
-currentdir = os.path.dirname(os.path.realpath(__file__))
-parentdir = os.path.dirname(currentdir)
-sys.path.append(parentdir)
-from utils import get_behavior, get_fmriprep_confounds, get_retroicor_confounds, get_tr, get_mapper_response_hrf
-from utils import get_surf_data, get_mapper_paradigm, write_gifti, get_target_dir
+from risk_experiment.utils import get_behavior, get_fmriprep_confounds, get_retroicor_confounds, get_tr, get_mapper_response_hrf, get_runs
+from risk_experiment.utils import get_surf_data, get_mapper_paradigm, write_gifti, get_target_dir
+from risk_experiment.utils.surface import transform_data
 import pandas as pd
 
 from nilearn import signal
+from nipype.interfaces.freesurfer.utils import SurfaceTransform
 
 from braincoder.models import GaussianPRFWithHRF, GaussianPRF
 from braincoder.hrf import SPMHRFModel
-from braincoder.optimize import ParameterOptimizer
+from braincoder.optimize import ParameterFitter
 
-def main(subject, session, sourcedata, smoothed=True):
+def main(subject, session, bids_folder, smoothed=True, concatenate=False):
 
     print('yo')
-    target_dir = get_target_dir(subject, session, sourcedata, 'encoding_model')
+    target_dir = 'encoding_model'
+
     if smoothed:
         target_dir += '.smoothed'
         print('SMOOTHED DATA')
 
+    if concatenate:
+        print('CONCATENATING')
+        target_dir += '.concatenated'
+
+    target_dir = get_target_dir(subject, session, bids_folder, target_dir)
+
     # Create confounds
-    fmriprep_confounds = get_fmriprep_confounds(subject, session, sourcedata)
-    retroicor_confounds = get_retroicor_confounds(subject, session, sourcedata)
-    response_hrf = get_mapper_response_hrf(subject, session, sourcedata)
+    fmriprep_confounds = get_fmriprep_confounds(subject, session, bids_folder)
+    retroicor_confounds = get_retroicor_confounds(subject, session, bids_folder)
+    response_hrf = get_mapper_response_hrf(subject, session, bids_folder)
 
     confounds = pd.concat((fmriprep_confounds, retroicor_confounds,
         response_hrf), axis=1)
 
     # Get surface data
-    surf = get_surf_data(subject, session, sourcedata, smoothed=smoothed)
+    surf = get_surf_data(subject, session, bids_folder, smoothed=smoothed)
 
     # # clean surface data
     surf_cleaned = pd.DataFrame(None, columns=surf.columns)
@@ -44,51 +50,62 @@ def main(subject, session, sourcedata, smoothed=True):
     
     surf_cleaned.index = surf.index
 
-    avg_data = surf_cleaned.groupby(level=1, axis=0).mean()
+    if concatenate:
+        runs = get_runs(subject, session)
+        paradigm = pd.concat([get_mapper_paradigm(subject, session, bids_folder, run) for run in runs],
+                keys=runs,
+                names=['run'])
+        data= surf_cleaned
 
-    paradigm = get_mapper_paradigm(subject, session, sourcedata)
-
+    else:
+        paradigm = get_mapper_paradigm(subject, session, bids_folder)
+        avg_data = surf_cleaned.groupby(level=1, axis=0).mean()
+        data = avg_data
 
     hrf_model = SPMHRFModel(tr=get_tr(subject, session), time_length=20)
     model = GaussianPRFWithHRF(hrf_model=hrf_model)
 
-    # avg_data = avg_data.loc[:, avg_data.var() != 0].astype(np.float32) 
-
     # SET UP GRID
     mus = np.linspace(0, np.log(80), 20, dtype=np.float32)
-    sds = np.linspace(0, 2, 20, dtype=np.float32)
-    amplitudes = np.linspace(0, 1, 10, dtype=np.float32)
+    sds = np.linspace(.01, 2, 20, dtype=np.float32)
+    amplitudes = np.linspace(0, 10, 10, dtype=np.float32)
     baselines = np.array([0], dtype=np.float32)
 
-    optimizer = ParameterOptimizer(model, avg_data, paradigm)
+    optimizer = ParameterFitter(model, data, paradigm)
+
     grid_parameters = optimizer.fit_grid(mus, sds, amplitudes, baselines)
 
     r2 = optimizer.get_r2(grid_parameters)
     target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-r2.grid_space-fsnative') + '_hemi-{hemi}.func.gii'
 
-    write_gifti(subject, session, sourcedata, 'fsnative', r2, target_fn)
+    write_gifti(subject, session, bids_folder, 'fsnative', r2, target_fn)
+    transform_data(target_fn, f'sub-{subject}', bids_folder, target_subject='fsaverage')
 
     for par, values in grid_parameters.T.iterrows():
         target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-{par}.grid_space-fsnative') + '_hemi-{hemi}.func.gii'
-        write_gifti(subject, session, sourcedata, 'fsnative', values, target_fn)
+        write_gifti(subject, session, bids_folder, 'fsnative', values, target_fn)
+        transform_data(target_fn, f'sub-{subject}', bids_folder, target_subject='fsaverage')
 
-    optimizer.fit(init_pars=grid_parameters, learning_rate=0.05, store_intermediate_parameters=False)
+    optimizer.fit(init_pars=grid_parameters, learning_rate=0.01, store_intermediate_parameters=False)
     print(optimizer.r2)
 
     target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-r2.optim_space-fsnative') + '_hemi-{hemi}.func.gii'
-    write_gifti(subject, session, sourcedata, 'fsnative', optimizer.r2, target_fn)
+    write_gifti(subject, session, bids_folder, 'fsnative', optimizer.r2, target_fn)
+    transform_data(target_fn, f'sub-{subject}', bids_folder, target_subject='fsaverage')
 
     for par, values in optimizer.estimated_parameters.T.iterrows():
         print(values)
         target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-{par}.optim_space-fsnative') + '_hemi-{hemi}.func.gii'
-        write_gifti(subject, session, sourcedata, 'fsnative', values, target_fn)
+        write_gifti(subject, session, bids_folder, 'fsnative', values, target_fn)
+        transform_data(target_fn, f'sub-{subject}', bids_folder, target_subject='fsaverage')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('subject', default=None)
     parser.add_argument('session', default=None)
-    parser.add_argument('--sourcedata', default='/data')
+    parser.add_argument('--bids_folder', default='/data')
     parser.add_argument('--smoothed', action='store_true')
+    parser.add_argument('--concatenate', action='store_true')
     args = parser.parse_args()
 
-    main(args.subject, args.session, sourcedata=args.sourcedata)
+    main(args.subject, args.session, bids_folder=args.bids_folder, concatenate=args.concatenate)
