@@ -156,30 +156,38 @@ def main(subject, session, bids_folder, sourcedata=None, overwrite=True, physiol
             intended_for_run = runs[i]
             if (int(topup_run) % 2) == (int(intended_for_run) %2):
                 topup_run = str(int(topup_run) + 1)
+            if topup_run in tmp.index:
+                topup = image.load_img(tmp.loc[topup_run].fn)
+                topup = image.index_img(topup, range(10))
 
-            topup = image.load_img(tmp.loc[topup_run].fn)
-            topup = image.index_img(topup, range(10))
+                if int(topup_run) % 2 == 0:
+                    sidecar_json['PhaseEncodingDirection'] = 'i-'
+                else:
+                    sidecar_json['PhaseEncodingDirection'] = 'i'
 
-            if int(topup_run) % 2 == 0:
-                sidecar_json['PhaseEncodingDirection'] = 'i-'
-            else:
-                sidecar_json['PhaseEncodingDirection'] = 'i'
+                intended_for_bold = op.join('func', f'sub-{subject}_ses-{session}_{tmp.loc[intended_for_run].label}_bold.nii.gz')
 
-            intended_for_bold = op.join('func', f'sub-{subject}_ses-{session}_{tmp.loc[intended_for_run].label}_bold.nii.gz')
+                sidecar_json['IntendedFor'] = intended_for_bold
 
-            sidecar_json['IntendedFor'] = intended_for_bold
+                fn = op.join(bids_folder, 'fmap', f'sub-{subject}_ses-{session}_run-{intended_for_run}_epi')
 
-            fn = op.join(bids_folder, 'fmap', f'sub-{subject}_ses-{session}_run-{intended_for_run}_epi')
+                with open(fn + '.json', 'w') as fp:
+                    json.dump(sidecar_json, fp)
 
-            with open(fn + '.json', 'w') as fp:
-                json.dump(sidecar_json, fp)
-
-            topup.to_filename(fn + '.nii.gz')
+                topup.to_filename(fn + '.nii.gz')
 
 
         # Use before-last run as topup for final run
+        print(runs)
         intended_for_run = runs[-1]
-        topup_run = runs[-2]
+
+        topup_run_ix = -2
+        while (int(intended_for_run) % 2) == (int(runs[topup_run_ix]) % 2):
+            print(int(intended_for_run), int(runs[topup_run_ix]))
+            topup_run_ix -= 1
+
+        topup_run = runs[topup_run_ix]
+
         topup = image.load_img(tmp.loc[topup_run].fn)
         topup = image.index_img(topup, range(-10, 0))
 
