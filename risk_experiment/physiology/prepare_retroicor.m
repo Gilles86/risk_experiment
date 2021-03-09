@@ -16,7 +16,7 @@ function physio = prepare_retroicor(subject, session)
          task = 'mapper'
      elseif session(3) == '2'
          runs = 1:8;
-         task = 'task'         
+         task = 'task'   
      else
         ME = MException('Not the right number of sessions');
         throw(ME)
@@ -24,6 +24,8 @@ function physio = prepare_retroicor(subject, session)
      
     if strcmp(subject, '08') && strcmp(session, '7t1')
         runs = [1 2 4 5]
+    elseif strcmp(subject, '23') && strcmp(session, '7t1')
+        runs = [1 2 3 5]
     end
     disp(runs)
     

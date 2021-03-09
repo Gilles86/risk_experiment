@@ -34,9 +34,10 @@ def main(subject, bids_folder):
         if 'T2starw' in label:
             bounds = ((-65, 65), (-80, 80), (-20, 10))
         else:
-            bounds = ((-65, 65), (-65, 65), (-30, 100))
+            bounds = ((-65, 65), (-65, 65), (-30, 60))
 
-        for bnd, display_mode in zip(bounds[1:], ['x', 'y', 'z'][1:]):
+        for bnd, display_mode in zip(bounds[2:], ['x', 'y', 'z'][2:]):
+            print(bnd, display_mode)
             for coord in np.arange(bnd[0], bnd[1] + 5, 5):
                 fn = op.join(
                     output_folder, f'sub-{subject}_label-{label}_axis-{display_mode}_coord-{coord}.png')
@@ -50,8 +51,8 @@ def main(subject, bids_folder):
 
 
     # plot_img(t1w_3t, label='3T_t1w')
-    # plot_img(t1w_7t, label='7T_t1w')
-    plot_img(t2starw_7t, label='7T_T2starw')
+    plot_img(t1w_7t, label='7T_t1w')
+    # plot_img(t2starw_7t, label='7T_T2starw')
 
 
 if __name__ == '__main__':
