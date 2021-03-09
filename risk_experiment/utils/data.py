@@ -57,7 +57,7 @@ def get_fmriprep_confounds(subject, session, sourcedata,
     print(runs)
 
     if confounds_to_include is None:
-        fmriprep_confounds_include = ['global_signal', 'dvars', 'framewise_displacement', 'trans_x',
+        fmriprep_confounds_include = ['dvars', 'framewise_displacement', 'trans_x',
                                       'trans_y', 'trans_z', 'rot_x', 'rot_y', 'rot_z',
                                       'a_comp_cor_00', 'a_comp_cor_01', 'a_comp_cor_02', 'a_comp_cor_03',
                                       'cosine00', 'cosine01', 'cosine02',
