@@ -78,21 +78,42 @@ def get_fmriprep_confounds(subject, session, sourcedata,
     return confounds.groupby('run').transform(lambda x: x.fillna(x.mean()))
 
 
-def get_retroicor_confounds(subject, session, sourcedata):
+def get_retroicor_confounds(subject, session, sourcedata, n_cardiac=2, n_respiratory=2, n_interaction=0):
+    
     runs = get_runs(subject, session)
+
+    if (subject == '25') & (session == '7t1'):
+        print('No physiological data')
+        index = pd.MultiIndex.from_product([runs, get_frametimes(subject, session)], names=['run', None])
+        return pd.DataFrame(index=index, columns=[])
+
+    #Make columns
+    columns = []
+    for n, modality in zip([3, 4, 2], ['cardiac', 'respiratory', 'interaction']):    
+        for order in range(1, n+1):
+            columns += [(modality, order, 'sin'), (modality, order, 'cos')]
+
+    columns = pd.MultiIndex.from_tuples(columns, names=['modality', 'order', 'type'])
+
     retroicor_confounds = [
             op.join(sourcedata, f'derivatives/physiotoolbox/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-mapper_run-{run}_desc-retroicor_timeseries.tsv') for run in runs]
     retroicor_confounds = [pd.read_table(
-        cf, header=None, usecols=range(18)) for cf in retroicor_confounds]
+        cf, header=None, usecols=range(18), names=columns) for cf in retroicor_confounds]
 
     n_vols = len(retroicor_confounds[0])
     tr = get_tr(subject, session)
 
     retroicor_confounds = [rc.set_index(get_frametimes(subject, session)) for rc in retroicor_confounds]
 
-    confounds =  pd.concat(retroicor_confounds, 0, keys=runs, names=['run'])
-    confounds.columns = [f'retroicor_{i:02d}' for i in range(confounds.shape[1])]
-    return confounds.groupby('run').transform(lambda x: x.fillna(x.mean()))
+    confounds =  pd.concat(retroicor_confounds, 0, keys=runs, names=['run']).sort_index(axis=1)
+
+    confounds = pd.concat((confounds.loc[:, ('cardiac', slice(n_cardiac))],
+                           confounds.loc[:, ('respiratory', slice(n_respiratory))],
+                           confounds.loc[:, ('interaction', slice(n_interaction))]), axis=1)
+
+    print(confounds)
+
+    return confounds
 
 
 def get_confounds(subject, session,  sourcedata=None):
