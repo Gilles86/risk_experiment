@@ -9,7 +9,9 @@ def make_default_parser():
     return parser
 
 
-def run_main(main):
-    parser = make_default_parser()
+def run_main(main, parser=None):
+    if parser is None:
+        parser = make_default_parser()
+
     args = parser.parse_args()
     main(args.subject, args.session, args.bids_folder)
