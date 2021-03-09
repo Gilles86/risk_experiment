@@ -209,9 +209,11 @@ def get_surf_data(subject, session, sourcedata, smoothed=False, space='fsnative'
     return pd.concat(data, 0)
 
 
-def get_mapper_paradigm(subject, session, sourcedata):
+def get_mapper_paradigm(subject, session, sourcedata, run=None):
 
-    run = 1
+    if run is None:
+        run = 1
+
     events = pd.read_table(op.join(
             sourcedata, f'sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-mapper_run-{run}_events.tsv'))
 
