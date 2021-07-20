@@ -30,3 +30,4 @@ neurodocker generate docker --base ubuntu --pkg-manager apt --freesurfer version
    --copy setup.py /setup.py \
    --run-bash "source activate neuro && cd / && python setup.py develop --no-deps" \
    --copy ./nipype.cfg /root/.nipype/nipype.cfg \
+   --copy ./edf2asc /usr/local/bin \

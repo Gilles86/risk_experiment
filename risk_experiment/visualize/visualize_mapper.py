@@ -42,17 +42,20 @@ def main(subject, session, sourcedata, standard_space=False, thr=thr):
         par_l = op.join(dir_, f'sub-{subject}_ses-{session}_desc-{par}_space-{space}_hemi-L.func.gii')
         par_r = op.join(dir_, f'sub-{subject}_ses-{session}_desc-{par}_space-{space}_hemi-R.func.gii')
 
-        par_l = surface.load_surf_data(par_l).T
-        par_r = surface.load_surf_data(par_r).T
+        if op.exists(par_l):
+            par_l = surface.load_surf_data(par_l).T
+            par_r = surface.load_surf_data(par_r).T
 
-        par = np.concatenate((par_l, par_r))
+            par = np.concatenate((par_l, par_r))
 
-        if space == 'fsnative':
-            fs_subject = f'sub-{subject}'
+            if space == 'fsnative':
+                fs_subject = f'sub-{subject}'
+            else:
+                fs_subject = space
+
+            return cortex.Vertex(par, fs_subject, alpha=alpha)
         else:
-            fs_subject = space
-
-        return cortex.Vertex(par, fs_subject, alpha=alpha)
+            return None
 
 
     d = {}
@@ -79,14 +82,20 @@ def main(subject, session, sourcedata, standard_space=False, thr=thr):
                         values = _load_parameters(subject, session, par, 
                                 space, smoothed,
                                 concatenated=concatenated)
-                                # alpha=d[f'{session}.r2.optim.smoothed'])
+                        d[key] = values
+
+                        values = _load_parameters(subject, session, par, 
+                                space, smoothed,
+                                concatenated=concatenated)
                         values.data[d[f'{session}.r2.optim.smoothed'].data < thr] = np.nan
+                        key += '.thr'
                     else:
                         values = _load_parameters(subject, session, par,
                                 space, smoothed,
                                 concatenated=concatenated)
 
-                    d[key] = values
+                    if values:
+                        d[key] = values
 
     ds = cortex.Dataset(**d)
     cortex.webshow(ds)
