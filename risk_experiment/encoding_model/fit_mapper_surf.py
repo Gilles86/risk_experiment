@@ -62,31 +62,34 @@ def main(subject, session, bids_folder, smoothed=True, concatenate=False):
         avg_data = surf_cleaned.groupby(level=1, axis=0).mean()
         data = avg_data
 
+    print('DATA: ', data, data.shape)
+
     hrf_model = SPMHRFModel(tr=get_tr(subject, session), time_length=20)
     model = GaussianPRFWithHRF(hrf_model=hrf_model)
 
     # SET UP GRID
     mus = np.linspace(0, np.log(80), 20, dtype=np.float32)
-    sds = np.linspace(.01, 2, 20, dtype=np.float32)
-    amplitudes = np.linspace(0, 10, 10, dtype=np.float32)
-    baselines = np.array([0], dtype=np.float32)
+    sds = np.linspace(.01, 2, 15, dtype=np.float32)
+    amplitudes = np.linspace(1e-6, 10, 10, dtype=np.float32)
+    baselines = np.array([0.0], dtype=np.float32)
 
     optimizer = ParameterFitter(model, data, paradigm)
 
     grid_parameters = optimizer.fit_grid(mus, sds, amplitudes, baselines)
 
-    r2 = optimizer.get_r2(grid_parameters)
+    r2 = optimizer.get_rsq(grid_parameters)
+
     target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-r2.grid_space-fsnative') + '_hemi-{hemi}.func.gii'
 
-    write_gifti(subject, session, bids_folder, 'fsnative', r2, target_fn)
-    transform_data(target_fn, f'sub-{subject}', bids_folder, target_subject='fsaverage')
+    # write_gifti(subject, session, bids_folder, 'fsnative', r2, target_fn)
+    # transform_data(target_fn, f'sub-{subject}', bids_folder, target_subject='fsaverage')
 
-    for par, values in grid_parameters.T.iterrows():
-        target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-{par}.grid_space-fsnative') + '_hemi-{hemi}.func.gii'
-        write_gifti(subject, session, bids_folder, 'fsnative', values, target_fn)
-        transform_data(target_fn, f'sub-{subject}', bids_folder, target_subject='fsaverage')
+    # for par, values in grid_parameters.T.iterrows():
+        # target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-{par}.grid_space-fsnative') + '_hemi-{hemi}.func.gii'
+        # write_gifti(subject, session, bids_folder, 'fsnative', values, target_fn)
+        # transform_data(target_fn, f'sub-{subject}', bids_folder, target_subject='fsaverage')
 
-    optimizer.fit(init_pars=grid_parameters, learning_rate=0.01, store_intermediate_parameters=False)
+    optimizer.fit(init_pars=grid_parameters, learning_rate=.1, store_intermediate_parameters=False, max_n_iterations=5000)
     print(optimizer.r2)
 
     target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-r2.optim_space-fsnative') + '_hemi-{hemi}.func.gii'
