@@ -45,7 +45,7 @@ def main(subject, session, bids_folder, smoothed=True, concatenate=False):
     # # clean surface data
     surf_cleaned = pd.DataFrame(None, columns=surf.columns)
     for run, d in surf.groupby(['run']):
-        d_cleaned = signal.clean(d.values, confounds=confounds.loc[run].values, standardize='psc')
+        d_cleaned = signal.clean(d.values, confounds=confounds.loc[run].values, standardize='psc', detrend=False)
         surf_cleaned = surf_cleaned.append(pd.DataFrame(d_cleaned, columns=d.columns))
     
     surf_cleaned.index = surf.index
@@ -63,6 +63,9 @@ def main(subject, session, bids_folder, smoothed=True, concatenate=False):
         data = avg_data
 
     print('DATA: ', data, data.shape)
+
+    print('DATA MEAN', data.mean(0))
+    print('DATA std', data.std(0))
 
     hrf_model = SPMHRFModel(tr=get_tr(subject, session), time_length=20)
     model = GaussianPRFWithHRF(hrf_model=hrf_model)
