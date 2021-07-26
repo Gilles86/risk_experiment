@@ -84,13 +84,13 @@ def main(subject, session, bids_folder, smoothed=True, concatenate=False):
 
     target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-r2.grid_space-fsnative') + '_hemi-{hemi}.func.gii'
 
-    # write_gifti(subject, session, bids_folder, 'fsnative', r2, target_fn)
-    # transform_data(target_fn, f'sub-{subject}', bids_folder, target_subject='fsaverage')
+    write_gifti(subject, session, bids_folder, 'fsnative', r2, target_fn)
+    transform_data(target_fn, f'sub-{subject}', bids_folder, target_subject='fsaverage')
 
-    # for par, values in grid_parameters.T.iterrows():
-        # target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-{par}.grid_space-fsnative') + '_hemi-{hemi}.func.gii'
-        # write_gifti(subject, session, bids_folder, 'fsnative', values, target_fn)
-        # transform_data(target_fn, f'sub-{subject}', bids_folder, target_subject='fsaverage')
+    for par, values in grid_parameters.T.iterrows():
+        target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-{par}.grid_space-fsnative') + '_hemi-{hemi}.func.gii'
+        write_gifti(subject, session, bids_folder, 'fsnative', values, target_fn)
+        transform_data(target_fn, f'sub-{subject}', bids_folder, target_subject='fsaverage')
 
     optimizer.fit(init_pars=grid_parameters, learning_rate=.1, store_intermediate_parameters=False, max_n_iterations=5000)
     print(optimizer.r2)
