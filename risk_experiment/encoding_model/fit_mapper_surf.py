@@ -74,7 +74,7 @@ def main(subject, session, bids_folder, smoothed=True, concatenate=False):
     mus = np.linspace(0, np.log(80), 20, dtype=np.float32)
     sds = np.linspace(.01, 2, 15, dtype=np.float32)
     amplitudes = np.linspace(1e-6, 10, 10, dtype=np.float32)
-    baselines = np.array([0.0], dtype=np.float32)
+    baselines = np.linspace(-2., 0., 4, endpoint=True, dtype=np.float32)
 
     optimizer = ParameterFitter(model, data, paradigm)
 
