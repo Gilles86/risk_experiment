@@ -1,6 +1,6 @@
 import os.path as op
 from nilearn.glm.first_level import make_first_level_design_matrix
-from nilearn import surface
+from nilearn import surface, image
 import nibabel as nb
 import pandas as pd
 import numpy as np
@@ -16,6 +16,15 @@ sys.path.append(parentdir)
 def get_sourcedata():
     return '/data/ds-risk'
 
+
+def get_all_subjects():
+    return ['%02d' % i for i in range(2, 33)]
+
+
+def get_all_sessions():
+    return ['3t1', '3t2', '7t1', '7t2']
+
+
 def get_runs(subject, session):
 
     if isinstance(subject, int):
@@ -28,6 +37,7 @@ def get_runs(subject, session):
         return range(1, 5)
     else:
         return range(1, 9)
+
 
 def get_behavior(subject, session, sourcedata):
 
@@ -66,49 +76,54 @@ def get_fmriprep_confounds(subject, session, sourcedata,
     else:
         fmriprep_confounds_include = confounds_to_include
 
-
     fmriprep_confounds = [
-            op.join(sourcedata, f'derivatives/fmriprep/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-mapper_run-{run}_desc-confounds_timeseries.tsv') for run in runs]
+        op.join(sourcedata, f'derivatives/fmriprep/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-mapper_run-{run}_desc-confounds_timeseries.tsv') for run in runs]
     fmriprep_confounds = [pd.read_table(
         cf)[fmriprep_confounds_include] for cf in fmriprep_confounds]
 
-    fmriprep_confounds = [rc.set_index(get_frametimes(subject, session)) for rc in fmriprep_confounds]
+    fmriprep_confounds = [rc.set_index(get_frametimes(
+        subject, session)) for rc in fmriprep_confounds]
 
-    confounds =  pd.concat(fmriprep_confounds, 0, keys=runs, names=['run'])
+    confounds = pd.concat(fmriprep_confounds, 0, keys=runs, names=['run'])
     return confounds.groupby('run').transform(lambda x: x.fillna(x.mean()))
 
 
 def get_retroicor_confounds(subject, session, sourcedata, n_cardiac=2, n_respiratory=2, n_interaction=0):
-    
+
     runs = get_runs(subject, session)
 
     if (subject == '25') & (session == '7t1'):
         print('No physiological data')
-        index = pd.MultiIndex.from_product([runs, get_frametimes(subject, session)], names=['run', None])
+        index = pd.MultiIndex.from_product(
+            [runs, get_frametimes(subject, session)], names=['run', None])
         return pd.DataFrame(index=index, columns=[])
 
-    #Make columns
+    # Make columns
     columns = []
-    for n, modality in zip([3, 4, 2], ['cardiac', 'respiratory', 'interaction']):    
+    for n, modality in zip([3, 4, 2], ['cardiac', 'respiratory', 'interaction']):
         for order in range(1, n+1):
             columns += [(modality, order, 'sin'), (modality, order, 'cos')]
 
-    columns = pd.MultiIndex.from_tuples(columns, names=['modality', 'order', 'type'])
+    columns = pd.MultiIndex.from_tuples(
+        columns, names=['modality', 'order', 'type'])
 
     retroicor_confounds = [
-            op.join(sourcedata, f'derivatives/physiotoolbox/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-mapper_run-{run}_desc-retroicor_timeseries.tsv') for run in runs]
+        op.join(sourcedata, f'derivatives/physiotoolbox/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-mapper_run-{run}_desc-retroicor_timeseries.tsv') for run in runs]
     retroicor_confounds = [pd.read_table(
         cf, header=None, usecols=range(18), names=columns) for cf in retroicor_confounds]
 
     n_vols = len(retroicor_confounds[0])
     tr = get_tr(subject, session)
 
-    retroicor_confounds = [rc.set_index(get_frametimes(subject, session)) for rc in retroicor_confounds]
+    retroicor_confounds = [rc.set_index(get_frametimes(
+        subject, session)) for rc in retroicor_confounds]
 
-    confounds =  pd.concat(retroicor_confounds, 0, keys=runs, names=['run']).sort_index(axis=1)
+    confounds = pd.concat(retroicor_confounds, 0, keys=runs,
+                          names=['run']).sort_index(axis=1)
 
     confounds = pd.concat((confounds.loc[:, ('cardiac', slice(n_cardiac))],
-                           confounds.loc[:, ('respiratory', slice(n_respiratory))],
+                           confounds.loc[:, ('respiratory',
+                                             slice(n_respiratory))],
                            confounds.loc[:, ('interaction', slice(n_interaction))]), axis=1)
 
     print(confounds)
@@ -124,6 +139,7 @@ def get_confounds(subject, session,  sourcedata=None):
 
 def get_tr(subject, sesion):
     return 2.3
+
 
 def get_frametimes(subject, session):
     if session[-1] == '1':
@@ -150,19 +166,19 @@ def get_mapper_response_hrf(subject, session, sourcedata):
     frametimes = np.linspace(0, (125-1)*tr, 125)
 
     response_hrf = responses.groupby('run').apply(lambda d: make_first_level_design_matrix(frametimes,
-                                                                                          d, drift_model=None,
-                                                                                          drift_order=0))
-    
+                                                                                           d, drift_model=None,
+                                                                                           drift_order=0))
+
     return response_hrf[['response']]
 
+
 def get_surf_file(subject, session, run, sourcedata,
-        hemi='lh', space='fsnative'):
+                  hemi='lh', space='fsnative'):
 
     if session[-1] == '1':
         task = 'mapper'
     elif session[-1] == '2':
         task = 'task'
-
 
     if hemi == 'lh':
         hemi = 'L'
@@ -170,23 +186,24 @@ def get_surf_file(subject, session, run, sourcedata,
         hemi = 'R'
 
     dir_ = op.join(sourcedata, 'derivatives', 'fmriprep', f'sub-{subject}',
-            f'ses-{session}', 'func')
+                   f'ses-{session}', 'func')
 
-    fn = op.join(dir_, f'sub-{subject}_ses-{session}_task-{task}_run-{run}_space-{space}_hemi-{hemi}_bold.func.gii')
+    fn = op.join(
+        dir_, f'sub-{subject}_ses-{session}_task-{task}_run-{run}_space-{space}_hemi-{hemi}_bold.func.gii')
 
     return fn
 
 
 def get_surf_data(subject, session, sourcedata, smoothed=False, space='fsnative'):
 
-    runs  = get_runs(subject, session)
+    runs = get_runs(subject, session)
 
     if smoothed:
         dir_ = op.join(sourcedata, 'derivatives', 'smoothed', f'sub-{subject}',
-                f'ses-{session}', 'func',)
+                       f'ses-{session}', 'func',)
     else:
         dir_ = op.join(sourcedata, 'derivatives', 'fmriprep', f'sub-{subject}',
-                f'ses-{session}', 'func',)
+                       f'ses-{session}', 'func',)
 
     frametimes = get_frametimes(subject, session)
 
@@ -195,14 +212,16 @@ def get_surf_data(subject, session, sourcedata, smoothed=False, space='fsnative'
         d_ = []
         for hemi in ['L', 'R']:
             if smoothed:
-                d =  op.join(dir_,
-                        f'sub-{subject}_ses-{session}_task-mapper_run-{run}_space-{space}_hemi-{hemi}_desc-smoothed_bold.func.gii')
+                d = op.join(dir_,
+                            f'sub-{subject}_ses-{session}_task-mapper_run-{run}_space-{space}_hemi-{hemi}_desc-smoothed_bold.func.gii')
             else:
-                d =  op.join(dir_,
-                        f'sub-{subject}_ses-{session}_task-mapper_run-{run}_space-{space}_hemi-{hemi}_bold.func.gii')
+                d = op.join(dir_,
+                            f'sub-{subject}_ses-{session}_task-mapper_run-{run}_space-{space}_hemi-{hemi}_bold.func.gii')
             d = surface.load_surf_data(d).T
-            columns = pd.MultiIndex.from_product([[hemi], np.arange(d.shape[1])], names=['hemi', 'vertex'])
-            index = pd.MultiIndex.from_product([[run], frametimes], names=['run', None])
+            columns = pd.MultiIndex.from_product(
+                [[hemi], np.arange(d.shape[1])], names=['hemi', 'vertex'])
+            index = pd.MultiIndex.from_product(
+                [[run], frametimes], names=['run', None])
             d_.append(pd.DataFrame(d, columns=columns, index=index))
 
         data.append(pd.concat(d_, 1))
@@ -215,33 +234,37 @@ def get_mapper_paradigm(subject, session, sourcedata, run=None):
         run = 1
 
     events = pd.read_table(op.join(
-            sourcedata, f'sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-mapper_run-{run}_events.tsv'))
+        sourcedata, f'sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-mapper_run-{run}_events.tsv'))
 
     events = events[events['trial_type'] == 'stimulation'].sort_values('onset')
     events['onset_halfway'] = events['onset']+events['duration'] / 2.
     events.index = pd.to_timedelta(events.onset_halfway, unit='s')
-    tmp = pd.DataFrame([0,0], columns=['n_dots'])
+    tmp = pd.DataFrame([0, 0], columns=['n_dots'])
     n_vols = 125
     tr = get_tr(subject, session)
-    tmp.index = pd.to_timedelta([0, (n_vols-1)*tr], 's')
-    paradigm = pd.concat((tmp, events)).n_dots.resample('2.3S').nearest().to_frame('n_dots').astype(np.float32)
+    tmp.index = pd.Index(pd.to_timedelta([0, (n_vols-1)*tr], 's'), name='time')
+    paradigm = pd.concat((tmp, events)).n_dots.resample(
+        '2.3S').nearest().to_frame('n_dots').astype(np.float32)
     paradigm['n_dots'] = np.log(paradigm['n_dots']).replace(-np.inf, 0)
-    
+
+    paradigm.index = pd.Index(get_frametimes(subject, session), name='time')
+
     return paradigm
 
 
 def get_target_dir(subject, session, sourcedata, base, modality='func'):
-    target_dir =  op.join(sourcedata, 'derivatives', base, f'sub-{subject}', f'ses-{session}',
-            modality)
+    target_dir = op.join(sourcedata, 'derivatives', base, f'sub-{subject}', f'ses-{session}',
+                         modality)
 
     if not op.exists(target_dir):
         os.makedirs(target_dir)
 
     return target_dir
 
+
 def write_gifti(subject, session, sourcedata, space, data, filename):
     dir_ = op.join(sourcedata, 'derivatives', 'fmriprep', f'sub-{subject}',
-            f'ses-{session}', 'func',)
+                   f'ses-{session}', 'func',)
 
     run = 1
 
@@ -250,9 +273,49 @@ def write_gifti(subject, session, sourcedata, space, data, filename):
 
     for hemi, d in data.groupby(['hemi'], axis=1):
         header = nb.load(op.join(dir_,
-            f'sub-{subject}_ses-{session}_task-mapper_run-{run}_space-{space}_hemi-L_bold.func.gii')).header
+                                 f'sub-{subject}_ses-{session}_task-mapper_run-{run}_space-{space}_hemi-L_bold.func.gii')).header
         print(d)
-        darrays = [nb.gifti.GiftiDataArray(data=d_.values) for _, d_ in d.iterrows()]
+        darrays = [nb.gifti.GiftiDataArray(
+            data=d_.values) for _, d_ in d.iterrows()]
         im = gifti.GiftiImage(header=header,
-                darrays=darrays)
+                              darrays=darrays)
         im.to_filename(filename.format(hemi=hemi))
+
+
+def get_volume_data(subject, session, run, sourcedata, smoothed=False, space='T1w'):
+
+    if smoothed:
+        raise NotImplementedError
+
+    dir_ = op.join(sourcedata, 'derivatives', 'fmriprep', f'sub-{subject}',
+                   f'ses-{session}', 'func',)
+
+    if session[-1] == '1':
+        task = 'mapper'
+    elif session[-1] == '2':
+        task = 'task'
+
+    fn = op.join(
+        dir_, f'sub-{subject}_ses-{session}_task-{task}_run-{run}_space-{space}_desc-preproc_bold.nii.gz')
+    print(fn)
+
+    return image.load_img(fn)
+
+
+def get_brain_mask(subject, session, run, sourcedata, space='T1w', bold=True):
+
+    if not bold:
+        raise NotImplementedError
+
+    dir_ = op.join(sourcedata, 'derivatives', 'fmriprep', f'sub-{subject}',
+                   f'ses-{session}', 'func',)
+
+    if session[-1] == '1':
+        task = 'mapper'
+    elif session[-1] == '2':
+        task = 'task'
+
+    fn = op.join(
+        dir_, f'sub-{subject}_ses-{session}_task-{task}_run-{run}_space-{space}_desc-brain_mask.nii.gz')
+
+    return image.load_img(fn)

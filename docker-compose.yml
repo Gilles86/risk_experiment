@@ -8,7 +8,7 @@ services:
     volumes:
       - ./risk_experiment:/risk_experiment
       - $DATA_DIR/ds-risk:/data
-      - $FREESURFER_HOME/license.txt:/opt/freesurfer-6.0.1/license.txt
+      - $HOME/freesurfer/license.txt:/opt/freesurfer-6.0.1/license.txt
       - /tmp:/tmp
       - ./braincoder:/braincoder
       - ./scripts:/scripts

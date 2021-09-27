@@ -8,7 +8,7 @@ neurodocker generate docker --base ubuntu --pkg-manager apt --freesurfer version
 	--ants version=2.3.4 \
   --install zsh wget git build-essential \
     --miniconda \
-      conda_install="python=3.7 pandas matplotlib scikit-learn seaborn ipython pytables" \
+      conda_install="python=3.7 pandas matplotlib scikit-learn seaborn ipython pytables tensorflow tensorflow tensorflow-probability" \
       pip_install="nilearn
 		nipype
                   pybids
@@ -16,7 +16,6 @@ neurodocker generate docker --base ubuntu --pkg-manager apt --freesurfer version
 		  https://github.com/Gilles86/niworkflows/archive/risk_project.zip
 		  tensorflow_probability
 		  https://github.com/Gilles86/hedfpy/archive/refactor_gilles.zip
-		  tensorflow==2.4
 		  pytest
 		  svgutils==0.3.1" \
       create_env="neuro" \
