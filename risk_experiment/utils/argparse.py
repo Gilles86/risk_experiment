@@ -1,11 +1,11 @@
 import argparse
 
-def make_default_parser():
+def make_default_parser(sourcedata='/data'):
     parser = argparse.ArgumentParser()
     parser.add_argument('subject', default=None)
     parser.add_argument('session', default=None)
     parser.add_argument(
-        '--bids_folder', default='/data')
+        '--bids_folder', default=sourcedata)
     return parser
 
 
