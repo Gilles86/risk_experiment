@@ -33,11 +33,12 @@ def transform_data(source_fn, source_subject, sourcedata, target_fn=None, target
     if target_fn is None:
         target_fn = source_fn.replace(reg.match(source_fn).group(1), f'space-{target_subject}')
 
-    print(target_fn)
+    print(f'Writing to {target_fn}')
 
     transformer = SurfaceTransform(source_subject=source_subject, target_subject=target_subject, subjects_dir=freesurfer_dir,
             source_file=source_fn, out_file=target_fn,
-            hemi=fs_hemi)
+            hemi=fs_hemi,
+            terminal_output='file')
 
     transformer.run()
     return target_fn
