@@ -8,8 +8,13 @@ from niworkflows.interfaces.bids import DerivativesDataSink
 
 def main(subject, session, bids_folder, space='fsnative', n_procs=12):
 
+    base_dir =  '/scratch/gdehol/workflow_folders'
+
+    if not op.exists(base_dir):
+        base_dir =  '/tmp'
+
     wf = pe.Workflow(name=f'smooth_{subject}_{session}_{space}',
-                     base_dir='/tmp')
+                     base_dir=base_dir)
 
     runs = get_runs(subject, session)
     fns_l = [get_surf_file(subject, session, run, bids_folder, 'lh')
