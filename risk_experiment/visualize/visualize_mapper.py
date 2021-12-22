@@ -86,9 +86,6 @@ def main(subject, session, sourcedata, standard_space=False, thr=thr):
                         key += '.concatenated'
 
 
-
-                             
-
                     if par.startswith('mu') or par.startswith('sd'):
                         pass
                         values = _load_parameters(subject, session, par, 
@@ -106,8 +103,8 @@ def main(subject, session, sourcedata, standard_space=False, thr=thr):
                             values = _load_parameters(subject, session, par,
                                     space, smoothed,
                                     concatenated=concatenated)
-                            values.vmin = 1
-                            values.vmax = 28
+                            values.vmin = 5
+                            values.vmax = 80
                             values.data = np.exp(values.data)
                             values.data[d[f'{session}.r2.optim.smoothed'].data < thr] = np.nan
                             key += '.natural'
