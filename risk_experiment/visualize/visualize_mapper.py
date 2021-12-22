@@ -4,8 +4,8 @@ import cortex
 import numpy as np
 from risk_experiment.utils.argparse import run_main, make_default_parser
 
-sourcedata = '/data2/ds-risk'
-subject = '10'
+sourcedata = '/data/ds-risk'
+subject = '02'
 session = '3t1'
 thr = .15
 
@@ -42,7 +42,14 @@ def main(subject, session, sourcedata, standard_space=False, thr=thr):
         par_l = op.join(dir_, f'sub-{subject}_ses-{session}_desc-{par}_space-{space}_hemi-L.func.gii')
         par_r = op.join(dir_, f'sub-{subject}_ses-{session}_desc-{par}_space-{space}_hemi-R.func.gii')
 
+        kwargs = {}
+
+        if par.startswith('r2'):
+            kwargs['vmin'] = 0.0
+            kwargs['vmax'] = 0.25
+
         if op.exists(par_l):
+
             par_l = surface.load_surf_data(par_l).T
             par_r = surface.load_surf_data(par_r).T
 
@@ -53,7 +60,9 @@ def main(subject, session, sourcedata, standard_space=False, thr=thr):
             else:
                 fs_subject = space
 
-            return cortex.Vertex(par, fs_subject, alpha=alpha)
+            
+
+            return cortex.Vertex(par, fs_subject, alpha=alpha, **kwargs)
         else:
             return None
 
@@ -75,7 +84,7 @@ def main(subject, session, sourcedata, standard_space=False, thr=thr):
                         key += '.smoothed'
                     if concatenated:
                         key += '.concatenated'
-                             
+
 
                     if par.startswith('mu') or par.startswith('sd'):
                         pass
@@ -89,6 +98,17 @@ def main(subject, session, sourcedata, standard_space=False, thr=thr):
                                 concatenated=concatenated)
                         values.data[d[f'{session}.r2.optim.smoothed'].data < thr] = np.nan
                         key += '.thr'
+                        
+                        if par[:2] == 'mu':
+                            values = _load_parameters(subject, session, par,
+                                    space, smoothed,
+                                    concatenated=concatenated)
+                            values.vmin = 5
+                            values.vmax = 80
+                            values.data = np.exp(values.data)
+                            values.data[d[f'{session}.r2.optim.smoothed'].data < thr] = np.nan
+                            key += '.natural'
+
                     else:
                         values = _load_parameters(subject, session, par,
                                 space, smoothed,
@@ -101,7 +121,8 @@ def main(subject, session, sourcedata, standard_space=False, thr=thr):
     cortex.webshow(ds)
 
 if __name__ == '__main__':
-    parser = make_default_parser()
+    parser = make_default_parser(sourcedata)
     parser.add_argument('--standard_space', action='store_true')
+    parser.add_argument('--threshold', default=.15, type=float)
     args = parser.parse_args()
-    main(args.subject, args.session, args.bids_folder, standard_space=args.standard_space)
+    main(args.subject, args.session, args.bids_folder, standard_space=args.standard_space, thr=args.threshold)

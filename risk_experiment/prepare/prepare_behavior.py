@@ -49,7 +49,7 @@ def main(subject, session, bids_folder, max_rt=1.0):
             targets['hazard1'] = get_hazard(targets['isi'])
             targets['hazard2'] = get_hazard(targets['isi'], use_cut=True)
 
-            all_stimuli = behavior[(behavior.event_type == 'stim') & (behavior.n_dots > 0.0)]
+            all_stimuli = behavior[(behavior.event_type == 'stim') & (~behavior.n_dots.isnull())]
             all_stimuli['onset'] -= t0
             start_dots = all_stimuli.pivot_table(index=['trial_nr'], values=['onset'], aggfunc=np.min)
             end_dots = all_stimuli.pivot_table(index=['trial_nr'], values=['onset'], aggfunc=np.max)
