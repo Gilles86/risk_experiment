@@ -42,7 +42,7 @@ def main(subject, session, bids_folder, smoothed=True, concatenate=False):
     # Get surface data
     surf = get_surf_data(subject, session, bids_folder, smoothed=smoothed)
 
-    # # clean surface data
+    # clean surface data
     surf_cleaned = pd.DataFrame(None, columns=surf.columns)
     for run, d in surf.groupby(['run']):
         d_cleaned = signal.clean(d.values, confounds=confounds.loc[run].values, standardize='psc', detrend=False)
@@ -71,14 +71,19 @@ def main(subject, session, bids_folder, smoothed=True, concatenate=False):
     model = GaussianPRFWithHRF(hrf_model=hrf_model)
 
     # SET UP GRID
-    mus = np.linspace(0, np.log(80), 20, dtype=np.float32)
-    sds = np.linspace(.01, 2, 15, dtype=np.float32)
-    amplitudes = np.linspace(1e-6, 10, 10, dtype=np.float32)
-    baselines = np.linspace(-2., 0., 4, endpoint=True, dtype=np.float32)
+    mus = np.log(np.linspace(5, 80, 100, dtype=np.float32))
+    sds = np.log(np.linspace(2, 30, 100, dtype=np.float32))
+    amplitudes = np.array([1.], dtype=np.float32)
+    baselines = np.array([0], dtype=np.float32)
+    # mus = np.linspace(0, np.log(80), 20, dtype=np.float32)
+    # sds = np.linspace(.01, 2, 15, dtype=np.float32)
+    # amplitudes = np.linspace(1e-6, 10, 10, dtype=np.float32)
+    # baselines = np.linspace(-2., 0., 4, endpoint=True, dtype=np.float32)
 
     optimizer = ParameterFitter(model, data, paradigm)
 
-    grid_parameters = optimizer.fit_grid(mus, sds, amplitudes, baselines)
+    grid_parameters = optimizer.fit_grid(mus, sds, amplitudes, baselines, use_correlation_cost=True)
+    grid_parameters = optimizer.refine_baseline_and_amplitude(grid_parameters, n_iterations=5)
 
     r2 = optimizer.get_rsq(grid_parameters)
 
@@ -92,7 +97,8 @@ def main(subject, session, bids_folder, smoothed=True, concatenate=False):
         write_gifti(subject, session, bids_folder, 'fsnative', values, target_fn)
         transform_data(target_fn, f'sub-{subject}', bids_folder, target_subject='fsaverage')
 
-    optimizer.fit(init_pars=grid_parameters, learning_rate=.1, store_intermediate_parameters=False, max_n_iterations=5000)
+    optimizer.fit(init_pars=grid_parameters, learning_rate=.05, store_intermediate_parameters=False, max_n_iterations=10000,
+            r2_atol=0.00001)
     print(optimizer.r2)
 
     target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-r2.optim_space-fsnative') + '_hemi-{hemi}.func.gii'
@@ -114,4 +120,4 @@ if __name__ == '__main__':
     parser.add_argument('--concatenate', action='store_true')
     args = parser.parse_args()
 
-    main(args.subject, args.session, bids_folder=args.bids_folder, concatenate=args.concatenate)
+    main(args.subject, args.session, smoothed=args.smoothed, bids_folder=args.bids_folder, concatenate=args.concatenate)
