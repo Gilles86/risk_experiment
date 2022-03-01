@@ -72,7 +72,57 @@ def main(subject, session, bids_folder, max_rt=1.0):
             events.to_csv(fn, index=False, sep='\t')
 
     else:
-        raise NotImplementedError('Only mapper so far')
+
+
+
+        for run in range(1, 9):
+            nii = op.join(target_dir, f'sub-{subject}_ses-{session}_task-task_run-{run}_bold.nii.gz')
+            n_volumes = image.load_img(nii).shape[-1]
+
+
+            behavior = pd.read_table(op.join(sourcedata, f'sub-{subject}/behavior/ses-{session}/sub-{subject}_ses-{session}_task-task_run-{run}_events.tsv'))
+            behavior['trial_nr'] = behavior['trial_nr'].astype(np.int)
+
+            print(behavior)
+
+            pulses = behavior[behavior.event_type == 'pulse'][['trial_nr', 'onset']]
+
+            pulses['ipi'] = pulses['onset'].diff()
+            pulses = pulses[((pulses['ipi'] > .2) & (pulses['ipi'] < 5.)) | pulses.ipi.isnull()]
+            pulses = pulses.set_index(np.arange(1, n_volumes+1))[['trial_nr', 'onset']]
+            t0 = pulses.loc[1, 'onset']
+
+
+            stim1 = behavior[(behavior['event_type'] == 'stim') & (behavior['phase'] == 4)]
+            stim1['n'] = stim1['n1']
+            stim1['onset'] -= t0
+            stim1['event_type'] = 'stimulus 1'
+
+
+            stim2 = behavior[(behavior['event_type'] == 'stim') & (behavior['phase'] == 8)]
+            stim2['n'] = stim2['n2']
+            stim2['onset'] -= t0
+            stim2['event_type'] = 'stimulus 2'
+
+
+            choice = behavior[(behavior['event_type'] == 'choice')]
+            choice['onset'] -= t0
+            choice['event_type'] = 'choice'
+
+
+            certainty = behavior[(behavior['event_type'] == 'certainty')]
+            certainty['onset'] -= t0
+            certainty['event_type'] = 'certainty'
+            certainty['choice'] = certainty['certainty'].astype(int)
+
+
+            events = pd.concat((stim1, stim2, choice, certainty)).sort_index().reset_index(drop=True)
+            # result['choice'] = result['choice'].astype(int)
+            events = events[['trial_nr', 'onset', 'event_type', 'prob1', 'prob2', 'n1', 'n2', 'choice']]
+
+            fn = op.join(target_dir, f'sub-{subject}_ses-{session}_task-task-{run}_events.tsv')
+            events.to_csv(fn, index=False, sep='\t')
+
 
 def get_hazard(x, s=1.0, loc=0.0, scale=10, cut=30, use_cut=False):
     import scipy.stats as ss
