@@ -268,12 +268,17 @@ def write_gifti(subject, session, sourcedata, space, data, filename):
 
     run = 1
 
+    if session.endswith('1'):
+        task = 'mapper'
+    else:
+        task = 'task'
+
     if data.ndim == 1:
         data = data.to_frame().T
 
     for hemi, d in data.groupby(['hemi'], axis=1):
         header = nb.load(op.join(dir_,
-                                 f'sub-{subject}_ses-{session}_task-mapper_run-{run}_space-{space}_hemi-L_bold.func.gii')).header
+                                 f'sub-{subject}_ses-{session}_task-{task}_run-{run}_space-{space}_hemi-L_bold.func.gii')).header
         darrays = [nb.gifti.GiftiDataArray(
             data=d_.values) for _, d_ in d.iterrows()]
         im = gifti.GiftiImage(header=header,
