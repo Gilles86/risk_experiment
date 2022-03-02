@@ -12,9 +12,13 @@ import numpy as np
 import seaborn as sns
 
 
-def main(subject, session, bids_folder='/data/ds-risk'):
+def main(subject, session, bids_folder='/data/ds-risk', smoothed=False):
 
     target_dir = 'encoding_model'
+
+    if smoothed:
+        target_dir += '.smoothed'
+
     target_dir = get_target_dir(subject, session, bids_folder, target_dir)
 
     paradigm = [pd.read_csv(op.join(bids_folder, f'sub-{subject}', f'ses-{session}',
@@ -22,10 +26,16 @@ def main(subject, session, bids_folder='/data/ds-risk'):
                 for run in range(1, 9)]
     paradigm = pd.concat(paradigm, keys=range(1,9), names=['run'])
     paradigm = paradigm[paradigm.trial_type == 'stimulus 1'][['n1', 'trial_nr']].set_index('trial_nr')
+    paradigm['n1'] = np.log(paradigm['n1'])
 
     for hemi in ['L', 'R']:
-        data = surface.load_surf_data(op.join(bids_folder, 'derivatives', 'glm_stim1_surf',
-                                              f'sub-{subject}', f'ses-{session}', 'func', f'sub-{subject}_ses-{session}_task-task_space-fsnative_desc-stims1_hemi-{hemi}.pe.gii')).T
+        if smoothed:
+            data = surface.load_surf_data(op.join(bids_folder, 'derivatives', 'glm_stim1_surf.smoothed',
+                                                  f'sub-{subject}', f'ses-{session}', 'func', f'sub-{subject}_ses-{session}_task-task_space-fsnative_desc-stims1_hemi-{hemi}.pe.gii')).T
+        else:
+            data = surface.load_surf_data(op.join(bids_folder, 'derivatives', 'glm_stim1_surf',
+                                                  f'sub-{subject}', f'ses-{session}', 'func', f'sub-{subject}_ses-{session}_task-task_space-fsnative_desc-stims1_hemi-{hemi}.pe.gii')).T
+
         model = GaussianPRF()
         # SET UP GRID
         mus = np.log(np.linspace(5, 80, 100, dtype=np.float32))
@@ -36,11 +46,11 @@ def main(subject, session, bids_folder='/data/ds-risk'):
         optimizer = ParameterFitter(model, data, paradigm)
 
         grid_parameters = optimizer.fit_grid(mus, sds, amplitudes, baselines, use_correlation_cost=True)
-        grid_parameters = optimizer.refine_baseline_and_amplitude(grid_parameters, n_iterations=5)
+        grid_parameters = optimizer.refine_baseline_and_amplitude(grid_parameters, n_iterations=2)
 
 
         optimizer.fit(init_pars=grid_parameters, learning_rate=.05, store_intermediate_parameters=False, max_n_iterations=10000,
-                r2_atol=0.00001)
+                r2_atol=0.0001)
 
         target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-r2.optim_space-fsnative_hemi-{hemi}.func.gii')
         write_gifti(subject, session, bids_folder, 'fsnative', 
@@ -59,6 +69,7 @@ if __name__ == '__main__':
     parser.add_argument('subject', default=None)
     parser.add_argument('session', default=None)
     parser.add_argument('--bids_folder', default='/data')
+    parser.add_argument('--smoothed', action='store_true')
     args = parser.parse_args()
 
-    main(args.subject, args.session, bids_folder=args.bids_folder)
+    main(args.subject, args.session, bids_folder=args.bids_folder, smoothed=args.smoothed)
