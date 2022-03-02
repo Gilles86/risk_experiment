@@ -11,11 +11,16 @@ from itertools import product
 
 
 
-def main(subject, session, sourcedata, space='fsnative', n_jobs=7):
+def main(subject, session, sourcedata, smoothed=False, space='fsnative', n_jobs=14):
 
     derivatives = op.join(sourcedata, 'derivatives')
-    base_dir = op.join(derivatives, 'glm_stim1_surf', f'sub-{subject}',
-            f'ses-{session}', 'func')
+
+    if smoothed:
+        base_dir = op.join(derivatives, 'glm_stim1_surf.smoothed', f'sub-{subject}',
+                f'ses-{session}', 'func')
+    else:
+        base_dir = op.join(derivatives, 'glm_stim1_surf', f'sub-{subject}',
+                f'ses-{session}', 'func')
     
     if not op.exists(base_dir):
         os.makedirs(base_dir)
@@ -25,7 +30,7 @@ def main(subject, session, sourcedata, space='fsnative', n_jobs=7):
     behavior = []
     for run in runs:
         behavior.append(pd.read_table(op.join(
-            sourcedata, f'sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-task-{run}_events.tsv')))
+            sourcedata, f'sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-task_run-{run}_events.tsv')))
 
     behavior = pd.concat(behavior, keys=runs, names=['run'])
     behavior['subject'] = subject
@@ -60,8 +65,13 @@ def main(subject, session, sourcedata, space='fsnative', n_jobs=7):
     # # sub-02_ses-7t2_task-task_run-1_space-fsaverage_hemi-R_bold.func
 
     keys = [(run, hemi) for run, hemi in product(runs, ['L', 'R'])]
-    surfs = [
-        op.join(sourcedata, f'derivatives/fmriprep/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-task_run-{run}_space-{space}_hemi-{hemi}_bold.func.gii') for run, hemi in keys]
+
+    if smoothed:
+        surfs = [
+            op.join(sourcedata, f'derivatives/smoothed/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-task_run-{run}_space-{space}_hemi-{hemi}_desc-smoothed_bold.func.gii') for run, hemi in keys]
+    else:
+        surfs = [
+            op.join(sourcedata, f'derivatives/fmriprep/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-task_run-{run}_space-{space}_hemi-{hemi}_bold.func.gii') for run, hemi in keys]
 
     fmriprep_confounds_include = ['global_signal', 'dvars', 'framewise_displacement', 'trans_x',
                                   'trans_y', 'trans_z', 'rot_x', 'rot_y', 'rot_z',
@@ -86,10 +96,13 @@ def main(subject, session, sourcedata, space='fsnative', n_jobs=7):
 
     betas = []
 
+    n_verts = {}
+
     for (run, hemi), cf, surf in zip(keys, confounds, surfs):
-        print(run, hemi)
         e = events.xs(run, 0, 'run')
         Y = surface.load_surf_data(surf).T
+
+        n_verts[hemi] = Y.shape[1]
 
         if len(Y) == 213:
             Y = Y[:160]
@@ -112,15 +125,14 @@ def main(subject, session, sourcedata, space='fsnative', n_jobs=7):
         betas.append(pd.DataFrame(r.theta, index=X.columns))
 
     betas = pd.concat(betas, keys=keys, names=['run', 'hemi'])
-    print(betas)
     betas.reset_index('run', drop=True, inplace=True)
-    betas = betas.loc[(slice(None), stimulus1.trial_type), :].unstack('hemi').swaplevel(axis=1).sort_index(axis=1)
-    betas = betas.loc[:, ~betas.isnull().all(0)]
-
+    betas = betas.loc[(slice(None), stimulus1.trial_type), :].unstack('hemi', fill_value=-1e6).swaplevel(axis=1).sort_index(axis=1)
 
     for hemi in ['L', 'R']:
+        b = betas[hemi].loc[:, :n_verts[hemi]-1]
+        print(b)
         gii = nb.gifti.GiftiImage(header=nb.load(surfs[['L', 'R'].index(hemi)]).header,
-                                  darrays=[nb.gifti.GiftiDataArray(row) for _, row in betas[hemi].iterrows()])
+                                  darrays=[nb.gifti.GiftiDataArray(row) for _, row in b.iterrows()])
 
         fn_template = op.join(base_dir, 'sub-{subject}_ses-{session}_task-task_space-{space}_desc-stims1_hemi-{hemi}.pe.gii')
 
@@ -131,6 +143,7 @@ if __name__ == '__main__':
     parser.add_argument('subject', default=None)
     parser.add_argument('session', default=None)
     parser.add_argument('--sourcedata', default='/data')
+    parser.add_argument('--smoothed', action='store_true')
     args = parser.parse_args()
 
-    main(args.subject, args.session, sourcedata=args.sourcedata)
+    main(args.subject, args.session, sourcedata=args.sourcedata, smoothed=args.smoothed)
