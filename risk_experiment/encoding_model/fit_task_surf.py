@@ -12,12 +12,19 @@ import numpy as np
 import seaborn as sns
 
 
-def main(subject, session, bids_folder='/data/ds-risk', smoothed=False):
+def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
+        pca_confounds=False):
 
+    key = 'glm_stim1_surf'
     target_dir = 'encoding_model'
 
     if smoothed:
+        key += '.smoothed'
         target_dir += '.smoothed'
+
+    if pca_confounds:
+        target_dir += '.pca_confounds'
+        key += '.pca_confounds'
 
     target_dir = get_target_dir(subject, session, bids_folder, target_dir)
 
@@ -29,12 +36,9 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False):
     paradigm['n1'] = np.log(paradigm['n1'])
 
     for hemi in ['L', 'R']:
-        if smoothed:
-            data = surface.load_surf_data(op.join(bids_folder, 'derivatives', 'glm_stim1_surf.smoothed',
-                                                  f'sub-{subject}', f'ses-{session}', 'func', f'sub-{subject}_ses-{session}_task-task_space-fsnative_desc-stims1_hemi-{hemi}.pe.gii')).T
-        else:
-            data = surface.load_surf_data(op.join(bids_folder, 'derivatives', 'glm_stim1_surf',
-                                                  f'sub-{subject}', f'ses-{session}', 'func', f'sub-{subject}_ses-{session}_task-task_space-fsnative_desc-stims1_hemi-{hemi}.pe.gii')).T
+
+        data = surface.load_surf_data(op.join(bids_folder, 'derivatives', key,
+                                              f'sub-{subject}', f'ses-{session}', 'func', f'sub-{subject}_ses-{session}_task-task_space-fsnative_desc-stims1_hemi-{hemi}.pe.gii')).T
 
         model = GaussianPRF()
         # SET UP GRID
@@ -50,7 +54,7 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False):
 
 
         optimizer.fit(init_pars=grid_parameters, learning_rate=.05, store_intermediate_parameters=False, max_n_iterations=10000,
-                r2_atol=0.0001)
+                r2_atol=0.00001)
 
         target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-r2.optim_space-fsnative_hemi-{hemi}.func.gii')
         write_gifti(subject, session, bids_folder, 'fsnative', 
@@ -70,6 +74,8 @@ if __name__ == '__main__':
     parser.add_argument('session', default=None)
     parser.add_argument('--bids_folder', default='/data')
     parser.add_argument('--smoothed', action='store_true')
+    parser.add_argument('--pca_confounds', action='store_true')
     args = parser.parse_args()
 
-    main(args.subject, args.session, bids_folder=args.bids_folder, smoothed=args.smoothed)
+    main(args.subject, args.session, bids_folder=args.bids_folder, smoothed=args.smoothed,
+            pca_confounds=args.pca_confounds)
