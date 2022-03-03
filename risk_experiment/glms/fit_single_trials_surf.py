@@ -8,19 +8,27 @@ from nilearn import surface
 from nilearn.glm.first_level import FirstLevelModel
 from nilearn.glm.first_level import make_first_level_design_matrix, run_glm
 from itertools import product
+from sklearn.decomposition import PCA
 
 
 
-def main(subject, session, sourcedata, smoothed=False, space='fsnative', n_jobs=14):
+def main(subject, session, sourcedata, smoothed=False, 
+        pca_confounds=False,
+        space='fsnative', n_jobs=14):
 
     derivatives = op.join(sourcedata, 'derivatives')
 
+    base_dir = 'glm_stim1_surf'
+
+
     if smoothed:
-        base_dir = op.join(derivatives, 'glm_stim1_surf.smoothed', f'sub-{subject}',
-                f'ses-{session}', 'func')
-    else:
-        base_dir = op.join(derivatives, 'glm_stim1_surf', f'sub-{subject}',
-                f'ses-{session}', 'func')
+        base_dir += '.smoothed'
+
+    if pca_confounds:
+        base_dir += '.pca_confounds'
+
+    base_dir = op.join(derivatives, base_dir, f'sub-{subject}',
+            f'ses-{session}', 'func')
     
     if not op.exists(base_dir):
         os.makedirs(base_dir)
@@ -107,6 +115,14 @@ def main(subject, session, sourcedata, smoothed=False, space='fsnative', n_jobs=
         if len(Y) == 213:
             Y = Y[:160]
             cf = cf.iloc[:160]
+            
+        
+        if pca_confounds:
+            pca = PCA(n_components=13)
+            cf -= cf.mean(0)
+            cf /= cf.std(0)
+            cf = pca.fit_transform(cf)
+            print('PCA size: ', cf.shape)
 
         X = make_first_level_design_matrix(frame_times,
                                                events=e,
@@ -144,6 +160,8 @@ if __name__ == '__main__':
     parser.add_argument('session', default=None)
     parser.add_argument('--sourcedata', default='/data')
     parser.add_argument('--smoothed', action='store_true')
+    parser.add_argument('--pca_confounds', action='store_true')
     args = parser.parse_args()
 
-    main(args.subject, args.session, sourcedata=args.sourcedata, smoothed=args.smoothed)
+    main(args.subject, args.session, sourcedata=args.sourcedata, smoothed=args.smoothed,
+            pca_confounds=args.pca_confounds)
