@@ -1,9 +1,9 @@
 function physio = retroicor(subject, session, task, run)      
         physio = tapas_physio_new();
-        physio.save_dir = {sprintf('/data2/ds-risk/derivatives/physiotoolbox/sub-%s/ses-%s/func/', subject, session)}
+        physio.save_dir = {sprintf('/data/ds-risk/derivatives/physiotoolbox/sub-%s/ses-%s/func/', subject, session)}
         
         physio.log_files.vendor = 'Philips';
-        log_file = sprintf('/data2/ds-risk/sub-%s/ses-%s/func/sub-%s_ses-%s_task-%s_run-%d_physio.log', subject, session, subject, session, task, run)
+        log_file = sprintf('/data/ds-risk/sub-%s/ses-%s/func/sub-%s_ses-%s_task-%s_run-%d_physio.log', subject, session, subject, session, task, run)
         physio.log_files.cardiac = {log_file};
         physio.log_files.respiration = {log_file};
         
