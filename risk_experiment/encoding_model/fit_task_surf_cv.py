@@ -28,7 +28,7 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False):
                                'func', f'sub-{subject}_ses-{session}_task-task_run-{run}_events.tsv'), sep='\t')
                 for run in range(1, 9)]
     paradigm = pd.concat(paradigm, keys=range(1,9), names=['run'])
-    paradigm = paradigm[paradigm.trial_type == 'stimulus 1'].set_index(['run', 'trial_nr'])
+    paradigm = paradigm[paradigm.trial_type == 'stimulus 1'].set_index(['trial_nr'], append=True)
     paradigm = paradigm[['n1']]
     paradigm['n1'] = np.log(paradigm['n1'])
 
@@ -49,7 +49,9 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False):
         for test_run in range(1, 9):
 
             test_data, test_paradigm = data.loc[test_run].copy(), paradigm.loc[test_run].copy()
-            train_ata, train_paradigm = data.drop(test_run, level='run').copy(), paradigm.drop(test_run, level='run').copy()
+            print(test_data, test_paradigm)
+            train_data, train_paradigm = data.drop(test_run, level='run').copy(), paradigm.drop(test_run, level='run').copy()
+            print(train_data, train_paradigm)
 
             optimizer = ParameterFitter(model, train_data, train_paradigm)
 
@@ -60,21 +62,22 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False):
             optimizer.fit(init_pars=grid_parameters, learning_rate=.05, store_intermediate_parameters=False, max_n_iterations=10000,
                     r2_atol=0.00001)
 
-            target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_run-{test_run}_desc-r2.optim{split_key}_space-fsnative_hemi-{hemi}.func.gii')
+            target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_run-{test_run}_desc-r2.optim_space-fsnative_hemi-{hemi}.func.gii')
             write_gifti(subject, session, bids_folder, 'fsnative', 
                     pd.concat([optimizer.r2], keys=[hemi], names=['hemi']), target_fn)
             transform_data(target_fn, f'sub-{subject}', bids_folder, target_subject='fsaverage')
 
-            target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_run-{test_run}_desc-cvr2.optim{split_key}_space-fsnative_hemi-{hemi}.func.gii')
+            target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_run-{test_run}_desc-cvr2.optim_space-fsnative_hemi-{hemi}.func.gii')
             cv_r2 = get_rsq(test_data, model.predict(parameters=optimizer.estimated_parameters,
-                paradigm=test_paradigm))
+                paradigm=test_paradigm.astype(np.float32)))
+            print(cv_r2)
             write_gifti(subject, session, bids_folder, 'fsnative', 
                     pd.concat([cv_r2], keys=[hemi], names=['hemi']), target_fn)
             transform_data(target_fn, f'sub-{subject}', bids_folder, target_subject='fsaverage')
 
             for par, values in optimizer.estimated_parameters.T.iterrows():
                 print(values)
-                target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_run-{test_run}_desc-{par}.optim{split_key}_space-fsnative_hemi-{hemi}.func.gii')
+                target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_run-{test_run}_desc-{par}.optim_space-fsnative_hemi-{hemi}.func.gii')
                 write_gifti(subject, session, bids_folder, 'fsnative', 
                         pd.concat([values], keys=[hemi], names=['hemi']), target_fn)
                 transform_data(target_fn, f'sub-{subject}', bids_folder, target_subject='fsaverage')
@@ -85,9 +88,7 @@ if __name__ == '__main__':
     parser.add_argument('session', default=None)
     parser.add_argument('--bids_folder', default='/data')
     parser.add_argument('--smoothed', action='store_true')
-    parser.add_argument('--pca_confounds', action='store_true')
-    parser.add_argument('--split_certainty', action='store_true')
     args = parser.parse_args()
 
-    main(args.subject, args.session, bids_folder=args.bids_folder, smoothed=args.smoothed,
-            pca_confounds=args.pca_confounds, split_certainty=args.split_certainty)
+    main(args.subject, args.session, bids_folder=args.bids_folder, smoothed=args.smoothed)
+            
