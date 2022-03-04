@@ -26,7 +26,7 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
         target_dir += '.pca_confounds'
         key += '.pca_confounds'
 
-    if split_certaity:
+    if split_certainty:
         target_dir += 'split_certainty'
 
     target_dir = get_target_dir(subject, session, bids_folder, target_dir)
@@ -39,10 +39,10 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
 
     if split_certainty:
         ixs = [paradigm['prob1'] == 0.55, paradigm['prob1'] == 1.0]
-        spit_keys = ['uncertain', 'certain']
+        split_keys = ['uncertain', 'certain']
     else:
         ixs = [paradigm.index]
-        spit_keys = ['']
+        split_keys = ['']
 
     paradigm = paradigm[['n1']]
     paradigm['n1'] = np.log(paradigm['n1'])
@@ -61,7 +61,7 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
 
 
         for ix, split_key in zip(ixs, split_keys):
-            optimizer = ParameterFitter(model, data.loc[ix], paradigm.loc[ix])
+            optimizer = ParameterFitter(model, data[ix, :], paradigm.loc[ix])
 
             grid_parameters = optimizer.fit_grid(mus, sds, amplitudes, baselines, use_correlation_cost=True)
             grid_parameters = optimizer.refine_baseline_and_amplitude(grid_parameters, n_iterations=2)
@@ -89,7 +89,8 @@ if __name__ == '__main__':
     parser.add_argument('--bids_folder', default='/data')
     parser.add_argument('--smoothed', action='store_true')
     parser.add_argument('--pca_confounds', action='store_true')
+    parser.add_argument('--split_certainty', action='store_true')
     args = parser.parse_args()
 
     main(args.subject, args.session, bids_folder=args.bids_folder, smoothed=args.smoothed,
-            pca_confounds=args.pca_confounds)
+            pca_confounds=args.pca_confounds, split_certainty=args.split_certainty)
