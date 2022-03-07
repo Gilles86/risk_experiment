@@ -194,6 +194,36 @@ def get_surf_file(subject, session, run, sourcedata,
     return fn
 
 
+def get_single_trial_surf_data(subject, session, bids_folder, smoothed=False,
+                          space='fsnative', hemi=None, mask=None):
+
+    if hemi is None:
+        d_l = get_single_trial_surf_data(subject, session, bids_folder,
+                                    smoothed, space, hemi='L', mask=mask)
+        d_r = get_single_trial_surf_data(subject, session, bids_folder,
+                                    smoothed, space, hemi='R', mask=mask)
+
+        d = pd.concat((d_l, d_r), axis=1, keys=['L', 'R'])
+
+        return d
+    else:
+
+        key = 'glm_stim1_surf'
+
+        if smoothed:
+            key += '.smoothed'
+
+        data = surface.load_surf_data(op.join(bids_folder, 'derivatives', key,
+                                              f'sub-{subject}', f'ses-{session}', 'func', f'sub-{subject}_ses-{session}_task-task_space-fsnative_desc-stims1_hemi-{hemi}.pe.gii')).T
+        data= pd.DataFrame(data, columns=pd.Index(np.arange(data.shape[1]), name='vertex'))
+
+        if mask is not None:
+            mask = get_surf_mask(subject, mask, hemi, bids_folder)
+            data = data.loc[:, mask.values]
+        return data
+
+
+
 def get_surf_data(subject, session, sourcedata, smoothed=False, space='fsnative'):
 
     runs = get_runs(subject, session)
@@ -323,3 +353,80 @@ def get_brain_mask(subject, session, run, sourcedata, space='T1w', bold=True):
         dir_, f'sub-{subject}_ses-{session}_task-{task}_run-{run}_space-{space}_desc-brain_mask.nii.gz')
 
     return image.load_img(fn)
+
+def get_fs_subject(subject):
+
+    if subject == 'fsaverage':
+        return subject
+    else:
+        return f'sub-{subject}'
+
+
+def get_surf_mask(subject, mask, hemi=None, bids_folder='/data'):
+
+    if hemi is None:
+        mask_l = get_surf_mask(subject, mask, 'L', bids_folder )
+        mask_r = get_surf_mask(subject, mask, 'R', bids_folder )
+        return pd.concat((mask_l, mask_r), axis=1, keys=['L', 'R'], names=['hemi'])
+        
+
+    fs_hemi = {'L':'lh', 'R':'rh'}[hemi]
+
+    fs_subject = f'sub-{subject}'
+    fn = op.join(bids_folder, 'derivatives', 'freesurfer', 
+            get_fs_subject(subject), 'surf',
+            f'{fs_hemi}.{mask}.mgz')
+
+    d = surface.load_surf_data(fn).astype(np.bool)
+    d = pd.Series(d, index=pd.Index(np.arange(len(d)), name='vertex'))
+    return d
+
+def get_prf_parameters(subject, session, bids_folder,
+        run=None,
+        smoothed=False,
+        cross_validated=False,
+        hemi=None,
+        mask=None,
+        space='fsnative'):
+
+    if hemi is None:
+        prf_l = get_prf_parameters(subject, session, bids_folder,
+                run, smoothed, cross_validated, hemi='L',
+                mask=mask, space=space)
+        prf_r = get_prf_parameters(subject, session, bids_folder,
+                run, smoothed, cross_validated, hemi='R',
+                mask=mask, space=space)
+        
+        return pd.concat((prf_l, prf_r), axis=0, 
+                keys=pd.Index(['L', 'R'], name='hemi'))
+
+
+    dir = 'encoding_model'
+    if cross_validated:
+        if run is None:
+            raise Exception('Give run')
+
+        dir += '.cv'
+
+    if smoothed:
+        dir += '.smoothed'
+
+    parameters = []
+
+    keys = ['mu', 'sd', 'amplitude', 'baseline']
+
+    if mask is not None:
+        mask = get_surf_mask(subject, mask, hemi, bids_folder)
+
+    for parameter_key in keys:
+        fn = op.join(bids_folder, 'derivatives', 'encoding_model.cv', f'sub-{subject}', f'ses-{session}', 
+                'func', f'sub-{subject}_ses-{session}_run-{run}_desc-{parameter_key}.optim_space-{space}_hemi-{hemi}.func.gii')
+        pars = pd.Series(surface.load_surf_data(fn))
+        pars.index.name = 'vertex'
+
+        if mask is not None:
+            pars = pars.loc[mask.values]
+
+        parameters.append(pars)
+
+    return pd.concat(parameters, axis=1, keys=keys, names=['parameter'])
