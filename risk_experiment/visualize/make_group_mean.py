@@ -18,9 +18,11 @@ for smoothed in [False, True]:
         folder += '.smoothed'
 
     fns = glob.glob(op.join(sourcedata, 'derivatives', folder, f'sub-*',
-                   'ses-*', 'func', '*.optim*space-fsaverage_hemi-*.func.gii'))
+                   'ses-3t1', 'func', '*.optim*space-fsaverage_hemi-*.func.gii'))
+    fns += glob.glob(op.join(sourcedata, 'derivatives', folder, f'sub-*',
+                   'ses-7t1', 'func', '*.optim*space-fsaverage_hemi-*.func.gii'))
 
-    reg = re.compile('.*/sub-(?P<subject>[0-9]+)_ses-(?P<session>3t1|7t1)_desc-(?P<parameter>[0-9a-z]+)\.optim_space-.+_hemi-(?P<hemi>L|R)\.func\.gii')
+    reg = re.compile('.*/sub-(?P<subject>[0-9]+)_ses-(?P<session>3t1|7t1|3t2|7t2)_desc-(?P<parameter>[0-9a-z]+)\.optim_space-.+_hemi-(?P<hemi>L|R)\.func\.gii')
     keys = []
     data = []
 
@@ -41,6 +43,7 @@ for smoothed in [False, True]:
 
 
     for (session, par), d in data.groupby(['session', 'parameter']):
+        print(d)
 
         d = d.mean()
 

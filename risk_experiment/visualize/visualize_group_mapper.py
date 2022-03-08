@@ -8,9 +8,9 @@ import glob
 from itertools import product
 import pandas as pd
 import re
-from matplotlib import colors, cm
 from tqdm import tqdm
 from pandas import IndexSlice as ix_
+from utils import get_alpha_vertex
 
 sourcedata = '/data/ds-risk'
 
@@ -18,32 +18,8 @@ sourcedata = '/data/ds-risk'
 smoothed = False
 
 
-def get_alpha_vertex(data, alpha, cmap='nipy_spectral', vmin=np.log(5), vmax=np.log(80), subject='fsaverage'):
-
-
-    data = np.clip((data - vmin) / (vmax - vmin), 0., .99)
-    red, green, blue = getattr(cm, cmap)(data,)[:, :3].T
-
-    # Get curvature
-    curv = cortex.db.get_surfinfo('fsaverage')
-    # Adjust curvature contrast / color. Alternately, you could work
-    # with curv.data, maybe threshold it, and apply a color map.
-    curv.data = np.sign(curv.data.data) * .25
-    curv.vmin = -1
-    curv.vmax = 1
-    curv.cmap = 'gray'
-    curv_rgb = np.vstack([curv.raw.red.data, curv.raw.green.data, curv.raw.blue.data]).astype(np.float32)
-
-    vx_rgb = (np.vstack([red.data, green.data, blue.data]) * 255.).astype(np.float32)
-
-    display_data = vx_rgb * alpha[np.newaxis, :] + curv_rgb * (1.-alpha[np.newaxis, :])
-
-    return cortex.VertexRGB(*display_data.astype(np.uint8), subject)
-
-
-
 parameters = ['mu', 'r2']
-sessions = ['3t1', '7t1']
+sessions = ['3t1', '7t1', '3t2', '7t2']
 hemis = ['L', 'R']
 
 data = []
@@ -83,7 +59,7 @@ for (smoothed, parameter, session), value in data.iterrows():
         vmin, vmax = 0.0, 0.5
         cmap = 'magma'
     elif parameter == 'mu':
-        vmin, vmax = np.log(5), np.log(80)
+        vmin, vmax = np.log(5), np.log(28)
         cmap = 'nipy_spectral'
     elif parameter == 'mu_natural':
         vmin, vmax = 5, 80
@@ -94,15 +70,23 @@ for (smoothed, parameter, session), value in data.iterrows():
         value.values, 'fsaverage', vmin=vmin, vmax=vmax, cmap=cmap)
 
 
+# for smoothed, session in product(['sm', 'usm'], ['3t1', '7t1', '3t2', '7t2']):
 for smoothed, session in product(['sm', 'usm'], ['3t1', '7t1']):
     alpha = np.copy(d[f'r2.{session}.{smoothed}'].data)
-    d[f'r2_.{session}.{smoothed}'] = get_alpha_vertex(alpha / 0.25, np.clip((alpha -0.05)/0.05, .0, 1.0), cmap='plasma', 
-            vmin=0.0, vmax=1.0)
+    if session.endswith('1'):
+        d[f'r2_.{session}.{smoothed}'] = get_alpha_vertex(alpha, np.clip((alpha - 0.05)/0.025, .0, 1.0), cmap='hot',
+                                                          vmin=0.0, vmax=.2)
+    else:
+        d[f'r2_.{session}.{smoothed}'] = get_alpha_vertex(alpha, np.clip((alpha - 0.025)/0.0125, .0, 1.0), cmap='hot',
+                                                          vmin=0.0, vmax=.1)
+
     # alpha -= 0.035
     alpha -= np.percentile(alpha, 65)
     alpha = np.clip(alpha / np.percentile(alpha[alpha > 0.0], 50), 0, 1)
     alpha = alpha / alpha.max()
-    d[f'mu_.{session}.{smoothed}'] = get_alpha_vertex(d[f'mu.{session}.{smoothed}'].data, alpha)
+    d[f'mu_.{session}.{smoothed}'] = get_alpha_vertex(
+        d[f'mu.{session}.{smoothed}'].data, alpha,
+        vmax=np.log(28))
 
 ds = cortex.Dataset(**d)
 cortex.webshow(ds)
@@ -114,7 +98,7 @@ plt.imshow(plt.cm.nipy_spectral(x)[np.newaxis, ...], aspect=10)
 
 
 ns = [5, 7, 10, 14, 20, 28, 40, 56, 80]
-plt.xticks((np.log(ns) - y[0]) / (y[-1] -y[0]) * len(x), ns)
+plt.xticks((np.log(ns) - y[0]) / (y[-1] - y[0]) * len(x), ns)
 plt.show()
 
 # print(data)

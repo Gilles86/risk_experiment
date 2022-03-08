@@ -1,128 +1,92 @@
+import matplotlib.pyplot as plt
 import os.path as op
 from nilearn import surface
 import cortex
 import numpy as np
 from risk_experiment.utils.argparse import run_main, make_default_parser
+from utils import _load_parameters, get_alpha_vertex, get_wang15_ips
 
 sourcedata = '/data/ds-risk'
 subject = '02'
 session = '3t1'
 thr = .15
+vmax = 28
 
 
-def main(subject, session, sourcedata, standard_space=False, thr=thr):
+def main(subject, session, sourcedata, standard_space=False, thr=thr, smoothed=False):
     left, right = cortex.db.get_surf(f'sub-{subject}', 'fiducial', merge=False)
     left, right = cortex.Surface(*left), cortex.Surface(*right)
 
 
-    def smooth(data, *args, **kwargs):
-        n_left_pts = len(left.pts)
-
-        smoothed_data = np.zeros_like(data)
-        smoothed_data[:n_left_pts] = left.smooth(data[:n_left_pts], *args, **kwargs)
-        smoothed_data[n_left_pts:] = right.smooth(data[n_left_pts:], *args, **kwargs)
-
-        return smoothed_data
-
-
-    def _load_parameters(subject, session, par, space='fsnative', smoothed=False, concatenated=False, alpha=None):
-
-
-        d_name = 'encoding_model'
-        if smoothed:
-            d_name += '.smoothed'
-        if concatenated:
-            d_name += '.concatenated'
-
-        dir_ = op.join(sourcedata, 'derivatives', d_name, f'sub-{subject}',
-                f'ses-{session}', 'func')
-
-        print(dir_)
-
-        par_l = op.join(dir_, f'sub-{subject}_ses-{session}_desc-{par}_space-{space}_hemi-L.func.gii')
-        par_r = op.join(dir_, f'sub-{subject}_ses-{session}_desc-{par}_space-{space}_hemi-R.func.gii')
-
-        kwargs = {}
-
-        if par.startswith('r2'):
-            kwargs['vmin'] = 0.0
-            kwargs['vmax'] = 0.25
-
-        if op.exists(par_l):
-
-            par_l = surface.load_surf_data(par_l).T
-            par_r = surface.load_surf_data(par_r).T
-
-            par = np.concatenate((par_l, par_r))
-
-            if space == 'fsnative':
-                fs_subject = f'sub-{subject}'
-            else:
-                fs_subject = space
-
-            
-
-            return cortex.Vertex(par, fs_subject, alpha=alpha, **kwargs)
-        else:
-            return None
-
-
     d = {}
+
 
     if standard_space:
         space = 'fsaverage'
+        d['wang15_ips'] = get_wang15_ips('fsaverage', sourcedata)
     else:
         space = 'fsnative'
-
-    for session in ['3t1', '7t1'][:2]:
-        for par in ['r2.grid', 'r2.optim', 'mu.grid', 'mu.optim', 'sd.grid', 'sd.optim', 'amplitude.optim']:
-            for smoothed in [True]:
-                for concatenated in [False]:
-                    key = f'{session}.{par}'
-
-                    if smoothed:
-                        key += '.smoothed'
-                    if concatenated:
-                        key += '.concatenated'
+        d['wang15_ips'] = get_wang15_ips(subject, sourcedata)
 
 
-                    if par.startswith('mu') or par.startswith('sd'):
-                        pass
-                        values = _load_parameters(subject, session, par, 
-                                space, smoothed,
-                                concatenated=concatenated)
-                        d[key] = values
+    concatenated = False
 
-                        values = _load_parameters(subject, session, par, 
-                                space, smoothed,
-                                concatenated=concatenated)
-                        values.data[d[f'{session}.r2.optim.smoothed'].data < thr] = np.nan
-                        key += '.thr'
-                        
-                        if par[:2] == 'mu':
-                            values = _load_parameters(subject, session, par,
-                                    space, smoothed,
-                                    concatenated=concatenated)
-                            values.vmin = 5
-                            values.vmax = 80
-                            values.data = np.exp(values.data)
-                            values.data[d[f'{session}.r2.optim.smoothed'].data < thr] = np.nan
-                            key += '.natural'
+    for session in ['3t1', '7t1', '3t2', '7t2']:
 
-                    else:
-                        values = _load_parameters(subject, session, par,
-                                space, smoothed,
-                                concatenated=concatenated)
+        # for desc, split_certainty in zip(['', '.certain', '.uncertain'], [False, True, True]):
+        for desc, split_certainty in zip([''], [False]):
+            ext = ''
+            # if pca_confounds:
+                # ext += '.pca_confounds'
+            if smoothed:
+                ext += '.smoothed'
 
-                    if values:
-                        d[key] = values
+
+            print(desc)
+            r2 = _load_parameters(subject, session, 'r2.optim'+desc, space, smoothed,
+                    split_certainty=split_certainty,
+                    concatenated=concatenated, pca_confounds=False)
+
+            if r2 is not None:
+                alpha = np.clip(r2.data-thr, 0., .1) /.1
+
+                d[f'r2.{session}{ext}{desc}'] = get_alpha_vertex(r2.data, alpha, cmap='hot',
+                        subject=subject, vmin=0.0, vmax=.5,
+                        standard_space=standard_space)
+
+                mu = _load_parameters(subject, session, 'mu.optim'+desc, space, smoothed,
+                        split_certainty=split_certainty,
+                        concatenated=concatenated)
+
+                d[f'mu.{session}{ext}{desc}'] = get_alpha_vertex(mu.data, alpha, cmap='nipy_spectral',
+                        subject=subject, vmin=np.log(5), vmax=np.log(28),
+                        standard_space=standard_space)
+
+
 
     ds = cortex.Dataset(**d)
     cortex.webshow(ds)
+
+    x = np.linspace(0, 1, 101, True)
+    y = np.linspace(np.log(5), np.log(vmax), len(x), True)
+
+    plt.imshow(plt.cm.nipy_spectral(x)[np.newaxis, ...],
+            extent=[np.log(5),np.log(vmax), np.log(5), np.log(vmax)], aspect=1./10.,
+            origin='lower')
+
+    ns = np.array([5, 7, 10, 14, 20, 28, 40, 56, 80])
+    ns = ns[ns <= vmax]
+
+
+    plt.xticks(np.log(ns), ns)
+    # plt.xlim(np.olg(5, np.log(vmax))
+    plt.show()
 
 if __name__ == '__main__':
     parser = make_default_parser(sourcedata)
     parser.add_argument('--standard_space', action='store_true')
     parser.add_argument('--threshold', default=.15, type=float)
+    parser.add_argument('--smoothed', action='store_true')
     args = parser.parse_args()
-    main(args.subject, args.session, args.bids_folder, standard_space=args.standard_space, thr=args.threshold)
+    main(args.subject, args.session, args.bids_folder, standard_space=args.standard_space, thr=args.threshold,
+            smoothed=args.smoothed)
