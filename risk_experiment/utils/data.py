@@ -281,6 +281,21 @@ def get_mapper_paradigm(subject, session, sourcedata, run=None):
 
     return paradigm
 
+def get_task_paradigm(subject, session, bids_folder, run=None):
+
+    if run is None:
+        runs = range(1,9)
+    else:
+        runs = [run]
+
+    paradigm = [pd.read_csv(op.join(bids_folder, f'sub-{subject}', f'ses-{session}',
+                               'func', f'sub-{subject}_ses-{session}_task-task_run-{run}_events.tsv'), sep='\t')
+                for run in range(1, 9)]
+    paradigm = pd.concat(paradigm, keys=range(1,9), names=['run']).droplevel(1)
+    paradigm = paradigm[paradigm.trial_type == 'stimulus 1'].set_index('trial_nr', append=True)
+
+    return paradigm
+
 
 def get_target_dir(subject, session, sourcedata, base, modality='func'):
     target_dir = op.join(sourcedata, 'derivatives', base, f'sub-{subject}', f'ses-{session}',
