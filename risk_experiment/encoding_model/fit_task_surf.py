@@ -27,7 +27,7 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
         key += '.pca_confounds'
 
     if split_certainty:
-        target_dir += 'split_certainty'
+        target_dir += '.split_certainty'
 
     target_dir = get_target_dir(subject, session, bids_folder, target_dir)
 
@@ -39,7 +39,7 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
 
     if split_certainty:
         ixs = [paradigm['prob1'] == 0.55, paradigm['prob1'] == 1.0]
-        split_keys = ['uncertain', 'certain']
+        split_keys = ['.uncertain', '.certain']
     else:
         ixs = [paradigm.index]
         split_keys = ['']
@@ -70,7 +70,7 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
             optimizer.fit(init_pars=grid_parameters, learning_rate=.05, store_intermediate_parameters=False, max_n_iterations=10000,
                     r2_atol=0.00001)
 
-            target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-r2.optim_space-fsnative_hemi-{hemi}.func.gii')
+            target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-r2.optim{split_key}_space-fsnative_hemi-{hemi}.func.gii')
             write_gifti(subject, session, bids_folder, 'fsnative', 
                     pd.concat([optimizer.r2], keys=[hemi], names=['hemi']), target_fn)
             transform_data(target_fn, f'sub-{subject}', bids_folder, target_subject='fsaverage')

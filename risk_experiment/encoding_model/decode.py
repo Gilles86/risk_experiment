@@ -44,9 +44,9 @@ def main(subject, session, smoothed, n_verts=100, bids_folder='/data',
     data.index = paradigm.index
 
 
-    # np.random.seed(666)
-    # resample_mask = np.random.choice(data.columns, n_verts)
-    # data = data[resample_mask].astype(np.float32)
+    np.random.seed(666)
+    resample_mask = np.random.choice(data.columns, n_verts)
+    data = data[resample_mask].astype(np.float32)
 
     pdfs = []
     runs = range(1, 9)
@@ -58,22 +58,22 @@ def main(subject, session, smoothed, n_verts=100, bids_folder='/data',
 
         pars = get_prf_parameters(subject, session, run=test_run, mask=mask, bids_folder=bids_folder, smoothed=smoothed,space=space)
 
-        # pars = pars.loc[resample_mask]
+        pars = pars.loc[resample_mask]
 
         model = GaussianPRF(parameters=pars)
         pred = model.predict(paradigm=train_paradigm['log(n1)'].astype(np.float32))
 
-        r2 = get_rsq(train_data, pred)
-        print(r2.describe())
-        print(r2.sort_values(ascending=False))
-        r2_mask = r2.sort_values(ascending=False).index[:n_verts]
-        model.apply_mask(r2_mask)
+        # r2 = get_rsq(train_data, pred)
+        # print(r2.describe())
+        # print(r2.sort_values(ascending=False))
+        # r2_mask = r2.sort_values(ascending=False).index[:n_verts]
+        # model.apply_mask(r2_mask)
 
-        train_data = train_data[r2_mask].astype(np.float32)
-        test_data = test_data[r2_mask].astype(np.float32)
+        # train_data = train_data[r2_mask].astype(np.float32)
+        # test_data = test_data[r2_mask].astype(np.float32)
 
-        print(model.parameters)
-        print(train_data)
+        # print(model.parameters)
+        # print(train_data)
 
         model.init_pseudoWWT(stimulus_range, model.parameters)
         residfit = ResidualFitter(model, train_data,

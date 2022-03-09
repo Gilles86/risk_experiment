@@ -61,6 +61,8 @@ def main(subject, session, bids_folder, smoothed=True, concatenate=False):
         paradigm = get_mapper_paradigm(subject, session, bids_folder)
         avg_data = surf_cleaned.groupby(level=1, axis=0).mean()
         data = avg_data
+    
+    print(paradigm)
 
     print('DATA: ', data, data.shape)
 
@@ -83,7 +85,7 @@ def main(subject, session, bids_folder, smoothed=True, concatenate=False):
     optimizer = ParameterFitter(model, data, paradigm)
 
     grid_parameters = optimizer.fit_grid(mus, sds, amplitudes, baselines, use_correlation_cost=True)
-    grid_parameters = optimizer.refine_baseline_and_amplitude(grid_parameters, n_iterations=5)
+    grid_parameters = optimizer.refine_baseline_and_amplitude(grid_parameters, n_iterations=2)
 
     r2 = optimizer.get_rsq(grid_parameters)
 
