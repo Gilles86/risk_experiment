@@ -445,3 +445,40 @@ def get_prf_parameters(subject, session, bids_folder,
         parameters.append(pars)
 
     return pd.concat(parameters, axis=1, keys=keys, names=['parameter'])
+
+
+def get_surf_distance_matrix(subject, mask, hemi=None, bids_folder='/data'):
+
+    if subject == 'fsaverage':
+        fs_subject = 'fsaverage'
+    else:
+        fs_subject = f'sub-{subject}'
+
+
+    fs_hemi = {'L':'lh', 'R':'rh'}[hemi]
+
+    if hemi is None:
+        
+        dist_matrix_l = get_surf_distance_matrix(subject, mask, 'L', bids_folder)
+        dist_matrix_r = get_surf_distance_matrix(subject, mask, 'R', bids_folder)
+
+        dist_matrix = pd.concat((dist_matrix_l, dist_matrix_r), axis=0).fillna(100)
+
+    else:
+        distance = op.join(bids_folder, 'derivatives', 'freesurfer', fs_subject, 'surf', f'{fs_hemi}.{mask}_distance.mgz')
+        v = surface.load_surf_data(distance)
+
+        mask = get_surf_mask(subject, mask, hemi, bids_folder)
+        nlverts = int(mask.sum())
+        
+        dist_matrix = np.zeros((nlverts,nlverts))
+        dist_matrix[np.triu_indices(nlverts, k = 1)] = v
+        dist_matrix = dist_matrix + dist_matrix.T
+
+        dist_matrix = pd.DataFrame(dist_matrix, index=mask.index[mask], columns=mask.index[mask])
+
+        dist_matrix = pd.concat((dist_matrix,), axis=0, keys=[hemi], names=['hemi'])
+        dist_matrix = pd.concat((dist_matrix,), axis=1, keys=[hemi], names=['hemi'])
+
+        return dist_matrix
+
