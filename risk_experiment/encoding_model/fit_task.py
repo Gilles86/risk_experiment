@@ -1,3 +1,4 @@
+
 import argparse
 import pandas as pd
 from braincoder.models import GaussianPRF
@@ -5,6 +6,7 @@ from braincoder.optimize import ParameterFitter
 from risk_experiment.utils import get_surf_data, get_mapper_paradigm, write_gifti, get_target_dir
 from risk_experiment.utils.surface import transform_data
 from nilearn import surface
+from nilearn.input_data import NiftiMasker
 
 import os
 import os.path as op
@@ -15,7 +17,7 @@ import seaborn as sns
 def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
         pca_confounds=False, split_certainty=True):
 
-    key = 'glm_stim1_surf'
+    key = 'glm_stim1'
     target_dir = 'encoding_model'
 
     if smoothed:
@@ -27,7 +29,7 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
         key += '.pca_confounds'
 
     if split_certainty:
-        target_dir += '.split_certainty'
+        target_dir += 'split_certainty'
 
     target_dir = get_target_dir(subject, session, bids_folder, target_dir)
 
@@ -39,7 +41,7 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
 
     if split_certainty:
         ixs = [paradigm['prob1'] == 0.55, paradigm['prob1'] == 1.0]
-        split_keys = ['.uncertain', '.certain']
+        split_keys = ['uncertain', 'certain']
     else:
         ixs = [paradigm.index]
         split_keys = ['']
@@ -54,34 +56,35 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
     amplitudes = np.array([1.], dtype=np.float32)
     baselines = np.array([0], dtype=np.float32)
 
-    for hemi in ['L', 'R']:
+    mask = op.join(bids_folder, 'derivatives', f'fmriprep/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-task_run-1_space-T1w_desc-brain_mask.nii.gz')
 
-        data = surface.load_surf_data(op.join(bids_folder, 'derivatives', key,
-                                              f'sub-{subject}', f'ses-{session}', 'func', f'sub-{subject}_ses-{session}_task-task_space-fsnative_desc-stims1_hemi-{hemi}.pe.gii')).T
-        
-        data = pd.DataFrame(data, index=paradigm.index)
+    masker = NiftiMasker(mask_img=mask)
 
-        for ix, split_key in zip(ixs, split_keys):
-            optimizer = ParameterFitter(model, data.loc[ix, :], paradigm.loc[ix])
+    data = op.join(bids_folder, 'derivatives', key,
+                                          f'sub-{subject}', f'ses-{session}', 'func', f'sub-{subject}_ses-{session}_task-task_space-T1w_desc-stims1_pe.nii.gz')
 
-            grid_parameters = optimizer.fit_grid(mus, sds, amplitudes, baselines, use_correlation_cost=True)
-            grid_parameters = optimizer.refine_baseline_and_amplitude(grid_parameters, n_iterations=2)
+    data = pd.DataFrame(masker.fit_transform(data), index=paradigm.index)
+    print(data)
+
+    data = pd.DataFrame(data, index=paradigm.index)
+
+    optimizer = ParameterFitter(model, data, paradigm)
+
+    grid_parameters = optimizer.fit_grid(mus, sds, amplitudes, baselines, use_correlation_cost=True)
+    grid_parameters = optimizer.refine_baseline_and_amplitude(grid_parameters, n_iterations=2)
 
 
-            optimizer.fit(init_pars=grid_parameters, learning_rate=.05, store_intermediate_parameters=False, max_n_iterations=10000,
-                    r2_atol=0.00001)
+    optimizer.fit(init_pars=grid_parameters, learning_rate=.05, store_intermediate_parameters=False, max_n_iterations=10000,
+            r2_atol=0.00001)
 
-            target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-r2.optim{split_key}_space-fsnative_hemi-{hemi}.func.gii')
-            write_gifti(subject, session, bids_folder, 'fsnative', 
-                    pd.concat([optimizer.r2], keys=[hemi], names=['hemi']), target_fn)
-            transform_data(target_fn, f'sub-{subject}', bids_folder, target_subject='fsaverage')
+    target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-r2.optim_space-T1w_pars.nii.gz')
 
-            for par, values in optimizer.estimated_parameters.T.iterrows():
-                print(values)
-                target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-{par}.optim{split_key}_space-fsnative_hemi-{hemi}.func.gii')
-                write_gifti(subject, session, bids_folder, 'fsnative', 
-                        pd.concat([values], keys=[hemi], names=['hemi']), target_fn)
-                transform_data(target_fn, f'sub-{subject}', bids_folder, target_subject='fsaverage')
+    masker.inverse_transform(optimizer.r2).to_filename(target_fn)
+
+    for par, values in optimizer.estimated_parameters.T.iterrows():
+        print(values)
+        target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-{par}.optim{split_key}_space-T1w_pars.nii.gz')
+        masker.inverse_transform(values).to_filename(target_fn)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
