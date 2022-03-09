@@ -15,7 +15,7 @@ import seaborn as sns
 
 
 def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
-        pca_confounds=False, split_certainty=True):
+        pca_confounds=False):
 
     key = 'glm_stim1'
     target_dir = 'encoding_model'
@@ -28,9 +28,6 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
         target_dir += '.pca_confounds'
         key += '.pca_confounds'
 
-    if split_certainty:
-        target_dir += 'split_certainty'
-
     target_dir = get_target_dir(subject, session, bids_folder, target_dir)
 
     paradigm = [pd.read_csv(op.join(bids_folder, f'sub-{subject}', f'ses-{session}',
@@ -39,15 +36,8 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
     paradigm = pd.concat(paradigm, keys=range(1,9), names=['run'])
     paradigm = paradigm[paradigm.trial_type == 'stimulus 1'].set_index('trial_nr')
 
-    if split_certainty:
-        ixs = [paradigm['prob1'] == 0.55, paradigm['prob1'] == 1.0]
-        split_keys = ['uncertain', 'certain']
-    else:
-        ixs = [paradigm.index]
-        split_keys = ['']
-
-    paradigm = paradigm[['n1']]
-    paradigm['n1'] = np.log(paradigm['n1'])
+    paradigm['log(n1)'] = np.log(paradigm['n1'])
+    paradigm = paradigm['log(n1)']
 
     model = GaussianPRF()
     # SET UP GRID
@@ -83,7 +73,7 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
 
     for par, values in optimizer.estimated_parameters.T.iterrows():
         print(values)
-        target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-{par}.optim{split_key}_space-T1w_pars.nii.gz')
+        target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-{par}.optim_space-T1w_pars.nii.gz')
         masker.inverse_transform(values).to_filename(target_fn)
 
 if __name__ == '__main__':
@@ -93,8 +83,7 @@ if __name__ == '__main__':
     parser.add_argument('--bids_folder', default='/data')
     parser.add_argument('--smoothed', action='store_true')
     parser.add_argument('--pca_confounds', action='store_true')
-    parser.add_argument('--split_certainty', action='store_true')
     args = parser.parse_args()
 
     main(args.subject, args.session, bids_folder=args.bids_folder, smoothed=args.smoothed,
-            pca_confounds=args.pca_confounds, split_certainty=args.split_certainty)
+            pca_confounds=args.pca_confounds)
