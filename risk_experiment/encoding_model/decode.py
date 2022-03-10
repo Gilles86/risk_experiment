@@ -42,11 +42,6 @@ def main(subject, session, smoothed, n_voxels=1000, bids_folder='/data',
     data = get_single_trial_volume(subject, session, bids_folder=bids_folder, mask=mask).astype(np.float32)
     print(data)
 
-
-    data = data.loc[:, ~data.isnull().any(0)]
-    data = data.loc[:, ~(data.std(0) == 0.0)]
-    print(data)
-
     pdfs = []
     runs = range(1, 9)
 
