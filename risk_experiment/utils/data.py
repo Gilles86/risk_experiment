@@ -1,6 +1,7 @@
 import os.path as op
 from nilearn.glm.first_level import make_first_level_design_matrix
 from nilearn import surface, image
+from nilearn.input_data import NiftiMasker
 import nibabel as nb
 import pandas as pd
 import numpy as np
@@ -396,7 +397,49 @@ def get_surf_mask(subject, mask, hemi=None, bids_folder='/data'):
     d = pd.Series(d, index=pd.Index(np.arange(len(d)), name='vertex'))
     return d
 
-def get_prf_parameters(subject, session, bids_folder,
+
+
+
+def get_prf_parameters_volume(subject, session, bids_folder,
+        run=None,
+        smoothed=False,
+        cross_validated=True,
+        hemi=None,
+        mask=None,
+        space='fsnative'):
+
+    dir = 'encoding_model'
+    if cross_validated:
+        if run is None:
+            raise Exception('Give run')
+
+        dir += '.cv'
+
+    if smoothed:
+        dir += '.smoothed'
+
+    parameters = []
+
+    keys = ['mu', 'sd', 'amplitude', 'baseline']
+
+    mask = get_volume_mask(subject, session, mask, bids_folder)
+    masker = NiftiMasker(mask)
+
+    for parameter_key in keys:
+        if cross_validated:
+            fn = op.join(bids_folder, 'derivatives', dir, f'sub-{subject}', f'ses-{session}', 
+                    'func', f'sub-{subject}_ses-{session}_run-{run}_desc-{parameter_key}.optim_space-T1w_pars.nii.gz')
+        else:
+            fn = op.join(bids_folder, 'derivatives', dir, f'sub-{subject}', f'ses-{session}', 
+                    'func', f'sub-{subject}_ses-{session}_desc-{parameter_key}.optim_space-T1w_pars.nii.gz')
+        
+        pars = pd.Series(masker.fit_transform(fn).ravel())
+        parameters.append(pars)
+
+    return pd.concat(parameters, axis=1, keys=keys, names=['parameter'])
+
+
+def get_prf_parameters_surf(subject, session, bids_folder,
         run=None,
         smoothed=False,
         cross_validated=False,
@@ -434,8 +477,13 @@ def get_prf_parameters(subject, session, bids_folder,
         mask = get_surf_mask(subject, mask, hemi, bids_folder)
 
     for parameter_key in keys:
-        fn = op.join(bids_folder, 'derivatives', 'encoding_model.cv', f'sub-{subject}', f'ses-{session}', 
-                'func', f'sub-{subject}_ses-{session}_run-{run}_desc-{parameter_key}.optim_space-{space}_hemi-{hemi}.func.gii')
+        if cross_validated:
+            fn = op.join(bids_folder, 'derivatives', 'encoding_model.cv', f'sub-{subject}', f'ses-{session}', 
+                    'func', f'sub-{subject}_ses-{session}_run-{run}_desc-{parameter_key}.optim_space-{space}_hemi-{hemi}.func.gii')
+        else:
+            fn = op.join(bids_folder, 'derivatives', 'encoding_model', f'sub-{subject}', f'ses-{session}', 
+                    'func', f'sub-{subject}_ses-{session}_desc-{parameter_key}.optim_space-{space}_hemi-{hemi}.func.gii')
+
         pars = pd.Series(surface.load_surf_data(fn))
         pars.index.name = 'vertex'
 
@@ -481,4 +529,34 @@ def get_surf_distance_matrix(subject, mask, hemi=None, bids_folder='/data'):
         dist_matrix = pd.concat((dist_matrix,), axis=1, keys=[hemi], names=['hemi'])
 
         return dist_matrix
+
+
+def get_volume_mask(subject, session, mask, bids_folder='/data'):
+
+    base_mask = op.join(bids_folder, 'derivatives', f'fmriprep/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-task_run-1_space-T1w_desc-brain_mask.nii.gz')
+
+    if mask is None:
+        return base_mask
+
+    elif mask == 'wang15_ips':
+        mask = op.join(bids_folder, 'derivatives', 'ips_masks', f'sub-{subject}', 'anat', f'sub-{subject}_space-T1w_desc-wang15ips_mask.nii.gz')
+        mask = image.resample_to_img(mask, base_mask, interpolation='nearest')
+
+    return mask
+
+def get_single_trial_volume(subject, session, mask=None, bids_folder='/data'):
+
+    fn = op.join(bids_folder, 'derivatives', 'glm_stim1', f'sub-{subject}', f'ses-{session}', 'func', 
+            f'sub-{subject}_ses-{session}_task-task_space-T1w_desc-stims1_pe.nii.gz')
+
+    im = image.load_img(fn)
+    
+    mask = get_volume_mask(subject, session, mask, bids_folder)
+    paradigm = get_task_paradigm(subject, session, bids_folder)
+    masker = NiftiMasker(mask_img=mask)
+
+    data = pd.DataFrame(masker.fit_transform(im), index=paradigm.index)
+
+    return data
+
 
