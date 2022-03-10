@@ -14,7 +14,7 @@ from braincoder.optimize import ParameterFitter
 
 def main(subject, session, bids_folder, smoothed=True, concatenate=False, space='T1w'):
 
-    target_dir = 'encoding_model.volume'
+    target_dir = 'encoding_model'
 
     target_dir = get_target_dir(subject, session, bids_folder, target_dir)
 
@@ -29,7 +29,6 @@ def main(subject, session, bids_folder, smoothed=True, concatenate=False, space=
     paradigm = get_mapper_paradigm(subject, session, bids_folder)
 
     images = []
-
 
     psc_dir = op.join(bids_folder, 'derivatives', 'psc', f'sub-{subject}', f'ses-{session}', 'func')
 
@@ -71,33 +70,25 @@ def main(subject, session, bids_folder, smoothed=True, concatenate=False, space=
     model = GaussianPRFWithHRF(hrf_model=hrf_model)
 
     # # SET UP GRID
-    mus = np.linspace(0, np.log(80), 20, dtype=np.float32)
-    sds = np.linspace(.01, 2, 15, dtype=np.float32)
-    amplitudes = np.linspace(1e-6, 10, 10, dtype=np.float32)
-    baselines = np.array([0.0], dtype=np.float32)
+    mus = np.log(np.linspace(5, 80, 10, dtype=np.float32))
+    sds = np.log(np.linspace(2, 30, 10, dtype=np.float32))
+    amplitudes = np.array([1.], dtype=np.float32)
+    baselines = np.array([0], dtype=np.float32)
 
     optimizer = ParameterFitter(model, mean_data, paradigm)
 
-    grid_parameters = optimizer.fit_grid(mus, sds, amplitudes, baselines)
-
-    r2 = optimizer.get_rsq(grid_parameters)
-
-    target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-r2.grid_space-{space}_parameter.nii.gz')
-    masker.inverse_transform(r2).to_filename(target_fn)
-
-    for par, values in grid_parameters.T.iterrows():
-        target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-{par}.grid_space-{space}_parameter.nii.gz')
-        masker.inverse_transform(values).to_filename(target_fn)
+    grid_parameters = optimizer.fit_grid(mus, sds, amplitudes, baselines, use_correlation_cost=True)
+    grid_parameters = optimizer.refine_baseline_and_amplitude(grid_parameters, n_iterations=2)
 
     optimizer.fit(init_pars=grid_parameters, learning_rate=.1, store_intermediate_parameters=False, max_n_iterations=5000)
 
-    r2 = optimizer.r2
+    target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-r2.optim_space-T1w_pars.nii.gz')
 
-    target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-r2.optim_space-{space}_parameter.nii.gz')
-    masker.inverse_transform(r2).to_filename(target_fn)
+    masker.inverse_transform(optimizer.r2).to_filename(target_fn)
 
-    for par, values in grid_parameters.T.iterrows():
-        target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-{par}.optim_space-{space}_parameter.nii.gz')
+    for par, values in optimizer.estimated_parameters.T.iterrows():
+        print(values)
+        target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_desc-{par}.optim_space-T1w_pars.nii.gz')
         masker.inverse_transform(values).to_filename(target_fn)
 
 if __name__ == '__main__':
