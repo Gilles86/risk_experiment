@@ -54,8 +54,6 @@ def main(subject, session, smoothed, n_voxels=1000, bids_folder='/data',
         # pars = get_prf_parameters_volume(subject, session, cross_validated=False,  mask=mask, bids_folder=bids_folder)
         print(pars)
 
-        pars = pars.loc[resample_mask]
-
         model = GaussianPRF(parameters=pars)
         pred = model.predict(paradigm=train_paradigm['log(n1)'].astype(np.float32))
 
