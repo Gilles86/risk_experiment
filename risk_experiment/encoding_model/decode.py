@@ -39,7 +39,12 @@ def main(subject, session, smoothed, n_voxels=1000, bids_folder='/data',
     paradigm['log(n1)'] = np.log(paradigm['n1'])
     print(paradigm)
 
-    data = get_single_trial_volume(subject, session, bids_folder=bids_folder, mask=mask)
+    data = get_single_trial_volume(subject, session, bids_folder=bids_folder, mask=mask).astype(np.float32)
+    print(data)
+
+
+    data = data.loc[:, ~data.isnull().any(0)]
+    data = data.loc[:, ~(data.std(0) == 0.0)]
     print(data)
 
     pdfs = []
@@ -60,6 +65,9 @@ def main(subject, session, smoothed, n_voxels=1000, bids_folder='/data',
         r2 = get_rsq(train_data, pred)
         print(r2.describe())
         r2_mask = r2.sort_values(ascending=False).index[:n_voxels]
+
+        train_data = train_data[r2_mask]
+        test_data = test_data[r2_mask]
 
         print(r2.loc[r2_mask])
         model.apply_mask(r2_mask)
