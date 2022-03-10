@@ -8,18 +8,18 @@ from nilearn import surface
 from braincoder.optimize import ResidualFitter
 from braincoder.models import GaussianPRF
 from braincoder.utils import get_rsq
-from risk_experiment.utils import get_single_trial_volume, get_surf_mask, get_prf_parameters_volume
+from risk_experiment.utils import get_single_trial_surf_data, get_surf_mask, get_prf_parameters
 import numpy as np
 
 
 stimulus_range = np.linspace(np.log(5), np.log(80), 100)
 mask = 'wang15_ips'
-space = 'T1w'
+space = 'fsnative'
 
-def main(subject, session, smoothed, n_voxels=1000, bids_folder='/data',
+def main(subject, session, smoothed, n_verts=100, bids_folder='/data',
         mask='wang15_ips'):
 
-    target_dir = op.join(bids_folder, 'derivatives', 'decoded_pdfs.volume')
+    target_dir = op.join(bids_folder, 'derivatives', 'decoded_pdfs')
 
     if smoothed:
         target_dir += '.smoothed'
@@ -39,8 +39,14 @@ def main(subject, session, smoothed, n_voxels=1000, bids_folder='/data',
     paradigm['log(n1)'] = np.log(paradigm['n1'])
     print(paradigm)
 
-    data = get_single_trial_volume(subject, session, bids_folder=bids_folder, mask=mask)
-    print(data)
+    data = get_single_trial_surf_data(subject, session, bids_folder, mask=mask, smoothed=smoothed,
+            space=space)
+    data.index = paradigm.index
+
+
+    # np.random.seed(666)
+    # resample_mask = np.random.choice(data.columns, n_verts)
+    # data = data[resample_mask].astype(np.float32)
 
     pdfs = []
     runs = range(1, 9)
@@ -50,21 +56,24 @@ def main(subject, session, smoothed, n_voxels=1000, bids_folder='/data',
         test_data, test_paradigm = data.loc[test_run].copy(), paradigm.loc[test_run].copy()
         train_data, train_paradigm = data.drop(test_run, level='run').copy(), paradigm.drop(test_run, level='run').copy()
 
-        pars = get_prf_parameters_volume(subject, session, cross_validated=True, run=test_run, mask=mask, bids_folder=bids_folder)
-        # pars = get_prf_parameters_volume(subject, session, cross_validated=False,  mask=mask, bids_folder=bids_folder)
-        print(pars)
+        pars = get_prf_parameters(subject, session, run=test_run, mask=mask, bids_folder=bids_folder, smoothed=smoothed,space=space)
 
-        pars = pars.loc[resample_mask]
+        # pars = pars.loc[resample_mask]
 
         model = GaussianPRF(parameters=pars)
         pred = model.predict(paradigm=train_paradigm['log(n1)'].astype(np.float32))
 
         r2 = get_rsq(train_data, pred)
         print(r2.describe())
-        r2_mask = r2.sort_values(ascending=False).index[:n_voxels]
-
-        print(r2.loc[r2_mask])
+        print(r2.sort_values(ascending=False))
+        r2_mask = r2.sort_values(ascending=False).index[:n_verts]
         model.apply_mask(r2_mask)
+
+        train_data = train_data[r2_mask].astype(np.float32)
+        test_data = test_data[r2_mask].astype(np.float32)
+
+        print(model.parameters)
+        print(train_data)
 
         model.init_pseudoWWT(stimulus_range, model.parameters)
         residfit = ResidualFitter(model, train_data,
@@ -94,7 +103,7 @@ def main(subject, session, smoothed, n_voxels=1000, bids_folder='/data',
 
     pdfs = pd.concat(pdfs)
 
-    target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_mask-{mask}_nvoxels-{n_voxels}_space-{space}_pars.tsv')
+    target_fn = op.join(target_dir, f'sub-{subject}_ses-{session}_mask-{mask}_nverts-{n_verts}_space-{space}_pars.tsv')
     pdfs.to_csv(target_fn, sep='\t')
 
 
@@ -105,9 +114,11 @@ if __name__ == '__main__':
     parser.add_argument('--bids_folder', default='/data')
     parser.add_argument('--smoothed', action='store_true')
     parser.add_argument('--mask', default='wang15_ips')
-    parser.add_argument('--n_voxels', default=100, type=int)
+    parser.add_argument('--n_verts', default=100, type=int)
     args = parser.parse_args()
 
-    main(args.subject, args.session, args.smoothed, args.n_voxels,
+    main(args.subject, args.session, args.smoothed, args.n_verts,
             bids_folder=args.bids_folder, mask=args.mask)
             
+# def main(subject, session, smoothed, n_verts=100, bids_folder='/data',
+        # mask='wang15_ips'):
