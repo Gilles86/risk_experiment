@@ -276,7 +276,7 @@ def get_mapper_paradigm(subject, session, sourcedata, run=None):
     tmp.index = pd.Index(pd.to_timedelta([0, (n_vols-1)*tr], 's'), name='time')
     paradigm = pd.concat((tmp, events)).n_dots.resample(
         '2.3S').nearest().to_frame('n_dots').astype(np.float32)
-    paradigm['n_dots'] = np.log(paradigm['n_dots']).replace(-np.inf, 0)
+    paradigm['n_dots'] = np.log(paradigm['n_dots']).replace(-np.inf, -1e6)
 
     paradigm.index = pd.Index(get_frametimes(subject, session), name='time')
 

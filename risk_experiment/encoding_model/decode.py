@@ -54,7 +54,7 @@ def main(subject, session, smoothed, n_voxels=1000, bids_folder='/data',
         # pars = get_prf_parameters_volume(subject, session, cross_validated=False,  mask=mask, bids_folder=bids_folder)
         print(pars)
 
-        # pars = pars.loc[resample_mask]
+        pars = pars.loc[resample_mask]
 
         model = GaussianPRF(parameters=pars)
         pred = model.predict(paradigm=train_paradigm['log(n1)'].astype(np.float32))
@@ -65,12 +65,6 @@ def main(subject, session, smoothed, n_voxels=1000, bids_folder='/data',
 
         print(r2.loc[r2_mask])
         model.apply_mask(r2_mask)
-
-        train_data = train_data[r2_mask].astype(np.float32)
-        test_data = test_data[r2_mask].astype(np.float32)
-
-        print(model.parameters)
-        print(train_data)
 
         model.init_pseudoWWT(stimulus_range, model.parameters)
         residfit = ResidualFitter(model, train_data,
@@ -117,5 +111,3 @@ if __name__ == '__main__':
     main(args.subject, args.session, args.smoothed, args.n_voxels,
             bids_folder=args.bids_folder, mask=args.mask)
             
-# def main(subject, session, smoothed, n_verts=100, bids_folder='/data',
-        # mask='wang15_ips'):
