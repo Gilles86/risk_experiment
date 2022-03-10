@@ -52,3 +52,5 @@ docs/_build/
 # Settings/logs
 experiment/logs/*
 experiment/settings/*
+
+*output.nipype
