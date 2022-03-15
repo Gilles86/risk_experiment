@@ -47,6 +47,28 @@ def main(subj, bids_folder='/data'):
     save(target_fn, im)
     print('surface_to_image complete!')
 
+    target_fn = op.join(target_dir, f'sub-{subj}_space-T1w_desc-wang15ipsL_mask.nii.gz')
+    print('Generating volume...')
+    im = sub.cortex_to_image(lhdat,
+            im,
+            hemi='lh',
+            method='nearest',
+            fill=0.0)
+    print('Exporting volume file: %s' % target_fn)
+    save(target_fn, im)
+    print('surface_to_image complete!')
+
+    target_fn = op.join(target_dir, f'sub-{subj}_space-T1w_desc-wang15ipsR_mask.nii.gz')
+    print('Generating volume...')
+    im = sub.cortex_to_image(rhdat,
+            im,
+            hemi='rh',
+            method='nearest',
+            fill=0.0)
+    print('Exporting volume file: %s' % target_fn)
+    save(target_fn, im)
+    print('surface_to_image complete!')
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('subject', default=None)
