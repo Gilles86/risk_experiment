@@ -3,6 +3,7 @@ import os.path as op
 import nibabel as nb
 from nilearn import surface
 import numpy as np
+import cortex
 
 
 def main(subject, bids_folder):
@@ -23,11 +24,21 @@ def main(subject, bids_folder):
     else:
         fs_subject = f'sub-{subject}'
         for hemi in['lh', 'rh']:
+
+            pts, poly = cortex.db.get_surf(f'sub-{subject}', 'pia', hemisphere=hemi)
+            surf = cortex.polyutils.Surface(pts, poly)
+
             im = nb.load(fn.format(hemi=hemi, label='wang15_fplbl', fs_subject=fs_subject))
             prob_mask = surface.load_surf_data(fn.format(hemi=hemi, label='wang15_fplbl', fs_subject=fs_subject))
             # print(prob_mask, op.exists(prob_mask))
             label_mask = (prob_mask[18:24] > 0.05).any(0).astype(np.int16)
-            
+
+            ix_mask = np.where(label_mask)[0]
+            ss = surf.create_subsurface(label_mask.astype(np.bool))
+            label_mask = ss.subsurface_vertex_mask
+
+            print(len(pts), len(label_mask))
+
             new_im = nb.MGHImage(label_mask, im.affine, im.header)
             new_im.to_filename(fn.format(hemi=hemi, label='wang15_ips', fs_subject=fs_subject))
 
