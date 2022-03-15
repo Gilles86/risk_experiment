@@ -61,11 +61,16 @@ def get_behavior(subject, session, sourcedata):
 def get_fmriprep_confounds(subject, session, sourcedata,
                            confounds_to_include=None):
 
-    print(f'Getting fmriprepconfounds for {subject} - {session}')
 
     runs = get_runs(subject, session)
 
-    print(runs)
+    if session.endswith('1'):
+        task = 'mapper'
+    elif session.endswith('2'):
+        task = 'task'
+    else:
+        raise ValueError(f'Invalid session: {session}')
+
 
     if confounds_to_include is None:
         fmriprep_confounds_include = ['dvars', 'framewise_displacement', 'trans_x',
@@ -78,7 +83,7 @@ def get_fmriprep_confounds(subject, session, sourcedata,
         fmriprep_confounds_include = confounds_to_include
 
     fmriprep_confounds = [
-        op.join(sourcedata, f'derivatives/fmriprep/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-mapper_run-{run}_desc-confounds_timeseries.tsv') for run in runs]
+        op.join(sourcedata, f'derivatives/fmriprep/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-{task}_run-{run}_desc-confounds_timeseries.tsv') for run in runs]
     fmriprep_confounds = [pd.read_table(
         cf)[fmriprep_confounds_include] for cf in fmriprep_confounds]
 
@@ -99,6 +104,13 @@ def get_retroicor_confounds(subject, session, sourcedata, n_cardiac=2, n_respira
             [runs, get_frametimes(subject, session)], names=['run', None])
         return pd.DataFrame(index=index, columns=[])
 
+    if session.endswith('1'):
+        task = 'mapper'
+    elif session.endswith('2'):
+        task = 'task'
+    else:
+        raise ValueError(f'Invalid session: {session}')
+
     # Make columns
     columns = []
     for n, modality in zip([3, 4, 2], ['cardiac', 'respiratory', 'interaction']):
@@ -109,7 +121,7 @@ def get_retroicor_confounds(subject, session, sourcedata, n_cardiac=2, n_respira
         columns, names=['modality', 'order', 'type'])
 
     retroicor_confounds = [
-        op.join(sourcedata, f'derivatives/physiotoolbox/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-mapper_run-{run}_desc-retroicor_timeseries.tsv') for run in runs]
+        op.join(sourcedata, f'derivatives/physiotoolbox/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-{task}_run-{run}_desc-retroicor_timeseries.tsv') for run in runs]
     retroicor_confounds = [pd.read_table(
         cf, header=None, usecols=range(18), names=columns) for cf in retroicor_confounds]
 
@@ -126,8 +138,6 @@ def get_retroicor_confounds(subject, session, sourcedata, n_cardiac=2, n_respira
                            confounds.loc[:, ('respiratory',
                                              slice(n_respiratory))],
                            confounds.loc[:, ('interaction', slice(n_interaction))]), axis=1)
-
-    print(confounds)
 
     return confounds
 
@@ -146,7 +156,7 @@ def get_frametimes(subject, session):
     if session[-1] == '1':
         n_vols = 125
     else:
-        raise NotImplementedError
+        n_vols = 160
 
     tr = get_tr(subject, session)
     return np.linspace(0, (n_vols-1)*tr, n_vols)
@@ -289,13 +299,49 @@ def get_task_paradigm(subject, session, bids_folder, run=None):
     else:
         runs = [run]
 
-    paradigm = [pd.read_csv(op.join(bids_folder, f'sub-{subject}', f'ses-{session}',
+    behavior = [pd.read_csv(op.join(bids_folder, f'sub-{subject}', f'ses-{session}',
                                'func', f'sub-{subject}_ses-{session}_task-task_run-{run}_events.tsv'), sep='\t')
                 for run in range(1, 9)]
-    paradigm = pd.concat(paradigm, keys=range(1,9), names=['run']).droplevel(1)
-    paradigm = paradigm[paradigm.trial_type == 'stimulus 1'].set_index('trial_nr', append=True)
+    behavior = pd.concat(behavior, keys=range(1,9), names=['run']).droplevel(1)
 
-    return paradigm
+    behavior['subject'] = subject
+    behavior = behavior.reset_index().set_index(
+        ['subject', 'run', 'trial_type'])
+    stimulus1 = behavior.xs('stimulus 1', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_type', 'n1', 'prob1', 'n2', 'prob2']]
+    stimulus1['duration'] = 0.6
+
+    stimulus2 = behavior.xs('stimulus 2', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_type']]
+    stimulus2['duration'] = 0.6
+
+
+    n1 = behavior.xs('stimulus 1', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_type', 'n1']]
+    n1['duration'] = 0.6
+    def zscore(n):
+        return (n - n.mean()) / n.std()
+    n1['modulation'] = zscore(n1['n1'])
+    n1['trial_type'] = 'n_dots1'
+
+    n2 = behavior.xs('stimulus 2', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_type', 'n2']]
+    n2['duration'] = 0.6
+    def zscore(n):
+        return (n - n.mean()) / n.std()
+    n2['modulation'] = zscore(n2['n2'])
+    n2['trial_type'] = 'n_dots2'
+
+    p1 = behavior.xs('stimulus 1', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_type', 'prob1']]
+    p1 = p1[p1.prob1 == 1.0]
+    p1['duration'] = 0.6
+    p1['trial_type'] = 'certain1'
+
+    p2 = behavior.xs('stimulus 2', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_type', 'prob2']]
+    p2 = p2[p2.prob2 == 1.0]
+    p2['duration'] = 0.6
+    p2['trial_type'] = 'certain2'
+
+    events = pd.concat((stimulus1, stimulus2, n1, n2, p1, p2))
+    events['modulation'].fillna(1.0, inplace=True)
+
+    return events
 
 
 def get_target_dir(subject, session, sourcedata, base, modality='func'):
@@ -533,7 +579,12 @@ def get_surf_distance_matrix(subject, mask, hemi=None, bids_folder='/data'):
 
 def get_volume_mask(subject, session, mask, bids_folder='/data'):
 
-    base_mask = op.join(bids_folder, 'derivatives', f'fmriprep/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-task_run-1_space-T1w_desc-brain_mask.nii.gz')
+    if session.endswith('1'):
+        task  = 'mapper'
+    else:
+        task  = 'task'
+
+    base_mask = op.join(bids_folder, 'derivatives', f'fmriprep/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-{task}_run-1_space-T1w_desc-brain_mask.nii.gz')
 
     if mask is None:
         return base_mask
