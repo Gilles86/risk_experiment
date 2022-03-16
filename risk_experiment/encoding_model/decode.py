@@ -40,6 +40,7 @@ def main(subject, session, smoothed, n_voxels=1000, bids_folder='/data',
     print(paradigm)
 
     data = get_single_trial_volume(subject, session, bids_folder=bids_folder, mask=mask).astype(np.float32)
+    data.index = paradigm.index
     print(data)
 
     pdfs = []
