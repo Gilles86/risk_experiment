@@ -588,9 +588,9 @@ def get_volume_mask(subject, session, mask, bids_folder='/data'):
     if mask is None:
         return base_mask
 
-    elif mask == 'wang15_ips':
-        mask = op.join(bids_folder, 'derivatives', 'ips_masks', f'sub-{subject}', 'anat', f'sub-{subject}_space-T1w_desc-wang15ips_mask.nii.gz')
-        mask = image.resample_to_img(mask, base_mask, interpolation='nearest')
+    mask = mask.replace('_', '')
+    mask = op.join(bids_folder, 'derivatives', 'ips_masks', f'sub-{subject}', 'anat', f'sub-{subject}_space-T1w_desc-{mask}_mask.nii.gz')
+    mask = image.resample_to_img(mask, base_mask, interpolation='nearest')
 
     return mask
 
