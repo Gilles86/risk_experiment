@@ -603,6 +603,7 @@ def get_single_trial_volume(subject, session, mask=None, bids_folder='/data'):
     
     mask = get_volume_mask(subject, session, mask, bids_folder)
     paradigm = get_task_paradigm(subject, session, bids_folder)
+    paradigm = paradigm[paradigm.trial_type == 'stimulus 1']
     masker = NiftiMasker(mask_img=mask)
 
     data = pd.DataFrame(masker.fit_transform(im), index=paradigm.index)
