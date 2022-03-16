@@ -35,7 +35,7 @@ moviepy==1.0.3
 msgpack==1.0.0
 msgpack-numpy==0.4.6.post0
 numexpr==2.7.1
-numpy==1.18.4
+numpy==1.21.0
 openpyxl==3.0.3
 pandas==1.0.4
 parso==0.7.1
