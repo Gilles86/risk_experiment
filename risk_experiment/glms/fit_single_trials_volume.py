@@ -90,7 +90,7 @@ def main(subject, session, bids_folder, smoothed=False,
     retroicor_confounds = [
         op.join(bids_folder, f'derivatives/physiotoolbox/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-task_run-{run}_desc-retroicor_timeseries.tsv') for run in runs]
     retroicor_confounds = [pd.read_table(
-        cf, header=None, usecols=range(18)) for cf in retroicor_confounds]
+        cf, header=None, usecols=range(18)) if op.exists(cf) else pd.DataFrame(np.zeros((160, 0))) for cf in retroicor_confounds]
 
     confounds = [pd.concat((rcf, fcf), axis=1) for rcf, fcf in zip(retroicor_confounds, fmriprep_confounds)]
     confounds = [c.fillna(method='bfill') for c in confounds]
