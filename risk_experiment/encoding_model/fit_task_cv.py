@@ -14,11 +14,11 @@ import numpy as np
 import seaborn as sns
 
 
-def main(subject, session, bids_folder='/data/ds-risk', smoothed=False)
+def main(subject, session, bids_folder='/data/ds-risk', smoothed=False):
          
 
     key = 'glm_stim1'
-    target_dir = 'encoding_model'
+    target_dir = 'encoding_model.cv'
 
     if smoothed:
         key += '.smoothed'
@@ -31,15 +31,15 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False)
                 for run in range(1, 9)]
     paradigm = pd.concat(paradigm, keys=range(1, 9), names=['run'])
     paradigm = paradigm[paradigm.trial_type ==
-                        'stimulus 1'].set_index('trial_nr')
+                        'stimulus 1'].set_index('trial_nr', append=True)
 
     paradigm['log(n1)'] = np.log(paradigm['n1'])
     paradigm = paradigm['log(n1)']
 
     model = GaussianPRF()
     # SET UP GRID
-    mus = np.log(np.linspace(5, 80, 100, dtype=np.float32))
-    sds = np.log(np.linspace(2, 30, 100, dtype=np.float32))
+    mus = np.log(np.linspace(5, 80, 30, dtype=np.float32))
+    sds = np.log(np.linspace(2, 30, 30, dtype=np.float32))
     amplitudes = np.array([1.], dtype=np.float32)
     baselines = np.array([0], dtype=np.float32)
 
@@ -90,7 +90,7 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False)
         for par, values in optimizer.estimated_parameters.T.iterrows():
             print(values)
             target_fn = op.join(
-                target_dir, f'sub-{subject}_ses-{session}_desc-{par}.optim_space-T1w_pars.nii.gz')
+                target_dir, f'sub-{subject}_ses-{session}_run-{test_run}_desc-{par}.optim_space-T1w_pars.nii.gz')
 
             masker.inverse_transform(values).to_filename(target_fn)
 
