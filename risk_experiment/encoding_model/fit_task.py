@@ -41,8 +41,8 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
 
     model = GaussianPRF()
     # SET UP GRID
-    mus = np.log(np.linspace(5, 80, 100, dtype=np.float32))
-    sds = np.log(np.linspace(2, 30, 100, dtype=np.float32))
+    mus = np.log(np.linspace(5, 80, 60, dtype=np.float32))
+    sds = np.log(np.linspace(2, 30, 60, dtype=np.float32))
     amplitudes = np.array([1.], dtype=np.float32)
     baselines = np.array([0], dtype=np.float32)
 
