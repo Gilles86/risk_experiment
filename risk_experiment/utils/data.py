@@ -304,9 +304,8 @@ def get_task_paradigm(subject, session, bids_folder, run=None):
                 for run in range(1, 9)]
     behavior = pd.concat(behavior, keys=range(1,9), names=['run']).droplevel(1)
 
-    behavior['subject'] = subject
     behavior = behavior.reset_index().set_index(
-        ['subject', 'run', 'trial_type'])
+        ['run', 'trial_type'])
     stimulus1 = behavior.xs('stimulus 1', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_type', 'n1', 'prob1', 'n2', 'prob2']]
     stimulus1['duration'] = 0.6
 
