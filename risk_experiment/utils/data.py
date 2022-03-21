@@ -302,10 +302,10 @@ def get_task_paradigm(subject, session, bids_folder, run=None):
     behavior = [pd.read_csv(op.join(bids_folder, f'sub-{subject}', f'ses-{session}',
                                'func', f'sub-{subject}_ses-{session}_task-task_run-{run}_events.tsv'), sep='\t')
                 for run in range(1, 9)]
-    behavior = pd.concat(behavior, keys=range(1,9), names=['run']).droplevel(1)
+    behavior = pd.concat(behavior, keys=range(1,9), names=['run'])
 
     behavior = behavior.reset_index().set_index(
-        ['run', 'trial_type'])
+        ['run', 'trial_nr', 'trial_type'])
     stimulus1 = behavior.xs('stimulus 1', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_type', 'n1', 'prob1', 'n2', 'prob2']]
     stimulus1['duration'] = 0.6
 
@@ -337,7 +337,7 @@ def get_task_paradigm(subject, session, bids_folder, run=None):
     p2['duration'] = 0.6
     p2['trial_type'] = 'certain2'
 
-    events = pd.concat((stimulus1, stimulus2, n1, n2, p1, p2))
+    events = pd.concat((stimulus1, stimulus2, n1, n2, p1, p2)).sort_index()
     events['modulation'].fillna(1.0, inplace=True)
 
     return events
