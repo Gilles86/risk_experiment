@@ -7,7 +7,7 @@
 # 
 #     https://github.com/ReproNim/neurodocker
 # 
-# Timestamp: 2022/03/10 10:16:39 UTC
+# Timestamp: 2022/03/21 10:26:38 UTC
 
 FROM ubuntu
 
@@ -192,7 +192,6 @@ RUN export PATH="/opt/miniconda-latest/bin:$PATH" \
            "ipython" \
            "pytables" \
            "tensorflow" \
-           "tensorflow" \
            "tensorflow-probability" \
            "pingouin" \
     && sync && conda clean -y --all && sync \
@@ -207,6 +206,8 @@ RUN export PATH="/opt/miniconda-latest/bin:$PATH" \
              "https://github.com/Gilles86/hedfpy/archive/refactor_gilles.zip" \
              "pytest" \
              "neuropythy" \
+             "bambi" \
+             "pymc3" \
              "svgutils==0.3.1"" \
     && rm -rf ~/.cache/pip/* \
     && sync \
@@ -286,7 +287,6 @@ RUN echo '{ \
     \n          "ipython", \
     \n          "pytables", \
     \n          "tensorflow", \
-    \n          "tensorflow", \
     \n          "tensorflow-probability", \
     \n          "pingouin" \
     \n        ], \
@@ -300,6 +300,8 @@ RUN echo '{ \
     \n          "https://github.com/Gilles86/hedfpy/archive/refactor_gilles.zip", \
     \n          "pytest", \
     \n          "neuropythy", \
+    \n          "bambi", \
+    \n          "pymc3", \
     \n          "svgutils==0.3.1" \
     \n        ], \
     \n        "create_env": "neuro", \

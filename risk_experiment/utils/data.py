@@ -6,6 +6,7 @@ import nibabel as nb
 import pandas as pd
 import numpy as np
 from nibabel import gifti
+from tqdm.contrib.itertools import product
 
 import os
 import sys
@@ -292,7 +293,10 @@ def get_mapper_paradigm(subject, session, sourcedata, run=None):
 
     return paradigm
 
-def get_task_paradigm(subject, session, bids_folder, run=None):
+def get_task_paradigm(subject=None, session=None, bids_folder='/data', run=None):
+
+    if subject is None:
+        return get_all_task_behavior(session=session, bids_folder=bids_folder)
 
     if run is None:
         runs = range(1,9)
@@ -342,6 +346,49 @@ def get_task_paradigm(subject, session, bids_folder, run=None):
 
     return events
 
+def get_all_task_behavior(session=None, bids_folder='/data'):
+
+    keys = []
+    df = []
+
+    subjects = ['{:02d}'.format(i) for i in range(2, 33)]
+    subjects.pop(subjects.index('24'))
+
+    if session is None:
+        sessions = ['3t2', '7t2']
+    else:
+        sessions = [session]
+
+    for subject, session, run in product(subjects, sessions, range(1, 9)):
+        try:
+            d = pd.read_csv(op.join(bids_folder, f'sourcedata/sub-{subject}/behavior/ses-{session}/sub-{subject}_ses-{session}_task-task_run-{run}_events.tsv'), sep='\t')
+            d = d[np.in1d(d.phase, [8,9])]
+            d['trial_nr'] = d['trial_nr'].astype(int)
+            d = d.pivot_table(index=['trial_nr'], values=['choice', 'certainty', 'n1', 'n2', 'prob1', 'prob2'])
+            d['task'] = 'task'
+            d['subject'], d['session'], d['scanner'], d['run'] = subject, session, session[:2], run
+            df.append(d)    
+                
+        except Exception as e:
+            print(e)
+
+    df = pd.concat(df)
+
+    df['log(risky/safe)'] = np.log(df['n1'] / df['n2'])
+    ix = df.prob1 == 1.0
+
+    df.loc[~ix, 'log(risky/safe)'] = np.log(df.loc[~ix, 'n1'] / df.loc[~ix, 'n2'])
+    df.loc[ix, 'log(risky/safe)'] = np.log(df.loc[ix, 'n2'] / df.loc[ix, 'n1'])
+
+    df['risky/safe'] = np.exp(df['log(risky/safe)'])
+
+    df.loc[~ix, 'chose_risky'] = df.loc[~ix, 'choice'] == 1
+    df.loc[ix, 'chose_risky'] = df.loc[ix, 'choice'] == 2
+    df['chose_risky'] = df['chose_risky'].astype(bool)
+    df['risky_first'] = df.prob1 == 0.55
+    df = df.reset_index().set_index(['subject', 'session', 'run', 'trial_nr'])
+
+    return df
 
 def get_target_dir(subject, session, sourcedata, base, modality='func'):
     target_dir = op.join(sourcedata, 'derivatives', base, f'sub-{subject}', f'ses-{session}',
