@@ -50,12 +50,12 @@ def main(subject, session, bids_folder, smoothed=False,
         ['run', 'trial_type'])
 
 
-    stimulus1 = behavior.xs('stimulus 1', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_nr', 'trial_type']]
+    stimulus1 = behavior.xs('stimulus 1', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_type']]
     stimulus1['duration'] = 0.6
 
-    stimulus2 = behavior.xs('stimulus 2', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_type']]
+    stimulus2 = behavior.xs('stimulus 2', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_type', 'trial_nr']]
     stimulus2['duration'] = 0.6
-    stimulus2['trial_type'] = stimulus1.trial_nr.map(lambda trial: f'trial_{trial}')
+    stimulus2['trial_type'] = stimulus2.trial_nr.map(lambda trial: f'trial_{trial}')
     print(stimulus2)
 
     n1 = behavior.xs('stimulus 1', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_type', 'n1']]
