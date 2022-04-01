@@ -3,6 +3,7 @@ from nilearn import surface
 import numpy as np
 import os.path as op
 from matplotlib import colors, cm
+from nilearn import image
 
 def get_alpha_vertex(data, alpha, cmap='nipy_spectral', vmin=np.log(5), vmax=np.log(80), standard_space=False, subject='fsaverage'):
 
@@ -33,7 +34,14 @@ def get_alpha_vertex(data, alpha, cmap='nipy_spectral', vmin=np.log(5), vmax=np.
 
 def _load_parameters(subject, session, par, space='fsnative', smoothed=False, concatenated=False,
         pca_confounds=False, alpha=None, split_certainty=False,
-        sourcedata='/data/ds-risk', **kwargs):
+        volume=False,
+        sourcedata='/data/ds-risk',
+        cmap='nipy_spectral',
+        vmin=None,
+        vmax=None,
+        threshold=None,
+        stimulus=None,
+        **kwargs):
 
 
     d_name = 'encoding_model'
@@ -52,31 +60,67 @@ def _load_parameters(subject, session, par, space='fsnative', smoothed=False, co
 
     print(dir_)
 
-    par_l = op.join(dir_, f'sub-{subject}_ses-{session}_desc-{par}_space-{space}_hemi-L.func.gii')
-    par_r = op.join(dir_, f'sub-{subject}_ses-{session}_desc-{par}_space-{space}_hemi-R.func.gii')
+    if volume:
+        if stimulus is None:
+            par = op.join(sourcedata, 'derivatives', 'encoding_model', f'sub-{subject}', f'ses-{session}', 'func', f'sub-{subject}_ses-{session}_desc-{par}.optim_space-T1w_pars.nii.gz')
 
-
-    if op.exists(par_l):
-
-        par_l = surface.load_surf_data(par_l).T
-        par_r = surface.load_surf_data(par_r).T
-
-        par = np.concatenate((par_l, par_r))
-
-        if space == 'fsnative':
-            fs_subject = f'sub-{subject}'
         else:
-            fs_subject = space
+            par = op.join(sourcedata, 'derivatives', 'encoding_model', f'sub-{subject}', f'ses-{session}', 'func', f'sub-{subject}_ses-{session}_stim-{stimulus}_desc-{par}.optim_space-T1w_pars.nii.gz')
 
-         
+        if op.exists(par):
+            par = image.load_img(par)
+            transform = cortex.xfm.Transform(np.identity(4), par)
+            transform.save(f'sub-{subject}', f'bold.{session}')
 
-        if alpha is None:
-            return cortex.Vertex(par, fs_subject, **kwargs)
+            # vmin, vmax = 1, 4.
+            data = par.get_data()
+
+            if vmin is None:
+                vmin = np.quantile(data, .05)
+
+            if vmax is None:
+                vmax = np.quantile(data, .95)
+
+            if threshold is not None:
+                alpha = (data > threshold).T.astype(np.float32)
+
+            data = np.clip((data - vmin) / (vmax - vmin), 0., .99)
+            rgb = getattr(cm, cmap)(data.T,)[..., :3]
+            red, green, blue = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+
+
+            return cortex.VolumeRGB(red, green, blue, f'sub-{subject}', f'bold.{session}', alpha=alpha)
         else:
-            get_alpha_vertex(par, alpha, subject=fs_subject, **kwargs)
+            print(f'{par} does not exist')
+            return None
+
 
     else:
-        return None
+        par_l = op.join(dir_, f'sub-{subject}_ses-{session}_desc-{par}.optim_space-{space}_hemi-L.func.gii')
+        par_r = op.join(dir_, f'sub-{subject}_ses-{session}_desc-{par}.optim_space-{space}_hemi-R.func.gii')
+
+
+        if op.exists(par_l):
+
+            par_l = surface.load_surf_data(par_l).T
+            par_r = surface.load_surf_data(par_r).T
+
+            par = np.concatenate((par_l, par_r))
+
+            if space == 'fsnative':
+                fs_subject = f'sub-{subject}'
+            else:
+                fs_subject = space
+
+             
+
+            if alpha is None:
+                return cortex.Vertex(par, fs_subject, **kwargs)
+            else:
+                get_alpha_vertex(par, alpha, subject=fs_subject, cmap=cmap, **kwargs)
+
+        else:
+            return None
 
 
 def get_wang2015(subject, sourcedata, probabilistic=False):

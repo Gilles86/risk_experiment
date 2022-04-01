@@ -11,18 +11,18 @@ import numpy as np
 sourcedata='/data/ds-risk'
 
 
-for smoothed in [False, True]:
+for smoothed in [False]:
     folder = 'encoding_model'
 
     if smoothed:
         folder += '.smoothed'
 
     fns = glob.glob(op.join(sourcedata, 'derivatives', folder, f'sub-*',
-                   'ses-3t1', 'func', '*.optim*space-fsaverage_hemi-*.func.gii'))
-    fns += glob.glob(op.join(sourcedata, 'derivatives', folder, f'sub-*',
-                   'ses-7t1', 'func', '*.optim*space-fsaverage_hemi-*.func.gii'))
+                   'ses-*', 'func', '*volume.optim*space-fsaverage_hemi-*.func.gii'))
+    # fns += glob.glob(op.join(sourcedata, 'derivatives', folder, f'sub-*',
+                   # 'ses-7t1', 'func', '*volume.optim*space-fsaverage_hemi-*.func.gii'))
 
-    reg = re.compile('.*/sub-(?P<subject>[0-9]+)_ses-(?P<session>3t1|7t1|3t2|7t2)_desc-(?P<parameter>[0-9a-z]+)\.optim_space-.+_hemi-(?P<hemi>L|R)\.func\.gii')
+    reg = re.compile('.*/sub-(?P<subject>[0-9]+)_ses-(?P<session>3t1|7t1|3t2|7t2)_desc-(?P<parameter>[0-9a-z]+)\.volume\.optim_space-.+_hemi-(?P<hemi>L|R)\.func\.gii')
     keys = []
     data = []
 
@@ -48,4 +48,4 @@ for smoothed in [False, True]:
         d = d.mean()
 
         write_gifti('02', session, sourcedata, 'fsaverage', d,
-                op.join(sourcedata, 'derivatives', folder, f'group_ses-{session}_desc-{par}_hemi-_hemi__mean.gii'.replace('_hemi_', '{hemi}')))
+                op.join(sourcedata, 'derivatives', folder, f'group_ses-{session}_desc-{par}.volume_hemi-_hemi__mean.gii'.replace('_hemi_', '{hemi}')))

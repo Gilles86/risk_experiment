@@ -1,3 +1,5 @@
+import matplotlib.pyplot as plt
+import seaborn as sns
 import nibabel as nb
 import pandas as pd
 import numpy as np
@@ -9,6 +11,7 @@ from nilearn.glm.first_level import FirstLevelModel
 from nilearn.glm.first_level import make_first_level_design_matrix, run_glm
 from itertools import product
 from sklearn.decomposition import PCA
+from scipy.stats import zscore
 
 
 
@@ -73,7 +76,7 @@ def main(subject, session, bids_folder, smoothed=False,
 
     events = pd.concat((stimulus1, stimulus2, n2, p2)).sort_index()
     events['modulation'].fillna(1.0, inplace=True)
-    print(events)
+    print(events.loc[1].sort_values('onset').head(100))
 
     # # sub-02_ses-7t2_task-task_run-1_space-fsaverage_hemi-R_bold.func
 
@@ -92,7 +95,11 @@ def main(subject, session, bids_folder, smoothed=False,
     retroicor_confounds = [pd.read_table(
         cf, header=None, usecols=range(18)) if op.exists(cf) else pd.DataFrame(np.zeros((160, 0))) for cf in retroicor_confounds]
 
-    confounds = [pd.concat((rcf, fcf), axis=1) for rcf, fcf in zip(retroicor_confounds, fmriprep_confounds)]
+    if (subject, session) in [('10', '3t2')]:
+        confounds = fmriprep_confounds
+    else:
+        confounds = [pd.concat((rcf, fcf), axis=1) for rcf, fcf in zip(retroicor_confounds, fmriprep_confounds)]
+
     confounds = [c.fillna(method='bfill') for c in confounds]
 
     t_r, n_scans = 2.3, 160
@@ -109,6 +116,7 @@ def main(subject, session, bids_folder, smoothed=False,
         im = image.math_img('(im / im.mean(-1)[..., np.newaxis]) * 100 - 100', im=ims[run-1])
         model.fit(im, events.loc[run], confounds[run-1])
 
+
         for trial in range(1+(run-1)*24, 1+run*24):
             print(trial)
             single_trial_betas.append(model.compute_contrast(f'trial_{trial}', output_type='effect_size'))
@@ -116,58 +124,6 @@ def main(subject, session, bids_folder, smoothed=False,
 
     single_trial_betas = image.concat_imgs(single_trial_betas)
     single_trial_betas.to_filename(op.join(base_dir, f'sub-{subject}_ses-{session}_task-task_space-T1w_desc-stims1_pe.nii.gz'))
-
-    # betas = []
-
-    # n_verts = {}
-
-    # for (run, hemi), cf, surf in zip(keys, confounds, surfs):
-        # e = events.xs(run, 0, 'run')
-        # Y = surface.load_surf_data(surf).T
-
-        # n_verts[hemi] = Y.shape[1]
-
-        # if len(Y) == 213:
-            # Y = Y[:160]
-            # cf = cf.iloc[:160]
-            
-        
-        # if pca_confounds:
-            # pca = PCA(n_components=13)
-            # cf -= cf.mean(0)
-            # cf /= cf.std(0)
-            # cf = pca.fit_transform(cf)
-            # print('PCA size: ', cf.shape)
-
-        # X = make_first_level_design_matrix(frame_times,
-                                               # events=e,
-                                               # hrf_model='glover',
-                                               # high_pass=False,
-                                               # drift_model=None,
-                                               # add_regs=cf,
-                                               # )
-
-
-        # Y = (Y / Y.mean(0) * 100)
-        # Y -= Y.mean(0)
-
-        # fit = run_glm(Y, X, noise_model='ols', n_jobs=n_jobs)
-        # r = fit[1][0.0]
-        # betas.append(pd.DataFrame(r.theta, index=X.columns))
-
-    # betas = pd.concat(betas, keys=keys, names=['run', 'hemi'])
-    # betas.reset_index('run', drop=True, inplace=True)
-    # betas = betas.loc[(slice(None), stimulus1.trial_type), :].unstack('hemi', fill_value=-1e6).swaplevel(axis=1).sort_index(axis=1)
-
-    # for hemi in ['L', 'R']:
-        # b = betas[hemi].loc[:, :n_verts[hemi]-1]
-        # print(b)
-        # gii = nb.gifti.GiftiImage(header=nb.load(surfs[['L', 'R'].index(hemi)]).header,
-                                  # darrays=[nb.gifti.GiftiDataArray(row) for _, row in b.iterrows()])
-
-        # fn_template = op.join(base_dir, 'sub-{subject}_ses-{session}_task-task_space-{space}_desc-stims1_hemi-{hemi}.pe.gii')
-
-        # gii.to_filename(fn_template.format(**locals()))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

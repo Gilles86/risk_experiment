@@ -89,7 +89,7 @@ def get_fmriprep_confounds(subject, session, sourcedata,
         cf)[fmriprep_confounds_include] for cf in fmriprep_confounds]
 
     fmriprep_confounds = [rc.set_index(get_frametimes(
-        subject, session)) for rc in fmriprep_confounds]
+        subject, session, run)) for run, rc in zip(runs, fmriprep_confounds)]
 
     confounds = pd.concat(fmriprep_confounds, 0, keys=runs, names=['run'])
     return confounds.groupby('run').transform(lambda x: x.fillna(x.mean()))
@@ -107,8 +107,10 @@ def get_retroicor_confounds(subject, session, sourcedata, n_cardiac=2, n_respira
 
     if session.endswith('1'):
         task = 'mapper'
+        nvols = 125
     elif session.endswith('2'):
         task = 'task'
+        nvols = 160
     else:
         raise ValueError(f'Invalid session: {session}')
 
@@ -124,13 +126,13 @@ def get_retroicor_confounds(subject, session, sourcedata, n_cardiac=2, n_respira
     retroicor_confounds = [
         op.join(sourcedata, f'derivatives/physiotoolbox/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-{task}_run-{run}_desc-retroicor_timeseries.tsv') for run in runs]
     retroicor_confounds = [pd.read_table(
-        cf, header=None, usecols=range(18), names=columns) for cf in retroicor_confounds]
+        cf, header=None, usecols=range(18), names=columns) if op.exists(cf) else pd.DataFrame(np.zeros((nvols,0))) for cf in retroicor_confounds ]
 
     n_vols = len(retroicor_confounds[0])
     tr = get_tr(subject, session)
 
     retroicor_confounds = [rc.set_index(get_frametimes(
-        subject, session)) for rc in retroicor_confounds]
+        subject, session, run)) for run, rc in zip(runs, retroicor_confounds)]
 
     confounds = pd.concat(retroicor_confounds, 0, keys=runs,
                           names=['run']).sort_index(axis=1)
@@ -153,11 +155,17 @@ def get_tr(subject, sesion):
     return 2.3
 
 
-def get_frametimes(subject, session):
+def get_frametimes(subject, session, run=None):
+
     if session[-1] == '1':
         n_vols = 125
     else:
         n_vols = 160
+
+    if (session == '7t2') & (subject == '02') & (run == 1):
+        n_vols = 213
+
+    
 
     tr = get_tr(subject, session)
     return np.linspace(0, (n_vols-1)*tr, n_vols)
@@ -348,7 +356,7 @@ def get_task_paradigm(subject=None, session=None, bids_folder='/data', run=None)
     p2['duration'] = 0.6
     p2['trial_type'] = 'certain2'
 
-    events = pd.concat((stimulus1, stimulus2, n1, n2, p1, p2))
+    events = pd.concat((stimulus1, stimulus2, n1, n2, p1, p2)).sort_index()
     events['modulation'].fillna(1.0, inplace=True)
 
     print(events)
