@@ -243,7 +243,8 @@ def main(subject, session, bids_folder, modalities=None, registration_scheme='li
         return workflow
 
     df = BIDSLayout(anat_dir, validate=False).to_df()
-    df = df[np.in1d(df.extension, ['nii', 'nii.gz'])]
+    print(df['extension'])
+    df = df[np.in1d(df.extension, ['.nii', '.nii.gz'])]
 
     if 'acquisition' in df.columns:
         df = df[~((df.suffix == 'T2starw') & (df.acquisition != 'average'))]

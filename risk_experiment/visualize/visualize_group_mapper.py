@@ -26,7 +26,7 @@ data = []
 keys = []
 
 
-for smoothed in [False, True]:
+for smoothed in [False]:
     folder = 'encoding_model'
 
     if smoothed:
@@ -34,7 +34,7 @@ for smoothed in [False, True]:
 
     for par, session, hemi in product(parameters, sessions, hemis):
         data.append(surface.load_surf_data(op.join(sourcedata, 'derivatives',
-                                                   folder, f'group_ses-{session}_desc-{par}_hemi-{hemi}_mean.gii')))
+                                                   folder, f'group_ses-{session}_desc-{par}.volume_hemi-{hemi}_mean.gii')))
         keys.append({'smoothed': 'sm' if smoothed else 'usm', 'parameter': par, 'session': session,
                      'hemi': hemi})
 
@@ -71,22 +71,22 @@ for (smoothed, parameter, session), value in data.iterrows():
 
 
 # for smoothed, session in product(['sm', 'usm'], ['3t1', '7t1', '3t2', '7t2']):
-for smoothed, session in product(['sm', 'usm'], ['3t1', '7t1']):
+for smoothed, session in product(['usm'], ['3t1', '3t2', '7t1', '7t2']):
     alpha = np.copy(d[f'r2.{session}.{smoothed}'].data)
     if session.endswith('1'):
-        d[f'r2_.{session}.{smoothed}'] = get_alpha_vertex(alpha, np.clip((alpha - 0.05)/0.025, .0, 1.0), cmap='hot',
-                                                          vmin=0.0, vmax=.2)
+        d[f'r2_.{session}.{smoothed}'] = get_alpha_vertex(alpha, np.clip((alpha - 0.035)/0.0175, .0, 1.0), cmap='hot',
+                                                          vmin=0.0, vmax=.15)
     else:
         d[f'r2_.{session}.{smoothed}'] = get_alpha_vertex(alpha, np.clip((alpha - 0.025)/0.0125, .0, 1.0), cmap='hot',
-                                                          vmin=0.0, vmax=.1)
+                                                          vmin=0.0, vmax=.15)
 
     # alpha -= 0.035
-    alpha -= np.percentile(alpha, 65)
+    alpha -= np.nanpercentile(alpha, 65)
     alpha = np.clip(alpha / np.percentile(alpha[alpha > 0.0], 50), 0, 1)
     alpha = alpha / alpha.max()
-    d[f'mu_.{session}.{smoothed}'] = get_alpha_vertex(
-        d[f'mu.{session}.{smoothed}'].data, alpha,
-        vmax=np.log(28))
+    # d[f'mu_.{session}.{smoothed}'] = get_alpha_vertex(
+        # d[f'mu.{session}.{smoothed}'].data, alpha,
+        # vmax=np.log(28))
 
 ds = cortex.Dataset(**d)
 cortex.webshow(ds)

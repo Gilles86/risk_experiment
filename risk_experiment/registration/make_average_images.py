@@ -13,10 +13,16 @@ def main(modality, field_strength, bids_folder):
         source = op.join(bids_folder, 'derivatives', 'fmriprep')
         template = op.join(source, 'sub-*',
                 'anat', f'sub-*_space-MNI152NLin2009cAsym_desc-preproc_{modality}.nii.gz')
+
+        target_fn = op.join(bids_folder, 'derivatives', 'registration', 'group')
+
     else:
         source = op.join(bids_folder, 'derivatives', 'registration')
         template = op.join(source, 'sub-*', f'ses-{field_strength}*',
                 'anat', f'sub-*_ses-*_space-MNI152NLin2009cAsym_desc-registered_{modality}.nii.gz')
+        target_fn = op.join(source, 'group')
+
+    print(sorted(glob.glob(template)))
 
     ims = [image.load_img(im) for im in glob.glob(template)]
 
@@ -47,12 +53,12 @@ def main(modality, field_strength, bids_folder):
     mean_img = image.math_img(f'np.nan_to_num(np.clip(mean_img / sum_img, 0, 10))',
             mean_img=mean_img, sum_img=sum_img)
 
-    target_fn = op.join(source, 'group')
 
     if not op.exists(target_fn):
         os.makedirs(target_fn)
 
     target_fn = op.join(target_fn, f'group_space-MNI152NLin2009cAsym_field-{field_strength}_{modality}.nii.gz')
+    print(target_fn)
 
     mean_img.to_filename(target_fn)
 

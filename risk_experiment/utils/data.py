@@ -6,6 +6,7 @@ import nibabel as nb
 import pandas as pd
 import numpy as np
 from nibabel import gifti
+from tqdm.contrib.itertools import product
 
 import os
 import sys
@@ -91,7 +92,7 @@ def get_fmriprep_confounds(subject, session, sourcedata,
         cf)[fmriprep_confounds_include] for cf in fmriprep_confounds]
 
     fmriprep_confounds = [rc.set_index(get_frametimes(
-        subject, session)) for rc in fmriprep_confounds]
+        subject, session, run)) for run, rc in zip(runs, fmriprep_confounds)]
 
     confounds = pd.concat(fmriprep_confounds, 0, keys=runs, names=['run'])
     return confounds.groupby('run').transform(lambda x: x.fillna(x.mean()))
@@ -109,8 +110,10 @@ def get_retroicor_confounds(subject, session, sourcedata, n_cardiac=2, n_respira
 
     if session.endswith('1'):
         task = 'mapper'
+        nvols = 125
     elif session.endswith('2'):
         task = 'task'
+        nvols = 160
     else:
         raise ValueError(f'Invalid session: {session}')
 
@@ -126,13 +129,13 @@ def get_retroicor_confounds(subject, session, sourcedata, n_cardiac=2, n_respira
     retroicor_confounds = [
         op.join(sourcedata, f'derivatives/physiotoolbox/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-{task}_run-{run}_desc-retroicor_timeseries.tsv') for run in runs]
     retroicor_confounds = [pd.read_table(
-        cf, header=None, usecols=range(18), names=columns) for cf in retroicor_confounds]
+        cf, header=None, usecols=range(18), names=columns) if op.exists(cf) else pd.DataFrame(np.zeros((nvols,0))) for cf in retroicor_confounds ]
 
     n_vols = len(retroicor_confounds[0])
     tr = get_tr(subject, session)
 
     retroicor_confounds = [rc.set_index(get_frametimes(
-        subject, session)) for rc in retroicor_confounds]
+        subject, session, run)) for run, rc in zip(runs, retroicor_confounds)]
 
     confounds = pd.concat(retroicor_confounds, 0, keys=runs,
                           names=['run']).sort_index(axis=1)
@@ -155,11 +158,17 @@ def get_tr(subject, sesion):
     return 2.3
 
 
-def get_frametimes(subject, session):
+def get_frametimes(subject, session, run=None):
+
     if session[-1] == '1':
         n_vols = 125
     else:
         n_vols = 160
+
+    if (session == '7t2') & (subject == '02') & (run == 1):
+        n_vols = 213
+
+    
 
     tr = get_tr(subject, session)
     return np.linspace(0, (n_vols-1)*tr, n_vols)
@@ -295,20 +304,30 @@ def get_mapper_paradigm(subject, session, sourcedata, run=None):
 
     return paradigm
 
-def get_task_paradigm(subject, session, bids_folder, run=None):
+def get_task_paradigm(subject=None, session=None, bids_folder='/data', run=None):
+
+    if subject is None:
+        return get_all_task_behavior(session=session, bids_folder=bids_folder)
 
     if run is None:
         runs = range(1,9)
     else:
         runs = [run]
 
-    behavior = [pd.read_csv(op.join(bids_folder, f'sub-{subject}', f'ses-{session}',
+    behavior = []
+
+    for run in range(1, 9):
+        b = pd.read_csv(op.join(bids_folder, f'sub-{subject}', f'ses-{session}',
                                'func', f'sub-{subject}_ses-{session}_task-task_run-{run}_events.tsv'), sep='\t')
-                for run in range(1, 9)]
+
+        b['trial_nr'] = b['trial_nr'].astype(int)
+        behavior.append(b.set_index('trial_nr'))
+
     behavior = pd.concat(behavior, keys=range(1,9), names=['run']).droplevel(1)
+    print(behavior)
 
     behavior = behavior.reset_index().set_index(
-        ['run', 'trial_type'])
+        ['run', 'trial_nr', 'trial_type'])
     stimulus1 = behavior.xs('stimulus 1', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_type', 'n1', 'prob1', 'n2', 'prob2']]
     stimulus1['duration'] = 0.6
 
@@ -340,11 +359,77 @@ def get_task_paradigm(subject, session, bids_folder, run=None):
     p2['duration'] = 0.6
     p2['trial_type'] = 'certain2'
 
-    events = pd.concat((stimulus1, stimulus2, n1, n2, p1, p2))
+    events = pd.concat((stimulus1, stimulus2, n1, n2, p1, p2)).sort_index()
     events['modulation'].fillna(1.0, inplace=True)
+
+    print(events)
+    print(behavior.xs('certainty', 0, 'trial_type')['choice'].to_frame('certainty'))
+
+
+
+    events['certainty'] = behavior.xs('certainty', 0, 'trial_type')['choice'].to_frame('certainty')
 
     return events
 
+
+def get_task_behavior(subject, session, bids_folder='/data'):
+
+    runs = range(1, 9)
+
+    df = []
+
+    for run in runs:
+        d = pd.read_csv(op.join(bids_folder, f'sourcedata/sub-{subject}/behavior/ses-{session}/sub-{subject}_ses-{session}_task-task_run-{run}_events.tsv'), sep='\t')
+        d = d[np.in1d(d.phase, [8,9])]
+        d['trial_nr'] = d['trial_nr'].astype(int)
+        d = d.pivot_table(index=['trial_nr'], values=['choice', 'certainty', 'n1', 'n2', 'prob1', 'prob2'])
+        d['task'] = 'task'
+        d['log(n1)'] = np.log(d['n1'])
+        d['subject'], d['session'], d['scanner'], d['run'] = subject, session, session[:2], run
+        d = d.set_index(['subject', 'session', 'run'], append=True).reorder_levels(['subject', 'session', 'run', 'trial_nr'])
+        df.append(d)    
+    
+    df = pd.concat(df)
+
+    return df
+
+def get_all_task_behavior(session=None, bids_folder='/data'):
+
+    keys = []
+    df = []
+
+    subjects = ['{:02d}'.format(i) for i in range(2, 33)][:1]
+    # subjects.pop(subjects.index('24'))
+
+    if session is None:
+        sessions = ['3t2', '7t2']
+    else:
+        sessions = [session]
+
+    for subject, session, run in product(subjects, sessions, range(1, 9)):
+        try:
+            d = get_task_behavior(subject, session, bids_folder)
+            df.append(d)
+                
+        except Exception as e:
+            print(e)
+
+    df = pd.concat(df)
+
+    df['log(risky/safe)'] = np.log(df['n1'] / df['n2'])
+    ix = df.prob1 == 1.0
+
+    df.loc[~ix, 'log(risky/safe)'] = np.log(df.loc[~ix, 'n1'] / df.loc[~ix, 'n2'])
+    df.loc[ix, 'log(risky/safe)'] = np.log(df.loc[ix, 'n2'] / df.loc[ix, 'n1'])
+
+    df['risky/safe'] = np.exp(df['log(risky/safe)'])
+
+    df.loc[~ix, 'chose_risky'] = df.loc[~ix, 'choice'] == 1
+    df.loc[ix, 'chose_risky'] = df.loc[ix, 'choice'] == 2
+    df['chose_risky'] = df['chose_risky'].astype(bool)
+    df['risky_first'] = df.prob1 == 0.55
+
+    return df
 
 def get_target_dir(subject, session, sourcedata, base, modality='func'):
     target_dir = op.join(sourcedata, 'derivatives', base, f'sub-{subject}', f'ses-{session}',
@@ -605,8 +690,7 @@ def get_single_trial_volume(subject, session, mask=None, bids_folder='/data'):
     im = image.load_img(fn)
     
     mask = get_volume_mask(subject, session, mask, bids_folder)
-    paradigm = get_task_paradigm(subject, session, bids_folder)
-    paradigm = paradigm[paradigm.trial_type == 'stimulus 1']
+    paradigm = get_task_behavior(subject, session, bids_folder)
     masker = NiftiMasker(mask_img=mask)
 
     data = pd.DataFrame(masker.fit_transform(im), index=paradigm.index)

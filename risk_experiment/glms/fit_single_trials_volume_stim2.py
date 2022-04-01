@@ -1,5 +1,3 @@
-import matplotlib.pyplot as plt
-import seaborn as sns
 import nibabel as nb
 import pandas as pd
 import numpy as np
@@ -11,7 +9,6 @@ from nilearn.glm.first_level import FirstLevelModel
 from nilearn.glm.first_level import make_first_level_design_matrix, run_glm
 from itertools import product
 from sklearn.decomposition import PCA
-from scipy.stats import zscore
 
 
 
@@ -53,32 +50,29 @@ def main(subject, session, bids_folder, smoothed=False,
         ['run', 'trial_type'])
 
 
-    stimulus1 = behavior.xs('stimulus 1', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_nr', 'trial_type']]
+    stimulus1 = behavior.xs('stimulus 1', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_type']]
     stimulus1['duration'] = 0.6
-    stimulus1['trial_type'] = stimulus1.trial_nr.map(lambda trial: f'trial_{trial}')
 
-    print(stimulus1)
-    
-    stimulus2 = behavior.xs('stimulus 2', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_type']]
+    stimulus2 = behavior.xs('stimulus 2', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_type', 'trial_nr']]
     stimulus2['duration'] = 0.6
+    stimulus2['trial_type'] = stimulus2.trial_nr.map(lambda trial: f'trial_{trial}')
+    print(stimulus2)
 
-    n2 = behavior.xs('stimulus 2', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_type', 'n2']]
-    n2['duration'] = 0.6
+    n1 = behavior.xs('stimulus 1', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_type', 'n1']]
+    n1['duration'] = 0.6
     def zscore(n):
         return (n - n.mean()) / n.std()
-    n2['modulation'] = zscore(n2['n2'])
-    n2['trial_type'] = 'n_dots2'
+    n1['modulation'] = zscore(n1['n1'])
+    n1['trial_type'] = 'n_dots1'
 
-    p2 = behavior.xs('stimulus 2', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_type', 'prob2']]
-    p2 = p2[p2.prob2 == 1.0]
-    p2['duration'] = 0.6
-    p2['trial_type'] = 'certain2'
+    p1 = behavior.xs('stimulus 1', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_type', 'prob1']]
+    p1 = p1[p1.prob1 == 1.0]
+    p1['duration'] = 0.6
+    p1['trial_type'] = 'certain1'
 
-    events = pd.concat((stimulus1, stimulus2, n2, p2)).sort_index()
+    events = pd.concat((stimulus1, stimulus2, n1, p1)).set_index('trial_nr', append=True).sort_index()
     events['modulation'].fillna(1.0, inplace=True)
-    print(events.loc[1].sort_values('onset').head(100))
-
-    # # sub-02_ses-7t2_task-task_run-1_space-fsaverage_hemi-R_bold.func
+    print(events)
 
     fmriprep_confounds_include = ['global_signal', 'dvars', 'framewise_displacement', 'trans_x',
                                   'trans_y', 'trans_z', 'rot_x', 'rot_y', 'rot_z',
@@ -95,11 +89,7 @@ def main(subject, session, bids_folder, smoothed=False,
     retroicor_confounds = [pd.read_table(
         cf, header=None, usecols=range(18)) if op.exists(cf) else pd.DataFrame(np.zeros((160, 0))) for cf in retroicor_confounds]
 
-    if (subject, session) in [('10', '3t2')]:
-        confounds = fmriprep_confounds
-    else:
-        confounds = [pd.concat((rcf, fcf), axis=1) for rcf, fcf in zip(retroicor_confounds, fmriprep_confounds)]
-
+    confounds = [pd.concat((rcf, fcf), axis=1) for rcf, fcf in zip(retroicor_confounds, fmriprep_confounds)]
     confounds = [c.fillna(method='bfill') for c in confounds]
 
     t_r, n_scans = 2.3, 160
@@ -116,14 +106,13 @@ def main(subject, session, bids_folder, smoothed=False,
         im = image.math_img('(im / im.mean(-1)[..., np.newaxis]) * 100 - 100', im=ims[run-1])
         model.fit(im, events.loc[run], confounds[run-1])
 
-
         for trial in range(1+(run-1)*24, 1+run*24):
             print(trial)
             single_trial_betas.append(model.compute_contrast(f'trial_{trial}', output_type='effect_size'))
 
 
     single_trial_betas = image.concat_imgs(single_trial_betas)
-    single_trial_betas.to_filename(op.join(base_dir, f'sub-{subject}_ses-{session}_task-task_space-T1w_desc-stims1_pe.nii.gz'))
+    single_trial_betas.to_filename(op.join(base_dir, f'sub-{subject}_ses-{session}_task-task_space-T1w_desc-stims2_pe.nii.gz'))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
