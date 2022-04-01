@@ -34,6 +34,9 @@ def get_runs(subject, session):
     if (subject == '08') & (session == '7t1'):
         return [1, 2, 4, 5]
 
+    if (subject == '23') & (session == '7t1'):
+        return [1, 2, 3, 5]
+
     if session[-1] == '1':
         return range(1, 5)
     else:
