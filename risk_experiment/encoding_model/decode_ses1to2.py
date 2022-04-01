@@ -103,7 +103,7 @@ def main(subject, session, n_voxels=250, bids_folder='/data', mask='wang15_ips')
     if not op.exists(target_dir):
         os.makedirs(target_dir)
 
-    target_fn = op.join(target_dir, f'sub-{subject}_ses-{session2}_mask-{mask}_nvoxels-{n_voxels}_space-{space}_pars.tsv')
+    target_fn = op.join(target_dir, f'sub-{subject}_ses-{session2}_mask-{mask}_nvoxels-{n_voxels}_space-T1w_pars.tsv')
     pdfs.to_csv(target_fn, sep='\t')
 
 if __name__ == '__main__':
