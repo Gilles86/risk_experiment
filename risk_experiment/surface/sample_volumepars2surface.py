@@ -36,7 +36,7 @@ def main(subject, session, bids_folder='/data'):
                                                                 ('subject_id', 'inputnode.subject_id'),
                                                                 ('t1w2fsnative_xfm', 'inputnode.t1w2fsnative_xfm')])])
 
-        export_file = pe.MapNode(ExportFile(), iterfield=['in_file', 'out_file'], 
+        export_file = pe.MapNode(ExportFile(clobber=True), iterfield=['in_file', 'out_file'], 
                                  name=f'exporter_{par}')
 
         export_file.inputs.out_file = [op.join(bids_folder, f'derivatives/encoding_model/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_desc-{par}.volume.optim_space-{space}_hemi-{hemi}.func.gii') for space, hemi in product(spaces, ['L', 'R'])]
