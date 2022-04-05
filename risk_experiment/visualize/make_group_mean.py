@@ -41,11 +41,18 @@ for smoothed in [False]:
     data = pd.DataFrame(data, index=keys).unstack('hemi')
     data = data.reorder_levels([1, 0], 1).sort_index(axis=1)
 
+    for session, d in data.groupby(['session']):
 
-    for (session, par), d in data.groupby(['session', 'parameter']):
-        print(d)
+        weighted_mu = d.xs('mu', level='parameter') * d.xs('r2', level='parameter')
+        weighted_mu = weighted_mu.sum() / d.xs('r2', level='parameter').sum()
 
-        d = d.mean()
+        write_gifti('02', session, sourcedata, 'fsaverage', weighted_mu,
+                op.join(sourcedata, 'derivatives', folder, f'group_ses-{session}_desc-weightedmu.volume_hemi-_hemi__mean.gii'.replace('_hemi_', '{hemi}')))
 
-        write_gifti('02', session, sourcedata, 'fsaverage', d,
-                op.join(sourcedata, 'derivatives', folder, f'group_ses-{session}_desc-{par}.volume_hemi-_hemi__mean.gii'.replace('_hemi_', '{hemi}')))
+    # for (session, par), d in data.groupby(['session', 'parameter']):
+        # print(d)
+
+        # d = d.mean()
+
+        # write_gifti('02', session, sourcedata, 'fsaverage', d,
+                # op.join(sourcedata, 'derivatives', folder, f'group_ses-{session}_desc-{par}.volume_hemi-_hemi__mean.gii'.replace('_hemi_', '{hemi}')))
