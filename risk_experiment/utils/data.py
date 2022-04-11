@@ -35,6 +35,9 @@ def get_runs(subject, session):
     if (subject == '08') & (session == '7t1'):
         return [1, 2, 4, 5]
 
+    if (subject == '23') & (session == '7t1'):
+        return [1, 2, 3, 5]
+
     if session[-1] == '1':
         return range(1, 5)
     else:
@@ -311,10 +314,17 @@ def get_task_paradigm(subject=None, session=None, bids_folder='/data', run=None)
     else:
         runs = [run]
 
-    behavior = [pd.read_csv(op.join(bids_folder, f'sub-{subject}', f'ses-{session}',
+    behavior = []
+
+    for run in range(1, 9):
+        b = pd.read_csv(op.join(bids_folder, f'sub-{subject}', f'ses-{session}',
                                'func', f'sub-{subject}_ses-{session}_task-task_run-{run}_events.tsv'), sep='\t')
-                for run in range(1, 9)]
-    behavior = pd.concat(behavior, keys=range(1,9), names=['run'])
+
+        b['trial_nr'] = b['trial_nr'].astype(int)
+        behavior.append(b.set_index('trial_nr'))
+
+    behavior = pd.concat(behavior, keys=range(1,9), names=['run']).droplevel(1)
+    print(behavior)
 
     behavior = behavior.reset_index().set_index(
         ['run', 'trial_nr', 'trial_type'])
@@ -352,15 +362,44 @@ def get_task_paradigm(subject=None, session=None, bids_folder='/data', run=None)
     events = pd.concat((stimulus1, stimulus2, n1, n2, p1, p2)).sort_index()
     events['modulation'].fillna(1.0, inplace=True)
 
+    print(events)
+    print(behavior.xs('certainty', 0, 'trial_type')['choice'].to_frame('certainty'))
+
+
+
+    events['certainty'] = behavior.xs('certainty', 0, 'trial_type')['choice'].to_frame('certainty')
+
     return events
+
+
+def get_task_behavior(subject, session, bids_folder='/data'):
+
+    runs = range(1, 9)
+
+    df = []
+
+    for run in runs:
+        d = pd.read_csv(op.join(bids_folder, f'sourcedata/sub-{subject}/behavior/ses-{session}/sub-{subject}_ses-{session}_task-task_run-{run}_events.tsv'), sep='\t')
+        d = d[np.in1d(d.phase, [8,9])]
+        d['trial_nr'] = d['trial_nr'].astype(int)
+        d = d.pivot_table(index=['trial_nr'], values=['choice', 'certainty', 'n1', 'n2', 'prob1', 'prob2'])
+        d['task'] = 'task'
+        d['log(n1)'] = np.log(d['n1'])
+        d['subject'], d['session'], d['scanner'], d['run'] = subject, session, session[:2], run
+        d = d.set_index(['subject', 'session', 'run'], append=True).reorder_levels(['subject', 'session', 'run', 'trial_nr'])
+        df.append(d)    
+    
+    df = pd.concat(df)
+
+    return df
 
 def get_all_task_behavior(session=None, bids_folder='/data'):
 
     keys = []
     df = []
 
-    subjects = ['{:02d}'.format(i) for i in range(2, 33)]
-    subjects.pop(subjects.index('24'))
+    subjects = ['{:02d}'.format(i) for i in range(2, 33)][:1]
+    # subjects.pop(subjects.index('24'))
 
     if session is None:
         sessions = ['3t2', '7t2']
@@ -369,13 +408,8 @@ def get_all_task_behavior(session=None, bids_folder='/data'):
 
     for subject, session, run in product(subjects, sessions, range(1, 9)):
         try:
-            d = pd.read_csv(op.join(bids_folder, f'sourcedata/sub-{subject}/behavior/ses-{session}/sub-{subject}_ses-{session}_task-task_run-{run}_events.tsv'), sep='\t')
-            d = d[np.in1d(d.phase, [8,9])]
-            d['trial_nr'] = d['trial_nr'].astype(int)
-            d = d.pivot_table(index=['trial_nr'], values=['choice', 'certainty', 'n1', 'n2', 'prob1', 'prob2'])
-            d['task'] = 'task'
-            d['subject'], d['session'], d['scanner'], d['run'] = subject, session, session[:2], run
-            df.append(d)    
+            d = get_task_behavior(subject, session, bids_folder)
+            df.append(d)
                 
         except Exception as e:
             print(e)
@@ -394,7 +428,6 @@ def get_all_task_behavior(session=None, bids_folder='/data'):
     df.loc[ix, 'chose_risky'] = df.loc[ix, 'choice'] == 2
     df['chose_risky'] = df['chose_risky'].astype(bool)
     df['risky_first'] = df.prob1 == 0.55
-    df = df.reset_index().set_index(['subject', 'session', 'run', 'trial_nr'])
 
     return df
 
@@ -657,8 +690,7 @@ def get_single_trial_volume(subject, session, mask=None, bids_folder='/data'):
     im = image.load_img(fn)
     
     mask = get_volume_mask(subject, session, mask, bids_folder)
-    paradigm = get_task_paradigm(subject, session, bids_folder)
-    paradigm = paradigm[paradigm.trial_type == 'stimulus 1']
+    paradigm = get_task_behavior(subject, session, bids_folder)
     masker = NiftiMasker(mask_img=mask)
 
     data = pd.DataFrame(masker.fit_transform(im), index=paradigm.index)
