@@ -320,8 +320,8 @@ def get_task_paradigm(subject=None, session=None, bids_folder='/data', run=None)
         b['trial_nr'] = b['trial_nr'].astype(int)
         behavior.append(b.set_index('trial_nr'))
 
-    behavior = pd.concat(behavior, keys=range(1,9), names=['run']).droplevel(1)
-    print(behavior)
+    behavior = pd.concat(behavior, keys=range(1,9), names=['run'])#.droplevel(1)
+    # print(behavior)
 
     behavior = behavior.reset_index().set_index(
         ['run', 'trial_nr', 'trial_type'])
@@ -395,15 +395,15 @@ def get_all_task_behavior(session=None, bids_folder='/data'):
     keys = []
     df = []
 
-    subjects = ['{:02d}'.format(i) for i in range(2, 33)][:1]
-    # subjects.pop(subjects.index('24'))
+    subjects = ['{:02d}'.format(i) for i in range(2, 33)]
+    subjects.pop(subjects.index('24'))
 
     if session is None:
         sessions = ['3t2', '7t2']
     else:
         sessions = [session]
 
-    for subject, session, run in product(subjects, sessions, range(1, 9)):
+    for subject, session in product(subjects, sessions):
         try:
             d = get_task_behavior(subject, session, bids_folder)
             df.append(d)
