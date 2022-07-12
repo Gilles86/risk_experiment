@@ -20,7 +20,9 @@ def get_sourcedata():
 
 
 def get_all_subjects():
-    return ['%02d' % i for i in range(2, 33)]
+    subjects = ['%02d' % i for i in range(2, 33)]
+    subjects.pop(subjects.index('24'))
+    return subjects
 
 
 def get_all_sessions():
@@ -383,13 +385,31 @@ def get_task_behavior(subject, session, bids_folder='/data'):
         d = d[np.in1d(d.phase, [8,9])]
         d['trial_nr'] = d['trial_nr'].astype(int)
         d = d.pivot_table(index=['trial_nr'], values=['choice', 'certainty', 'n1', 'n2', 'prob1', 'prob2'])
-        d['task'] = 'task'
-        d['log(n1)'] = np.log(d['n1'])
         d['subject'], d['session'], d['scanner'], d['run'] = subject, session, session[:2], run
         d = d.set_index(['subject', 'session', 'run'], append=True).reorder_levels(['subject', 'session', 'run', 'trial_nr'])
         df.append(d)    
-    
+
     df = pd.concat(df)
+
+    df['task'] = 'task'
+    df['log(n1)'] = np.log(df['n1'])
+
+    df['log(risky/safe)'] = np.log(df['n1'] / df['n2'])
+
+    ix = df.prob1 == 1.0
+    df.loc[ix, 'log(risky/safe)'] = np.log(df.loc[ix, 'n2'] / df.loc[ix, 'n1'])
+    df.loc[~ix, 'log(risky/safe)'] = np.log(df.loc[~ix, 'n1'] / df.loc[~ix, 'n2'])
+
+    df.loc[ix, 'base_number'] = df.loc[ix, 'n1']
+    df.loc[~ix, 'base_number'] = df.loc[~ix, 'n2']
+
+    df['risky/safe'] = np.exp(df['log(risky/safe)'])
+
+    df.loc[~ix, 'chose_risky'] = df.loc[~ix, 'choice'] == 1
+    df.loc[ix, 'chose_risky'] = df.loc[ix, 'choice'] == 2
+    df['chose_risky'] = df['chose_risky'].astype(bool)
+    df['risky_first'] = df.prob1 == 0.55
+
 
     return df
 
@@ -398,8 +418,7 @@ def get_all_task_behavior(session=None, bids_folder='/data'):
     keys = []
     df = []
 
-    subjects = ['{:02d}'.format(i) for i in range(2, 33)]
-    subjects.pop(subjects.index('24'))
+    subjects = get_all_subjects()
 
     if session is None:
         sessions = ['3t2', '7t2']
@@ -415,19 +434,6 @@ def get_all_task_behavior(session=None, bids_folder='/data'):
             print(e)
 
     df = pd.concat(df)
-
-    df['log(risky/safe)'] = np.log(df['n1'] / df['n2'])
-    ix = df.prob1 == 1.0
-
-    df.loc[~ix, 'log(risky/safe)'] = np.log(df.loc[~ix, 'n1'] / df.loc[~ix, 'n2'])
-    df.loc[ix, 'log(risky/safe)'] = np.log(df.loc[ix, 'n2'] / df.loc[ix, 'n1'])
-
-    df['risky/safe'] = np.exp(df['log(risky/safe)'])
-
-    df.loc[~ix, 'chose_risky'] = df.loc[~ix, 'choice'] == 1
-    df.loc[ix, 'chose_risky'] = df.loc[ix, 'choice'] == 2
-    df['chose_risky'] = df['chose_risky'].astype(bool)
-    df['risky_first'] = df.prob1 == 0.55
 
     return df
 

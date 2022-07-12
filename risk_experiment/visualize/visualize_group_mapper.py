@@ -16,9 +16,6 @@ from tqdm.contrib.itertools import product
 sourcedata = '/data/ds-risk'
 
 
-smoothed = False
-
-
 parameters = ['mu', 'r2', 'weightedmu']
 sessions = ['3t1', '7t1', '3t2', '7t2']
 hemis = ['L', 'R']
@@ -61,7 +58,7 @@ for smoothed, session in product(['usm'], ['3t1', '3t2', '7t1', '7t2']):
         thr = 0.035
         alpha_ = np.clip((alpha - thr)/(thr/2.), .0, 1.0)
     else:
-        thr = 0.03
+        thr = 0.02 
         alpha_ = np.clip((alpha - thr)/(thr/2.), .0, 1.0)
 
     d[f'r2_.{session}.{smoothed}'] = get_alpha_vertex(alpha.values, alpha_, cmap='hot',
