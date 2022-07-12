@@ -325,8 +325,8 @@ def get_task_paradigm(subject=None, session=None, bids_folder='/data', run=None)
         b['trial_nr'] = b['trial_nr'].astype(int)
         behavior.append(b.set_index('trial_nr'))
 
-    behavior = pd.concat(behavior, keys=range(1,9), names=['run']).droplevel(1)
-    print(behavior)
+    behavior = pd.concat(behavior, keys=range(1,9), names=['run'])#.droplevel(1)
+    # print(behavior)
 
     behavior = behavior.reset_index().set_index(
         ['run', 'trial_nr', 'trial_type'])
