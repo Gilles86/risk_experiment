@@ -8,6 +8,7 @@ import numpy as np
 from nibabel import gifti
 from tqdm import tqdm
 from tqdm.contrib.itertools import product
+from sklearn.decomposition import PCA
 
 import os
 import sys
@@ -190,15 +191,15 @@ def get_fmriprep_confounds(subject, session, sourcedata,
     fmriprep_confounds = [rc.set_index(get_frametimes(
         subject, session, run)) for run, rc in zip(runs, fmriprep_confounds)]
 
-    confounds = pd.concat(fmriprep_confounds, 0, keys=runs, names=['run'])
-    return confounds.groupby('run').transform(lambda x: x.fillna(x.mean()))
+    # confounds = pd.concat(fmriprep_confounds, 0, keys=runs, names=['run'])
+    return fmriprep_confounds
 
 
 def get_retroicor_confounds(subject, session, sourcedata, n_cardiac=2, n_respiratory=2, n_interaction=0):
 
     runs = get_runs(subject, session)
 
-    if (subject == '25') & (session == '7t1'):
+    if ((subject == '25') & (session == '7t1')) | ((subject == '10') & (session == '3t2')):
         print('No physiological data')
         index = pd.MultiIndex.from_product(
             [runs, get_frametimes(subject, session)], names=['run', None])
@@ -227,9 +228,6 @@ def get_retroicor_confounds(subject, session, sourcedata, n_cardiac=2, n_respira
     retroicor_confounds = [pd.read_table(
         cf, header=None, usecols=range(18), names=columns) if op.exists(cf) else pd.DataFrame(np.zeros((nvols,0))) for cf in retroicor_confounds ]
 
-    n_vols = len(retroicor_confounds[0])
-    tr = get_tr(subject, session)
-
     retroicor_confounds = [rc.set_index(get_frametimes(
         subject, session, run)) for run, rc in zip(runs, retroicor_confounds)]
 
@@ -239,16 +237,34 @@ def get_retroicor_confounds(subject, session, sourcedata, n_cardiac=2, n_respira
     confounds = pd.concat((confounds.loc[:, ('cardiac', slice(n_cardiac))],
                            confounds.loc[:, ('respiratory',
                                              slice(n_respiratory))],
-                           confounds.loc[:, ('interaction', slice(n_interaction))]), axis=1)
+                           confounds .loc[:, ('interaction', slice(n_interaction))]), axis=1)
 
+    confounds = [cf.droplevel('run') for _, cf in confounds.groupby(['run'])]
     return confounds
 
+def get_confounds(subject, session, bids_folder, include_fmriprep=None, pca=False, pca_n_components=.95):
+    
+    fmriprep_confounds = get_fmriprep_confounds(subject, session, bids_folder, confounds_to_include=include_fmriprep)
+    retroicor_confounds = get_retroicor_confounds(subject, session, bids_folder, n_cardiac=2, n_respiratory=2, n_interaction=0)
+    confounds = [pd.concat((rcf, fcf), axis=1) for rcf, fcf in zip(retroicor_confounds, fmriprep_confounds)]
+    confounds = [c.fillna(method='bfill') for c in confounds]
 
-def get_confounds(subject, session,  sourcedata=None):
+    original_size = confounds[0].shape[1]
 
-    if sourcedata is None:
-        sourcedata = get_sourcedata()
+    if pca:
+        def map_cf(cf, n_components=pca_n_components):
+            pca = PCA(n_components=n_components)
+            cf -= cf.mean(0)
+            cf /= cf.std(0)
+            cf = pd.DataFrame(pca.fit_transform(cf))
+            cf.columns = [f'pca_{i}' for i in range(1, cf.shape[1]+1)]
+            return cf
+        confounds = [map_cf(cf) for cf in confounds]
 
+    new_size = np.mean([cf.shape[1] for cf in confounds])
+    print(f"RESIZED CONFOUNDS: {original_size} to {new_size}")
+
+    return confounds
 
 def get_tr(subject, sesion):
     return 2.3

@@ -12,6 +12,7 @@ from nilearn.glm.first_level import make_first_level_design_matrix, run_glm
 from itertools import product
 from sklearn.decomposition import PCA
 from scipy.stats import zscore
+from risk_experiment.utils import get_confounds
 
 
 
@@ -79,29 +80,8 @@ def main(subject, session, bids_folder, smoothed=False,
     events['modulation'].fillna(1.0, inplace=True)
     print(events.loc[1].sort_values('onset').head(100))
 
-    # # sub-02_ses-7t2_task-task_run-1_space-fsaverage_hemi-R_bold.func
-
-    fmriprep_confounds_include = ['global_signal', 'dvars', 'framewise_displacement', 'trans_x',
-                                  'trans_y', 'trans_z', 'rot_x', 'rot_y', 'rot_z',
-                                  'a_comp_cor_00', 'a_comp_cor_01', 'a_comp_cor_02', 'a_comp_cor_03', 'cosine00', 'cosine01', 'cosine02', 
-                                  'cosine03',
-                                  'non_steady_state_outlier00', 'non_steady_state_outlier01', 'non_steady_state_outlier02']
-    fmriprep_confounds = [
-        op.join(bids_folder, f'derivatives/fmriprep/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-task_run-{run}_desc-confounds_timeseries.tsv') for run in runs]
-    fmriprep_confounds = [pd.read_table(
-        cf)[fmriprep_confounds_include] for cf in fmriprep_confounds]
-
-    retroicor_confounds = [
-        op.join(bids_folder, f'derivatives/physiotoolbox/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-task_run-{run}_desc-retroicor_timeseries.tsv') for run in runs]
-    retroicor_confounds = [pd.read_table(
-        cf, header=None, usecols=range(18)) if op.exists(cf) else pd.DataFrame(np.zeros((160, 0))) for cf in retroicor_confounds]
-
-    if (subject, session) in [('10', '3t2')]:
-        confounds = fmriprep_confounds
-    else:
-        confounds = [pd.concat((rcf, fcf), axis=1) for rcf, fcf in zip(retroicor_confounds, fmriprep_confounds)]
-
-    confounds = [c.fillna(method='bfill') for c in confounds]
+    confounds = get_confounds(subject, session, bids_folder, None,
+    pca=pca_confounds)
 
     t_r, n_scans = 2.3, 160
     frame_times = t_r * (np.arange(n_scans) + .5)
