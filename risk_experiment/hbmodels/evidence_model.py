@@ -157,6 +157,103 @@ class EvidenceModel(object):
 
         return perm   
 
+
+class EvidenceModelRegression(EvidenceModel):
+    
+    def __init__(self, data, regressors=None):
+        self.data = data
+        self.subject_ix, self.unique_subjects = pd.factorize(self.data.index.get_level_values('subject'))
+        self.n_subjects = len(self.unique_subjects) 
+        
+        self.design_matrices = {}
+        
+        if regressors is None:
+            regressors = {}
+        
+        for par in ['evidence_sd1', 'evidence_sd2', 'risky_prior_mu', 'risky_prior_sd']:
+            
+            if par not in regressors:
+                regressors[par] = '1'
+            
+            self.design_matrices[par] = dmatrix(regressors[par], self.data)
+    
+    def build_model(self):
+
+        base_numbers = self.data.n_safe.unique()
+        choices = self.data.chose_risky.values
+
+        safe_prior_mu = np.mean(np.log(base_numbers))
+        safe_prior_sd = np.std(np.log(base_numbers)) 
+
+        self.coords = {
+            "subject": self.unique_subjects,
+            "presentation": ['first', 'second'],
+            "risky_prior_mu_regressors":self.design_matrices['risky_prior_mu'].design_info.term_names,
+            "risky_prior_sd_regressors":self.design_matrices['risky_prior_sd'].design_info.term_names,
+            "evidence_sd1_regressors":self.design_matrices['evidence_sd1'].design_info.term_names,
+            "evidence_sd2_regressors":self.design_matrices['evidence_sd2'].design_info.term_names            
+            
+        }
+        
+                              
+                                              
+        with pm.Model(coords=self.coords) as self.model:
+
+            inputs = self._get_model_input()
+            for key, value in inputs.items():
+                inputs[key] = pm.Data(key, value)
+                
+            def build_hierarchical_nodes(name, mu_intercept=0.0, sigma=.5):
+                nodes = {}
+
+                mu = np.zeros(self.design_matrices[name].shape[1])
+                mu[0] = mu_intercept
+
+                nodes[f'{name}_mu'] = pm.Normal(f"{name}_mu", 
+                                              mu=mu, 
+                                              sigma=sigma,
+                                              dims=f'{name}_regressors')
+                nodes[f'{name}_sd'] = pm.HalfCauchy(f'{name}_sd', .5, dims=f'{name}_regressors')
+                nodes[f'{name}_offset'] = pm.Normal(f'{name}_offset', mu=0, sd=1, dims=('subject', f'{name}_regressors'))
+                nodes[name] = pm.Deterministic(name, nodes[f'{name}_mu'] + nodes[f'{name}_sd'] * nodes[f'{name}_offset'],
+                                              dims=('subject', f'{name}_regressors'))
+                
+                nodes[f'{name}_trialwise'] = softplus(tt.sum(nodes[name][inputs['subject_ix']] * \
+                                                               np.asarray(self.design_matrices[name]), 1))
+                
+                return nodes
+
+            # Hyperpriors for group nodes
+            
+            nodes = {}
+            
+            nodes.update(build_hierarchical_nodes('risky_prior_mu'), mu_intercept=np.log(20.))
+            nodes.update(build_hierarchical_nodes('risky_prior_sd'), mu_intercept=1.)
+            nodes.update(build_hierarchical_nodes('evidence_sd1'), mu_intercept=1.)
+            nodes.update(build_hierarchical_nodes('evidence_sd2'), mu_intercept=1.)
+            
+            evidence_sd = tt.stack((nodes['evidence_sd1_trialwise'], nodes['evidence_sd2_trialwise']), 0)
+        
+            
+
+            post_risky_mu, post_risky_sd = get_posterior(nodes['risky_prior_mu_trialwise'],
+                                                         nodes['risky_prior_sd_trialwise'],
+                                                         inputs['risky_mu'],
+                                                         evidence_sd[inputs['risky_ix'], np.arange(self.data.shape[0])])
+
+
+            post_safe_mu, post_safe_sd = get_posterior(safe_prior_mu,
+                                                       safe_prior_sd,
+                                                       inputs['safe_mu'],
+                                                       evidence_sd[inputs['safe_ix'], np.arange(self.data.shape[0])])
+
+            diff_mu, diff_sd = get_diff_dist(post_risky_mu, post_risky_sd, post_safe_mu, post_safe_sd)
+
+            p = pm.Deterministic('p', cumulative_normal(tt.log(.55), diff_mu, diff_sd))
+
+
+            ll = pm.Bernoulli('ll_bernoulli', p=p, observed=choices)
+
 def get_posterior(mu1, sd1, mu2, sd2):
 
     var1, var2 = sd1**2, sd2**2
