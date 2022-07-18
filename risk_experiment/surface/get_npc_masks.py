@@ -9,7 +9,7 @@ from neuropythy.io import load, save
 from neuropythy.mri import (is_image, is_image_spec, image_clear, to_image)
 import numpy as np
 
-def main(subject, bids_folder):
+def main(subject, bids_folder, roi='npc1'):
 
     subjects_dir = op.join(bids_folder, 'derivatives', 'freesurfer')
 
@@ -31,10 +31,11 @@ def main(subject, bids_folder):
 
 
     mask_data = []
+    # for hemi, fs_hemi in [('L', 'lh'), ('R', 'rh')]:
     for hemi, fs_hemi in [('L', 'lh'), ('R', 'rh')]:
-        in_file = op.join(bids_folder, 'derivatives', 'surface_masks.v3', f'desc-NPC_{hemi}_space-fsaverage_hemi-{fs_hemi}.label.gii')
+        in_file = op.join(bids_folder, 'derivatives', 'surface_masks.v3', f'desc-{roi.upper()}_{hemi}_space-fsaverage_hemi-{fs_hemi}.label.gii')
 
-        out_file = op.join(subjects_dir, f'sub-{subject}', 'surf', f'{fs_hemi}.npc.mgz')
+        out_file = op.join(subjects_dir, f'sub-{subject}', 'surf', f'{fs_hemi}.{roi}.mgz')
 
         transform_surface(in_file, out_file, f'sub-{subject}', fs_hemi)
         mask_data.append(surface.load_surf_data(out_file))
@@ -46,7 +47,7 @@ def main(subject, bids_folder):
     if not op.exists(target_dir):
         os.makedirs(target_dir)
 
-    target_fn = op.join(target_dir, f'sub-{subject}_space-T1w_desc-npc_mask.nii.gz')
+    target_fn = op.join(target_dir, f'sub-{subject}_space-T1w_desc-{roi}_mask.nii.gz')
     sub = fs_subject(op.join(bids_folder, 'derivatives', 'freesurfer', f'sub-{subject}'))
     im = load(op.join(bids_folder, 'derivatives', 'fmriprep', f'sub-{subject}', 'anat', f'sub-{subject}_desc-preproc_T1w.nii.gz'))
     im = to_image(image_clear(im, fill=0.0), dtype=np.int)
@@ -62,7 +63,7 @@ def main(subject, bids_folder):
     save(target_fn, new_im)
     print('surface_to_image complete!')
 
-    target_fn = op.join(target_dir, f'sub-{subject}_space-T1w_desc-npcl_mask.nii.gz')
+    target_fn = op.join(target_dir, f'sub-{subject}_space-T1w_desc-{roi}l_mask.nii.gz')
     print('Generating volume...')
     new_im = sub.cortex_to_image(mask_data[0],
             im,
@@ -74,7 +75,7 @@ def main(subject, bids_folder):
     save(target_fn, new_im)
     print('surface_to_image complete!')
 
-    target_fn = op.join(target_dir, f'sub-{subject}_space-T1w_desc-npcr_mask.nii.gz')
+    target_fn = op.join(target_dir, f'sub-{subject}_space-T1w_desc-{roi}r_mask.nii.gz')
     print('Generating volume...')
     new_im = sub.cortex_to_image((np.zeros_like(mask_data[0]), mask_data[1]),
             im,
@@ -90,7 +91,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('subject', default=None)
     parser.add_argument(
+        '--roi', default='npc1')
+    parser.add_argument(
         '--bids_folder', default='/data')
     args = parser.parse_args()
 
-    main(args.subject, args.bids_folder, )
+    main(args.subject, args.bids_folder, roi=args.roi)

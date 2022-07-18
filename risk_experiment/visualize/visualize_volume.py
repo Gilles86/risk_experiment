@@ -11,47 +11,55 @@ from utils import _load_parameters, get_alpha_vertex
 cmap = 'nipy_spectral'
 
 sourcedata = '/data/ds-risk'
-subject = '10'
-session = '7t1'
-thr = .15
+subject = '16'
 
 d = {}
 
-for session in ['3t1', '3t2', '7t1', '7t2']:
-    if session.endswith('1'):
-        threshold = 0.055
-    else:
-        threshold = 0.03
+for session in ['3t1', '3t2', '7t1', '7t2' ][1:2]:
+    for smoothed in [False, True]:
 
-    d[f'r2_{session}_vol'] = _load_parameters(subject, session, 'r2', volume=True, vmin=0.0, vmax=.5,
-            cmap='hot', threshold=threshold)
-    d[f'mu_{session}_vol'] =_load_parameters(subject, session, 'mu', volume=True, vmin=np.log(5), vmax=np.log(28),
-            alpha=d[f'r2_{session}_vol'].alpha,
-            cmap='nipy_spectral')
+        if not (smoothed and session.endswith('1')):
+            if session.endswith('1'):
+                threshold = 0.025
+            else:
+                threshold = 0.02
 
+            key = f'{subject}.{session}_volsurf'
 
-    # d[f'r2_{session}_surf'] = _load_parameters(subject, session, 'r2', vmin=0.0, vmax=.5,
-            # cmap='hot', threshold=threshold)
-    # mu = _load_parameters(subject, session, 'mu', 
-            # cmap='hot', threshold=threshold)
-
-    # alpha = np.clip(d[f'r2_{session}_surf'].data-threshold, 0., .1) /.1
-    # d[f'mu_{session}_surf'] = get_alpha_vertex(mu.data, alpha, cmap='nipy_spectral',
-            # subject=subject, vmin=np.log(5), vmax=np.log(28),
-            # standard_space=False)
-
-    d[f'r2_{session}_volsurf'] = _load_parameters(subject, session, 'r2.volume', vmin=0.0, vmax=.5,
-            cmap='hot', threshold=threshold)
-    mu = _load_parameters(subject, session, 'mu.volume', 
-            cmap='hot', threshold=threshold)
-
-    alpha = np.clip(d[f'r2_{session}_volsurf'].data-threshold, 0., .1) /.1
-    d[f'mu_{session}_volsurf'] = get_alpha_vertex(mu.data, alpha, cmap='nipy_spectral',
-            subject=subject, vmin=np.log(5), vmax=np.log(28),
-            standard_space=False)
+            if smoothed:
+                key += '_smoothed'
 
 
-print(d)
+            try:
+                r2 = _load_parameters(subject, session, 'r2.volume', vmin=0.0, vmax=.5,
+                        cmap='hot', threshold=threshold, smoothed=smoothed)
+
+                alpha = np.clip(r2.data-threshold, 0., .1) /.1
+
+                d[f'r2_{key}'] = get_alpha_vertex(r2.data, alpha, cmap='hot',
+                        subject=subject, vmin=0.0, vmax=0.3,
+                        standard_space=False)
+
+                mu = _load_parameters(subject, session, 'mu.volume', 
+                        cmap='hot', threshold=threshold, smoothed=smoothed)
+
+                d[f'mu_{key}'] = get_alpha_vertex(mu.data, alpha, cmap='nipy_spectral',
+                        subject=subject, vmin=np.log(5), vmax=np.log(28),
+                        standard_space=False)
+
+                sd = _load_parameters(subject, session, 'sd.volume', 
+                        cmap='hot', threshold=threshold, smoothed=smoothed)
+
+                d[f'sd_{key}'] = get_alpha_vertex(sd.data, alpha, cmap='nipy_spectral',
+                        subject=subject, vmin=.5, vmax=3.,
+                        standard_space=False)
+
+                d[f'mu_natural_{key}'] = get_alpha_vertex(np.exp(mu.data - sd.data), alpha, cmap='nipy_spectral',
+                        subject=subject, vmin=5, vmax=28,
+                        standard_space=False)
+            except Exception as e:
+                print(f'Error {e} with {key}')
+
 ds = cortex.Dataset(**d)
 
 cortex.webshow(ds)

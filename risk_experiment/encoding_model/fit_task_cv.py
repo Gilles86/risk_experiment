@@ -14,7 +14,7 @@ import numpy as np
 import seaborn as sns
 
 
-def main(subject, session, bids_folder='/data/ds-risk', smoothed=False):
+def main(subject, session, bids_folder='/data/ds-risk', smoothed=False, pca_confounds=False):
          
 
     key = 'glm_stim1'
@@ -23,6 +23,10 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False):
     if smoothed:
         key += '.smoothed'
         target_dir += '.smoothed'
+
+    if pca_confounds:
+        key += '.pca_confounds'
+        target_dir += '.pca_confounds'
 
     target_dir = get_target_dir(subject, session, bids_folder, target_dir)
 
@@ -100,6 +104,8 @@ if __name__ == '__main__':
     parser.add_argument('session', default=None)
     parser.add_argument('--bids_folder', default='/data')
     parser.add_argument('--smoothed', action='store_true')
+    parser.add_argument('--pca_confounds', action='store_true')
     args = parser.parse_args()
 
-    main(args.subject, args.session, bids_folder=args.bids_folder, smoothed=args.smoothed)
+    main(args.subject, args.session, bids_folder=args.bids_folder, smoothed=args.smoothed,
+    pca_confounds=args.pca_confounds)

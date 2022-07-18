@@ -11,7 +11,7 @@ import numpy as np
 sourcedata='/data/ds-risk'
 
 
-for smoothed in [False]:
+for smoothed in [True]:
     folder = 'encoding_model'
 
     if smoothed:
@@ -41,6 +41,13 @@ for smoothed in [False]:
     data = pd.DataFrame(data, index=keys).unstack('hemi')
     data = data.reorder_levels([1, 0], 1).sort_index(axis=1)
 
+    for session, d in data.groupby(['session']):
+
+        weighted_mu = d.xs('mu', level='parameter') * d.xs('r2', level='parameter')
+        weighted_mu = weighted_mu.sum() / d.xs('r2', level='parameter').sum()
+
+        write_gifti('02', session, sourcedata, 'fsaverage', weighted_mu,
+                op.join(sourcedata, 'derivatives', folder, f'group_ses-{session}_desc-weightedmu.volume_hemi-_hemi__mean.gii'.replace('_hemi_', '{hemi}')))
 
     for (session, par), d in data.groupby(['session', 'parameter']):
         print(d)

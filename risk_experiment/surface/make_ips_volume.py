@@ -39,16 +39,16 @@ def main(subj, bids_folder='/data'):
     print(lhdat.sum())
     print(rhdat.sum())
 
-    # print('Generating volume...')
-    # new_im = sub.cortex_to_image((lhdat, rhdat),
-            # im,
-            # hemi=None,
-            # method='nearest',
-            # fill=0.0)
+    print('Generating volume...')
+    new_im = sub.cortex_to_image((lhdat, rhdat),
+            im,
+            hemi=None,
+            method='nearest',
+            fill=0.0)
 
-    # print('Exporting volume file: %s' % target_fn)
-    # save(target_fn, new_im)
-    # print('surface_to_image complete!')
+    print('Exporting volume file: %s' % target_fn)
+    save(target_fn, new_im)
+    print('surface_to_image complete!')
 
     target_fn = op.join(target_dir, f'sub-{subj}_space-T1w_desc-wang15ipsL_mask.nii.gz')
     print('Generating volume...')

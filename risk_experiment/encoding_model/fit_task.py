@@ -17,10 +17,14 @@ import seaborn as sns
 
 def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
         stimulus='1',
+        allow_neg=False,
         pca_confounds=False):
 
     key = 'glm_stim1'
     target_dir = 'encoding_model'
+
+    if allow_neg:
+        target_dir += '.posneg'
 
     if smoothed:
         key += '.smoothed'
@@ -51,12 +55,14 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
         p2 = paradigm[paradigm.trial_type == 'stimulus 2'].set_index('trial_nr')
         paradigm = pd.concat((np.log(p1['n1']), np.log(p2['n2'])), keys=['stim1', 'stim2'], names=['stimulus'])
 
-    print(paradigm)
     model = GaussianPRF()
     # SET UP GRID
     mus = np.log(np.linspace(5, 80, 60, dtype=np.float32))
     sds = np.log(np.linspace(2, 30, 60, dtype=np.float32))
-    amplitudes = np.array([-1., 1.], dtype=np.float32)
+    if allow_neg:
+        amplitudes = np.array([-1., 1.], dtype=np.float32)
+    else:
+        amplitudes = np.array([1.], dtype=np.float32)
     baselines = np.array([0], dtype=np.float32)
 
     mask = op.join(bids_folder, 'derivatives', f'fmriprep/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-task_run-1_space-T1w_desc-brain_mask.nii.gz')
@@ -82,7 +88,9 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
     optimizer = ParameterFitter(model, data, paradigm)
 
     grid_parameters = optimizer.fit_grid(mus, sds, amplitudes, baselines, use_correlation_cost=True)
-    grid_parameters = optimizer.refine_baseline_and_amplitude(grid_parameters, n_iterations=2)
+    print('grid', grid_parameters.describe())
+    grid_parameters = optimizer.refine_baseline_and_amplitude(grid_parameters, n_iterations=2, positive_amplitude=(not allow_neg))
+    print('reifned', grid_parameters.describe())
 
 
     optimizer.fit(init_pars=grid_parameters, learning_rate=.05, store_intermediate_parameters=False, max_n_iterations=10000,
