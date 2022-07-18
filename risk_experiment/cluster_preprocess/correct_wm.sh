@@ -4,7 +4,7 @@
 #SBATCH --partition=generic
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
-#SBATCH --mem=64G
+#SBATCH --mem=54G
 #SBATCH --time=72:00:00
 export PARTICIPANT_LABEL=$(printf "sub-%02d" $SLURM_ARRAY_TASK_ID)
 export FREESURFER_HOME=/data/gdehol/freesurfer

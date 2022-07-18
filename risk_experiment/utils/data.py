@@ -682,9 +682,15 @@ def get_volume_mask(subject, session, mask, bids_folder='/data'):
 
     return mask
 
-def get_single_trial_volume(subject, session, mask=None, bids_folder='/data'):
+def get_single_trial_volume(subject, session, mask=None, bids_folder='/data',
+        smoothed=False):
 
-    fn = op.join(bids_folder, 'derivatives', 'glm_stim1', f'sub-{subject}', f'ses-{session}', 'func', 
+    key= 'glm_stim1'
+
+    if smoothed:
+        key += '.smoothed'
+
+    fn = op.join(bids_folder, 'derivatives', key, f'sub-{subject}', f'ses-{session}', 'func', 
             f'sub-{subject}_ses-{session}_task-task_space-T1w_desc-stims1_pe.nii.gz')
 
     im = image.load_img(fn)

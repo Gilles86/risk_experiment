@@ -12,7 +12,8 @@ from risk_experiment.utils import get_single_trial_volume, get_surf_mask, get_pr
 import numpy as np
 
 
-stimulus_range = np.linspace(np.log(5), np.log(80), 100)
+stimulus_range = np.linspace(0, 6, 1000)
+# stimulus_range = np.log(np.arange(400))
 mask = 'wang15_ips'
 space = 'T1w'
 
@@ -39,7 +40,7 @@ def main(subject, session, smoothed, n_voxels=1000, bids_folder='/data',
     paradigm['log(n1)'] = np.log(paradigm['n1'])
     print(paradigm)
 
-    data = get_single_trial_volume(subject, session, bids_folder=bids_folder, mask=mask).astype(np.float32)
+    data = get_single_trial_volume(subject, session, bids_folder=bids_folder, mask=mask, smoothed=smoothed).astype(np.float32)
     data.index = paradigm.index
     print(data)
 
@@ -78,7 +79,7 @@ def main(subject, session, smoothed, n_voxels=1000, bids_folder='/data',
 
         print('DOF', dof)
 
-        bins = np.linspace(np.log(5), np.log(80), 150, endpoint=True).astype(np.float32)
+        bins = stimulus_range.astype(np.float32)
 
         pdf = model.get_stimulus_pdf(test_data, bins,
                 model.parameters,
@@ -112,4 +113,3 @@ if __name__ == '__main__':
 
     main(args.subject, args.session, args.smoothed, args.n_voxels,
             bids_folder=args.bids_folder, mask=args.mask)
-            

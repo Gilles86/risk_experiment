@@ -54,3 +54,4 @@ experiment/logs/*
 experiment/settings/*
 
 *output.nipype
+.job

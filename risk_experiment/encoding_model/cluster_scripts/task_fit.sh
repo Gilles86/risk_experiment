@@ -1,11 +1,11 @@
 #!/bin/bash
-#SBATCH --job-name=decode_nprf
+#SBATCH --job-name=fit_nprf_surf_unsmoothed
 #SBATCH --output=/home/cluster/gdehol/logs/fit_nprf_unsmoothed_surf_%A-%a.txt
 #SBATCH --partition=volta
 #SBATCH --ntasks=1
 #SBATCH --mem=96G
 #SBATCH --gres gpu:1
-#SBATCH --time=30:00
+#SBATCH --time=2:00:00
 module load volta
 module load nvidia/cuda11.2-cudnn8.1.0
 
@@ -16,5 +16,5 @@ module load nvidia/cuda11.2-cudnn8.1.0
 export PARTICIPANT_LABEL=$(printf "%02d" $SLURM_ARRAY_TASK_ID)
 
 source activate tf2-gpu
-python $HOME/git/risk_experiment/risk_experiment/encoding_model/decode.py $PARTICIPANT_LABEL 3t2 --bids_folder /scratch/gdehol/ds-risk --n_voxels 1000 --smoothed
-#python $HOME/git/risk_experiment/risk_experiment/encoding_model/decode.py $PARTICIPANT_LABEL 7t2 --bids_folder /scratch/gdehol/ds-risk --n_voxels 500 --smoothed
+python $HOME/git/risk_experiment/risk_experiment/encoding_model/fit_task.py $PARTICIPANT_LABEL 3t2 --bids_folder /scratch/gdehol/ds-risk --smoothed
+python $HOME/git/risk_experiment/risk_experiment/encoding_model/fit_task.py $PARTICIPANT_LABEL 7t2 --bids_folder /scratch/gdehol/ds-risk --smoothed

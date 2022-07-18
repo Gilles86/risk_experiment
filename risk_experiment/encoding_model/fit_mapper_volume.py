@@ -12,9 +12,13 @@ from braincoder.models import GaussianPRFWithHRF
 from braincoder.hrf import SPMHRFModel
 from braincoder.optimize import ParameterFitter
 
-def main(subject, session, bids_folder, smoothed=True, concatenate=False, space='T1w'):
+def main(subject, session, bids_folder, smoothed=False, concatenate=False, space='T1w'):
 
     target_dir = 'encoding_model'
+
+    if smoothed:
+        encoding_model += '.smoothed'
+
 
     target_dir = get_target_dir(subject, session, bids_folder, target_dir)
 
@@ -43,6 +47,9 @@ def main(subject, session, bids_folder, smoothed=True, concatenate=False, space=
         print(f'cleaning run {run}')
         d = get_volume_data(subject, session, run, bids_folder, space=space)
 
+        if smoothed:
+            d = image.smooth_img(d, 5.0)
+
         d = psc(d)
 
         d_cleaned = image.clean_img(d, confounds=confounds.loc[run].values, standardize=False, detrend=False, ensure_finite=True)
@@ -51,6 +58,9 @@ def main(subject, session, bids_folder, smoothed=True, concatenate=False, space=
 
         images.append(d_cleaned)
         masks.append(get_brain_mask(subject, session, run, bids_folder))
+
+    if ((subject == '13') & (session == '3t1')):
+        masks[-1] = image.resample_to_img(masks[-1], masks[0], 'nearest')  
 
     conjunct_mask = image.math_img('mask.sum(-1).astype(np.bool)', mask=image.concat_imgs(masks))
 
@@ -70,8 +80,8 @@ def main(subject, session, bids_folder, smoothed=True, concatenate=False, space=
     model = GaussianPRFWithHRF(hrf_model=hrf_model)
 
     # # SET UP GRID
-    mus = np.log(np.linspace(5, 80, 60, dtype=np.float32))
-    sds = np.log(np.linspace(2, 30, 60, dtype=np.float32))
+    mus = np.log(np.linspace(5, 80, 40, dtype=np.float32))
+    sds = np.log(np.linspace(2, 30, 40, dtype=np.float32))
     amplitudes = np.array([1.], dtype=np.float32)
     baselines = np.array([0], dtype=np.float32)
 
@@ -100,4 +110,5 @@ if __name__ == '__main__':
     parser.add_argument('--concatenate', action='store_true')
     args = parser.parse_args()
 
-    main(args.subject, args.session, bids_folder=args.bids_folder, concatenate=args.concatenate)
+    main(args.subject, args.session, bids_folder=args.bids_folder, concatenate=args.concatenate,
+            smoothed=args.smoothed)
