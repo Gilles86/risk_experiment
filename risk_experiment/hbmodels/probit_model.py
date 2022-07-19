@@ -15,8 +15,7 @@ bids_folder = '/data'
 
 class ProbitModel(object):
 
-    models = {'model1': 'chose_risky ~ 1 + C(n_safe)*x + x*risky_first + (C(n_safe)*x|subject) + (x*risky_first|subject)',
-              'model2': 'chose_risky ~ 1 + C(n_safe)*x*risky_first + (C(n_safe)*x*risky_first|subject)'}
+    models = {'model1': 'chose_risky ~ 1 + C(n_safe)*x*risky_first + (C(n_safe)*x*risky_first|subject)'}
 
     def __init__(self, data, model_type, bids_folder='/data'):
         self.bids_folder = bids_folder
@@ -65,7 +64,7 @@ class ProbitModel(object):
         x = [0, 1]
         n_safe = self.data['n_safe'].unique()
 
-    def fit(self, draws=1000, tune=1000, target_accept=.85):
+    def sample(self, draws=1000, tune=1000, target_accept=.85):
         trace = self.model.fit(
             draws, tune, target_accept=target_accept, init='adapt_diag')
         return trace
