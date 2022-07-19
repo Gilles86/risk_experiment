@@ -6,16 +6,16 @@ from evidence_model import EvidenceModel, EvidenceModelRegression
 import arviz as az
 
 
-def main(model, session='7t2', bids_folder='/data'):
+def main(model_label, session='7t2', bids_folder='/data'):
 
-    if model not in ['model1', 'certainty']:
+    if model_label not in ['model1', 'certainty']:
         raise NotImplementedError
 
     df = get_all_behavior(sessions=session, bids_folder=bids_folder)
     
-    if model == 'model1':
+    if model_label == 'model1':
         model = EvidenceModel(df)
-    elif model == 'certainty':
+    elif model_label == 'certainty':
         from scipy.stats import zscore
 
         df['z_certainty'] = df.groupby(['subject']).certainty.apply(zscore)
@@ -31,7 +31,7 @@ def main(model, session='7t2', bids_folder='/data'):
     if not op.exists(target_folder):
         os.makedirs(target_folder)
         
-    az.to_netcdf(trace,  op.join(target_folder, f'evidence_ses-{session}_model-{model}.nc'))
+    az.to_netcdf(trace,  op.join(target_folder, f'evidence_ses-{session}_model-{model_label}.nc'))
 
 
 if __name__ == '__main__':
