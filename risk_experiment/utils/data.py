@@ -166,7 +166,6 @@ class Subject(object):
                 return d
         df['bin(risky/safe)'] = df.groupby(['subject'])['frac'].apply(get_risk_bin)
 
-
         df = df[~df.chose_risky.isnull()]
         df['chose_risky'] = df['chose_risky'].astype(bool)
         return df.droplevel(-1, 1)
@@ -314,9 +313,7 @@ def get_mapper_response_hrf(subject, session, sourcedata):
     frametimes = np.linspace(0, (125-1)*tr, 125)
 
     response_hrf = responses.groupby('run').apply(lambda d: make_first_level_design_matrix(frametimes,
-                                                                                           d, drift_model=None,
                                                                                            drift_order=0))
-
     return response_hrf[['response']]
 
 
