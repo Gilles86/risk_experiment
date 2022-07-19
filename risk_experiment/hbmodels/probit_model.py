@@ -1,14 +1,8 @@
 import warnings
-import argparse
 import arviz as az
-import os
-import os.path as op
-from tms_risk.utils import get_all_behavior
-from tqdm.contrib.itertools import product
 import pandas as pd
 import numpy as np
 import bambi as bmb
-from scipy.stats import zscore
 
 bids_folder = '/data'
 
