@@ -50,7 +50,7 @@ def get_all_subjects(bids_folder):
     return [Subject(subject, bids_folder) for subject in get_all_subject_ids()]
 
 def get_all_behavior(sessions=['3t2', '7t2'], bids_folder='/data',
-        drop_no_responses=False):
+        drop_no_responses=True):
     subjects = get_all_subjects(bids_folder=bids_folder)
     behavior = [s.get_behavior(sessions=sessions, drop_no_responses=drop_no_responses) for s in tqdm(subjects)]
     return pd.concat(behavior)

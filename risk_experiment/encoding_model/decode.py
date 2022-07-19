@@ -34,7 +34,7 @@ def main(subject, session, smoothed, pca_confounds, n_voxels=1000, bids_folder='
         os.makedirs(target_dir)
 
     sub = Subject(subject, bids_folder)
-    paradigm = sub.get_behavior(sessions=session)
+    paradigm = sub.get_behavior(sessions=session, drop_no_responses=False)
     paradigm['log(n1)'] = np.log(paradigm['n1'])
     paradigm = paradigm.droplevel(['subject', 'session'])
 
