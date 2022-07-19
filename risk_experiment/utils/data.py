@@ -1,7 +1,7 @@
 import os.path as op
 from nilearn.glm.first_level import make_first_level_design_matrix
 from nilearn import surface, image
-from nilearn.input_data import NiftiMasker
+from nilearn.maskers import NiftiMasker
 import nibabel as nb
 import pandas as pd
 import numpy as np
@@ -542,7 +542,7 @@ def get_all_task_behavior(session=None, bids_folder='/data'):
     keys = []
     df = []
 
-    subjects = get_all_subjects()
+    subjects = get_all_subjects(bids_folder=bids_folder)
 
     if session is None:
         sessions = ['3t2', '7t2']
