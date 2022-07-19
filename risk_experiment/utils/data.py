@@ -154,6 +154,19 @@ class Subject(object):
         df['frac'] = df['n_risky'] / df['n_safe']
         df['log(risky/safe)'] = np.log(df['frac'])
 
+        def get_risk_bin(d):
+            try: 
+                return pd.qcut(d, 6, range(1, 7))
+            except Exception as e:
+                n = len(d)
+                ix = np.linspace(1, 7, n, False)
+
+                d[d.sort_values().index] = np.floor(ix)
+                
+                return d
+        df['bin(risky/safe)'] = df.groupby(['subject'])['frac'].apply(get_risk_bin)
+
+
         df = df[~df.chose_risky.isnull()]
         df['chose_risky'] = df['chose_risky'].astype(bool)
         return df.droplevel(-1, 1)
@@ -528,7 +541,7 @@ def get_all_task_behavior(session=None, bids_folder='/data'):
     keys = []
     df = []
 
-    subjects = get_all_subjects()
+    subjects = get_all_subjects(bids_folder=bids_folder)
 
     if session is None:
         sessions = ['3t2', '7t2']
