@@ -652,6 +652,7 @@ def get_surf_mask(subject, mask, hemi=None, bids_folder='/data'):
 def get_prf_parameters_volume(subject, session, bids_folder,
         run=None,
         smoothed=False,
+        pca_confounds=False,
         cross_validated=True,
         hemi=None,
         mask=None,
@@ -666,6 +667,9 @@ def get_prf_parameters_volume(subject, session, bids_folder,
 
     if smoothed:
         dir += '.smoothed'
+
+    if pca_confounds:
+        dir += '.pca_confounds'
 
     parameters = []
 
@@ -799,12 +803,16 @@ def get_volume_mask(subject, session, mask, bids_folder='/data'):
     return mask
 
 def get_single_trial_volume(subject, session, mask=None, bids_folder='/data',
-        smoothed=False):
+        smoothed=False,
+        pca_confounds=False):
 
     key= 'glm_stim1'
 
     if smoothed:
         key += '.smoothed'
+
+    if pca_confounds:
+        key += '.pca_confounds'
 
     fn = op.join(bids_folder, 'derivatives', key, f'sub-{subject}', f'ses-{session}', 'func', 
             f'sub-{subject}_ses-{session}_task-task_space-T1w_desc-stims1_pe.nii.gz')
@@ -812,10 +820,10 @@ def get_single_trial_volume(subject, session, mask=None, bids_folder='/data',
     im = image.load_img(fn)
     
     mask = get_volume_mask(subject, session, mask, bids_folder)
-    paradigm = get_task_behavior(subject, session, bids_folder)
+    # paradigm = get_task_behavior(subject, session, bids_folder)
     masker = NiftiMasker(mask_img=mask)
 
-    data = pd.DataFrame(masker.fit_transform(im), index=paradigm.index)
+    data = pd.DataFrame(masker.fit_transform(im))
 
     return data
 
