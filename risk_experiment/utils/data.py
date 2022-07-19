@@ -49,9 +49,10 @@ def get_all_subject_ids():
 def get_all_subjects(bids_folder):
     return [Subject(subject, bids_folder) for subject in get_all_subject_ids()]
 
-def get_all_behavior(sessions=['3t2', '7t2'], bids_folder='/data'):
+def get_all_behavior(sessions=['3t2', '7t2'], bids_folder='/data',
+        drop_no_responses=False):
     subjects = get_all_subjects(bids_folder=bids_folder)
-    behavior = [s.get_behavior(sessions=sessions) for s in tqdm(subjects)]
+    behavior = [s.get_behavior(sessions=sessions, drop_no_responses=drop_no_responses) for s in tqdm(subjects)]
     return pd.concat(behavior)
 
 class Subject(object):
@@ -105,7 +106,7 @@ class Subject(object):
 
         return im
 
-    def get_behavior(self, sessions=None):
+    def get_behavior(self, drop_no_responses=True, sessions=None):
 
         if sessions is None:
             sessions = ['3t2', '7t2']
@@ -131,12 +132,12 @@ class Subject(object):
             df = pd.concat(df)
             df = df.reset_index().set_index(['subject', 'session', 'run', 'trial_nr', 'trial_type']) 
             df = df.unstack('trial_type')
-            return self._cleanup_behavior(df)
+            return self._cleanup_behavior(df, drop_no_responses=drop_no_responses)
         else:
             return pd.DataFrame([])
 
     @staticmethod
-    def _cleanup_behavior(df_):
+    def _cleanup_behavior(df_, drop_no_responses=True):
         df = df_[[]].copy()
         df['rt'] = df_.loc[:, ('onset', 'choice')] - df_.loc[:, ('onset', 'stimulus 2')]
         df['certainty'] = df_.loc[:, ('choice', 'certainty')]
@@ -166,8 +167,11 @@ class Subject(object):
                 return d
         df['bin(risky/safe)'] = df.groupby(['subject'])['frac'].apply(get_risk_bin)
 
-        df = df[~df.chose_risky.isnull()]
         df['chose_risky'] = df['chose_risky'].astype(bool)
+
+        if drop_no_responses:
+            df = df[~df.chose_risky.isnull()]
+
         return df.droplevel(-1, 1)
         
 
