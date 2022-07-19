@@ -1,7 +1,7 @@
 import os.path as op
 from nilearn.glm.first_level import make_first_level_design_matrix
 from nilearn import surface, image
-from nilearn.input_data import NiftiMasker
+from nilearn.maskers import NiftiMasker
 import nibabel as nb
 import pandas as pd
 import numpy as np
