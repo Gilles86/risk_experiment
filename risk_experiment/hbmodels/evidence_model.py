@@ -2,6 +2,9 @@ import pymc3 as pm
 import numpy as np
 import pandas as pd
 import theano.tensor as tt
+from patsy import dmatrix
+from pymc3.math import log1pexp as softplus
+def softplus_np(x): return np.log1p(np.exp(-np.abs(x))) + np.maximum(x, 0)
 
 class EvidenceModel(object):
     

@@ -154,6 +154,18 @@ class Subject(object):
         df['frac'] = df['n_risky'] / df['n_safe']
         df['log(risky/safe)'] = np.log(df['frac'])
 
+        def get_risk_bin(d):
+            try: 
+                return pd.qcut(d, 6, range(1, 7))
+            except Exception as e:
+                n = len(d)
+                ix = np.linspace(1, 7, n, False)
+
+                d[d.sort_values().index] = np.floor(ix)
+                
+                return d
+        df['bin(risky/safe)'] = df.groupby(['subject'])['frac'].apply(get_risk_bin)
+
         df = df[~df.chose_risky.isnull()]
         df['chose_risky'] = df['chose_risky'].astype(bool)
         return df.droplevel(-1, 1)
@@ -301,9 +313,7 @@ def get_mapper_response_hrf(subject, session, sourcedata):
     frametimes = np.linspace(0, (125-1)*tr, 125)
 
     response_hrf = responses.groupby('run').apply(lambda d: make_first_level_design_matrix(frametimes,
-                                                                                           d, drift_model=None,
                                                                                            drift_order=0))
-
     return response_hrf[['response']]
 
 
