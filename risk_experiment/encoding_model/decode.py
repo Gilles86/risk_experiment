@@ -8,7 +8,7 @@ from nilearn import surface
 from braincoder.optimize import ResidualFitter
 from braincoder.models import GaussianPRF
 from braincoder.utils import get_rsq
-from risk_experiment.utils import get_single_trial_volume, get_surf_mask, get_prf_parameters_volume
+from risk_experiment.utils import get_single_trial_volume, get_surf_mask, get_prf_parameters_volume, Subject
 import numpy as np
 
 
@@ -17,7 +17,7 @@ stimulus_range = np.linspace(0, 6, 1000)
 mask = 'wang15_ips'
 space = 'T1w'
 
-def main(subject, session, smoothed, n_voxels=1000, bids_folder='/data',
+def main(subject, session, smoothed, pca_confounds, n_voxels=1000, bids_folder='/data',
         mask='wang15_ips'):
 
     target_dir = op.join(bids_folder, 'derivatives', 'decoded_pdfs.volume')
@@ -25,22 +25,20 @@ def main(subject, session, smoothed, n_voxels=1000, bids_folder='/data',
     if smoothed:
         target_dir += '.smoothed'
 
+    if pca_confounds:
+        target_dir += '.pca_confounds'
+
     target_dir = op.join(target_dir, f'sub-{subject}', 'func')
 
     if not op.exists(target_dir):
         os.makedirs(target_dir)
 
-
-    paradigm = [pd.read_csv(op.join(bids_folder, f'sub-{subject}', f'ses-{session}',
-                               'func', f'sub-{subject}_ses-{session}_task-task_run-{run}_events.tsv'), sep='\t')
-                for run in range(1, 9)]
-    paradigm = pd.concat(paradigm, keys=range(1,9), names=['run']).droplevel(1)
-    paradigm = paradigm[paradigm.trial_type == 'stimulus 1'].set_index('trial_nr', append=True)
-
+    sub = Subject(subject, bids_folder)
+    paradigm = sub.get_behavior(sessions=session)
     paradigm['log(n1)'] = np.log(paradigm['n1'])
-    print(paradigm)
+    paradigm = paradigm.droplevel(['subject', 'session'])
 
-    data = get_single_trial_volume(subject, session, bids_folder=bids_folder, mask=mask, smoothed=smoothed).astype(np.float32)
+    data = get_single_trial_volume(subject, session, bids_folder=bids_folder, mask=mask, smoothed=smoothed, pca_confounds=pca_confounds).astype(np.float32)
     data.index = paradigm.index
     print(data)
 
@@ -52,7 +50,9 @@ def main(subject, session, smoothed, n_voxels=1000, bids_folder='/data',
         test_data, test_paradigm = data.loc[test_run].copy(), paradigm.loc[test_run].copy()
         train_data, train_paradigm = data.drop(test_run, level='run').copy(), paradigm.drop(test_run, level='run').copy()
 
-        pars = get_prf_parameters_volume(subject, session, cross_validated=True, run=test_run, mask=mask, bids_folder=bids_folder)
+        pars = get_prf_parameters_volume(subject, session, cross_validated=True,
+                smoothed=smoothed, pca_confounds=pca_confounds,
+                run=test_run, mask=mask, bids_folder=bids_folder)
         # pars = get_prf_parameters_volume(subject, session, cross_validated=False,  mask=mask, bids_folder=bids_folder)
         print(pars)
 
@@ -107,9 +107,11 @@ if __name__ == '__main__':
     parser.add_argument('session', default=None)
     parser.add_argument('--bids_folder', default='/data')
     parser.add_argument('--smoothed', action='store_true')
+    parser.add_argument('--pca_confounds', action='store_true')
     parser.add_argument('--mask', default='wang15_ips')
     parser.add_argument('--n_voxels', default=100, type=int)
     args = parser.parse_args()
 
-    main(args.subject, args.session, args.smoothed, args.n_voxels,
+    main(args.subject, args.session, args.smoothed, args.pca_confounds,
+            args.n_voxels,
             bids_folder=args.bids_folder, mask=args.mask)
