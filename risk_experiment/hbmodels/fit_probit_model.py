@@ -9,7 +9,7 @@ import arviz as az
 def main(model_type, session='7t2', bids_folder='/data'):
 
     if model_type not in ['model1', 'model2']:
-        raise NotImplementedError(f'Not implemented {model_label}')
+        raise NotImplementedError(f'Not implemented {model_type}')
 
     df = get_all_behavior(sessions=session, bids_folder=bids_folder)
     model = ProbitModel(df, model_type, bids_folder)
@@ -21,7 +21,7 @@ def main(model_type, session='7t2', bids_folder='/data'):
     if not op.exists(target_folder):
         os.makedirs(target_folder)
         
-    az.to_netcdf(trace,  op.join(target_folder, f'evidence_ses-{session}_model-{model_label}.nc'))
+    az.to_netcdf(trace,  op.join(target_folder, f'evidence_ses-{session}_model-{model_type}.nc'))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
