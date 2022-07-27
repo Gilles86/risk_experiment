@@ -2,7 +2,7 @@ import os
 import os.path as op
 import argparse
 from risk_experiment.utils.data import get_all_behavior
-from evidence_model import EvidenceModel, EvidenceModelRegression
+from evidence_model import EvidenceModel, EvidenceModelRegression, EvidenceModelSinglePrior
 import arviz as az
 import re
 import pandas as pd
@@ -11,13 +11,19 @@ import numpy as np
 
 def main(model_label, session='7t2', bids_folder='/data'):
 
+    if model_label not in ['model1', 'certainty', 'certainty_full', 'singleprior']:
+        raise NotImplementedError(f'Not implemented {model_label}')
+
     df = get_all_behavior(sessions=session, bids_folder=bids_folder)
     print(df)
     df = df.drop(3).drop(32)
     
     if model_label == 'model1':
         model = EvidenceModel(df)
+    elif model_label == 'singleprior':
+        model = EvidenceModelSinglePrior(df)
     elif model_label.startswith('certainty'):
+        from scipy.stats import zscore
 
         df['z_certainty'] = df.groupby(['subject']).certainty.apply(zscore)
         df['z_certainty'] = df['z_certainty'].fillna(0.0)

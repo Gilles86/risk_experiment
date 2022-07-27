@@ -160,6 +160,67 @@ class EvidenceModel(object):
 
         return perm   
 
+class EvidenceModelSinglePrior(EvidenceModel):
+
+    def build_model(self):
+
+        choices = self.data.chose_risky.values
+
+        self.coords = {
+            "subject": self.unique_subjects,
+            "presentation": ['first', 'second'],
+            "risky": ['risky', 'safe']
+        }
+
+        with pm.Model(coords=self.coords) as self.model:
+
+            inputs = self._get_model_input()
+            for key, value in inputs.items():
+                inputs[key] = pm.Data(key, value)
+
+            # Hyperpriors for group nodes
+            prior_mu_mu = pm.HalfNormal("prior_mu_mu", sigma=np.log(20.))
+            prior_mu_sd = pm.HalfCauchy('prior_mu_sd', .5)
+            prior_mu_offset = pm.Normal('prior_mu_offset', mu=0, sd=1, dims='subject')#shape=n_subjects)
+            prior_mu = pm.Deterministic('prior_mu', prior_mu_mu + prior_mu_sd * prior_mu_offset,
+                                             dims='subject')
+
+            prior_sd_mu = pm.HalfNormal("prior_sd_mu", sigma=1.25)
+            prior_sd_sd = pm.HalfCauchy('prior_sd_sd', .5)
+
+            prior_sd = pm.TruncatedNormal('prior_sd',
+                                           mu=prior_sd_mu,
+                                          sigma=prior_sd_sd,
+                                          lower=0,
+                                          dims='subject')
+
+            # ix0 = first presented, ix1=later presented
+            evidence_sd_mu = pm.HalfNormal("evidence_sd_mu", sigma=1., dims=('presentation', 'risky'))
+            evidence_sd_sd = pm.HalfCauchy("evidence_sd_sd", 1., dims=('presentation', 'risky'))
+            evidence_sd = pm.TruncatedNormal('evidence_sd',
+                                              mu=evidence_sd_mu,
+                                              sigma=evidence_sd_sd,
+                                              lower=0,
+                                              dims=('subject', 'presentation', 'risky'))
+
+
+            post_risky_mu, post_risky_sd = get_posterior(prior_mu[inputs['subject_ix']],
+                                                         prior_sd[inputs['subject_ix']],
+                                                         inputs['risky_mu'],
+                                                         evidence_sd[inputs['subject_ix'], inputs['risky_ix'], 0])
+
+
+            post_safe_mu, post_safe_sd = get_posterior(prior_mu[inputs['subject_ix']],
+                                                       prior_sd[inputs['subject_ix']],
+                                                       inputs['safe_mu'],
+                                                       evidence_sd[inputs['subject_ix'], inputs['safe_ix'], 1])
+
+            diff_mu, diff_sd = get_diff_dist(post_risky_mu, post_risky_sd, post_safe_mu, post_safe_sd)
+
+            p = pm.Deterministic('p', cumulative_normal(tt.log(.55), diff_mu, diff_sd))
+
+            ll = pm.Bernoulli('ll_bernoulli', p=p, observed=choices)
+
 
 class EvidenceModelRegression(EvidenceModel):
     

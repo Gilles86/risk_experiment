@@ -536,30 +536,6 @@ def get_task_behavior(subject, session, bids_folder='/data'):
 
     return df
 
-def get_all_task_behavior(session=None, bids_folder='/data'):
-
-    keys = []
-    df = []
-
-    subjects = get_all_subjects(bids_folder=bids_folder)
-
-    if session is None:
-        sessions = ['3t2', '7t2']
-    else:
-        sessions = [session]
-
-    for subject, session in product(subjects, sessions):
-        try:
-            d = get_task_behavior(subject, session, bids_folder)
-            df.append(d)
-                
-        except Exception as e:
-            print(e)
-
-    df = pd.concat(df)
-
-    return df
-
 def get_target_dir(subject, session, sourcedata, base, modality='func'):
     target_dir = op.join(sourcedata, 'derivatives', base, f'sub-{subject}', f'ses-{session}',
                          modality)
