@@ -103,7 +103,7 @@ class EvidenceModel(object):
     def sample(self, draws=1000, tune=1000, target_accept=0.95):
         
         with self.model:
-            self.trace = pm.sample(draws, tune=tune, target_accept=0.95, return_inferencedata=True)
+            self.trace = pm.sample(draws, tune=500, target_accept=0.95, return_inferencedata=True)
         
         return self.trace
     
