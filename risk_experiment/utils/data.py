@@ -217,9 +217,8 @@ def get_retroicor_confounds(subject, session, sourcedata, n_cardiac=2, n_respira
 
     if ((subject == '25') & (session == '7t1')) | ((subject == '10') & (session == '3t2')):
         print('No physiological data')
-        index = pd.MultiIndex.from_product(
-            [runs, get_frametimes(subject, session)], names=['run', None])
-        return pd.DataFrame(index=index, columns=[])
+        index = get_frametimes(subject, session)
+        return [pd.DataFrame(index=index, columns=[]) for run in runs]
 
     if session.endswith('1'):
         task = 'mapper'
@@ -264,12 +263,14 @@ def get_confounds(subject, session, bids_folder, include_fmriprep=None, pca=Fals
     retroicor_confounds = get_retroicor_confounds(subject, session, bids_folder, n_cardiac=2, n_respiratory=2, n_interaction=0)
     confounds = [pd.concat((rcf, fcf), axis=1) for rcf, fcf in zip(retroicor_confounds, fmriprep_confounds)]
     confounds = [c.fillna(method='bfill') for c in confounds]
+    confounds = [c.fillna(0.0) for c in confounds]
 
     original_size = confounds[0].shape[1]
 
     if pca:
         def map_cf(cf, n_components=pca_n_components):
             pca = PCA(n_components=n_components)
+            cf = cf.loc[:, cf.std() > 0.0]
             cf -= cf.mean(0)
             cf /= cf.std(0)
             cf = pd.DataFrame(pca.fit_transform(cf))
@@ -295,8 +296,6 @@ def get_frametimes(subject, session, run=None):
 
     if (session == '7t2') & (subject == '02') & (run == 1):
         n_vols = 213
-
-    
 
     tr = get_tr(subject, session)
     return np.linspace(0, (n_vols-1)*tr, n_vols)
