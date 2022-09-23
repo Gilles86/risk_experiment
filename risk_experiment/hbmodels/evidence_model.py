@@ -8,7 +8,11 @@ def softplus_np(x): return np.log1p(np.exp(-np.abs(x))) + np.maximum(x, 0)
 
 class EvidenceModel(object):
     
-    def __init__(self, data):
+    def __init__(self, data=None, n_subjects=20):
+        if data is None:
+            self.data = None
+
+
         self.data = data
         self.subject_ix, self.unique_subjects = pd.factorize(self.data.index.get_level_values('subject'))
         self.n_subjects = len(self.unique_subjects) 
@@ -103,7 +107,7 @@ class EvidenceModel(object):
     def sample(self, draws=1000, tune=1000, target_accept=0.95):
         
         with self.model:
-            self.trace = pm.sample(draws, tune=500, target_accept=0.95, return_inferencedata=True)
+            self.trace = pm.sample(draws, tune=tune, target_accept=0.95, return_inferencedata=True)
         
         return self.trace
     
@@ -221,6 +225,80 @@ class EvidenceModelSinglePrior(EvidenceModel):
 
             ll = pm.Bernoulli('ll_bernoulli', p=p, observed=choices)
 
+class EvidenceModelSinglePriorDiminishingSensitivity(EvidenceModel):
+
+    def build_model(self):
+
+        choices = self.data.chose_risky.values
+
+        self.coords = {
+            "subject": self.unique_subjects,
+            "presentation": ['first', 'second'],
+            "risky": ['risky', 'safe']
+        }
+
+        with pm.Model(coords=self.coords) as self.model:
+
+            inputs = self._get_model_input()
+            for key, value in inputs.items():
+                inputs[key] = pm.Data(key, value)
+
+            # Hyperpriors for group nodes
+            prior_mu_mu = pm.HalfNormal("prior_mu_mu", sigma=np.log(20.))
+            prior_mu_sd = pm.HalfCauchy('prior_mu_sd', .5)
+            prior_mu_offset = pm.Normal('prior_mu_offset', mu=0, sd=1, dims='subject')#shape=n_subjects)
+            prior_mu = pm.Deterministic('prior_mu', prior_mu_mu + prior_mu_sd * prior_mu_offset,
+                                             dims='subject')
+
+            prior_sd_mu = pm.HalfNormal("prior_sd_mu", sigma=1.25)
+            prior_sd_sd = pm.HalfCauchy('prior_sd_sd', .5)
+
+            prior_sd = pm.TruncatedNormal('prior_sd',
+                                           mu=prior_sd_mu,
+                                          sigma=prior_sd_sd,
+                                          lower=0,
+                                          dims='subject')
+
+            # ix0 = first presented, ix1=later presented
+            evidence_sd_mu = pm.HalfNormal("evidence_sd_mu", sigma=1., dims=('presentation', 'risky'))
+            evidence_sd_sd = pm.HalfCauchy("evidence_sd_sd", 1., dims=('presentation', 'risky'))
+            evidence_sd = pm.TruncatedNormal('evidence_sd',
+                                              mu=evidence_sd_mu,
+                                              sigma=evidence_sd_sd,
+                                              lower=0,
+                                              dims=('subject', 'presentation', 'risky'))
+
+
+            # ix0 = first presented, ix1=later presented
+            alpha_mu = pm.Normal("alpha_mu", mu=1.0, sigma=.2)
+            alpha_sd = pm.HalfCauchy('alpha_sd', .5)
+            alpha = pm.TruncatedNormal('alpha',
+                                        mu=alpha_mu,
+                                        sigma=alpha_sd,
+                                        lower=0,
+                                        dims=('subject'))
+
+            post_risky_mu, post_risky_sd = get_posterior(prior_mu[inputs['subject_ix']],
+                                                         prior_sd[inputs['subject_ix']],
+                                                         inputs['risky_mu'],
+                                                         evidence_sd[inputs['subject_ix'], inputs['risky_ix'], 0])
+
+
+            post_safe_mu, post_safe_sd = get_posterior(prior_mu[inputs['subject_ix']],
+                                                       prior_sd[inputs['subject_ix']],
+                                                       inputs['safe_mu'],
+                                                       evidence_sd[inputs['subject_ix'], inputs['safe_ix'], 1])
+
+            diff_mu, diff_sd = get_diff_dist(post_risky_mu*alpha[inputs['subject_ix']],
+                                             post_risky_sd*alpha[inputs['subject_ix']],
+                                             post_safe_mu*alpha[inputs['subject_ix']],
+                                             post_safe_sd*alpha[inputs['subject_ix']])
+
+            p = pm.Deterministic('p', cumulative_normal(tt.log(.55), diff_mu, diff_sd))
+
+            ll = pm.Bernoulli('ll_bernoulli', p=p, observed=choices)
+
+
 
 class EvidenceModelRegression(EvidenceModel):
     
@@ -252,10 +330,10 @@ class EvidenceModelRegression(EvidenceModel):
         self.coords = {
             "subject": self.unique_subjects,
             "presentation": ['first', 'second'],
-            "risky_prior_mu_regressors":self.design_matrices['risky_prior_mu'].design_info.term_names,
-            "risky_prior_sd_regressors":self.design_matrices['risky_prior_sd'].design_info.term_names,
-            "evidence_sd1_regressors":self.design_matrices['evidence_sd1'].design_info.term_names,
-            "evidence_sd2_regressors":self.design_matrices['evidence_sd2'].design_info.term_names            
+            "risky_prior_mu_regressors":self.design_matrices['risky_prior_mu'].design_info.column_names,
+            "risky_prior_sd_regressors":self.design_matrices['risky_prior_sd'].design_info.column_names,
+            "evidence_sd1_regressors":self.design_matrices['evidence_sd1'].design_info.column_names,
+            "evidence_sd2_regressors":self.design_matrices['evidence_sd2'].design_info.column_names            
             
         }
         
@@ -322,7 +400,7 @@ def get_posterior(mu1, sd1, mu2, sd2):
 
     var1, var2 = sd1**2, sd2**2
 
-    return mu1 + (var1/(var1+var2))*(mu2 - mu1), np.sqrt((var1*var2)/(var1+var2))
+    return mu1 + (var1/(var1+var2))*(mu2 - mu1), tt.sqrt((var1*var2)/(var1+var2))
 
 def get_diff_dist(mu1, sd1, mu2, sd2):
     return mu2 - mu1, tt.sqrt(sd1**2+sd2**2)
