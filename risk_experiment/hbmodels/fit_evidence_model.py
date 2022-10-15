@@ -67,7 +67,7 @@ def main(model_label, session='7t2', bids_folder='/data'):
         raise NotImplementedError(f'Not implemented {model_label}')
 
     model.build_model()
-    trace = model.sample(500, 500)
+    trace = model.sample(1000, 1000)
 
     target_folder = op.join(bids_folder, 'derivatives', 'evidence_models')
     if not op.exists(target_folder):

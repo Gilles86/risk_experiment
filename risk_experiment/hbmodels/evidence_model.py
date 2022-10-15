@@ -104,10 +104,10 @@ class EvidenceModel(object):
 
         return d
             
-    def sample(self, draws=1000, tune=1000, target_accept=0.95):
+    def sample(self, draws=2000, tune=2000, target_accept=0.95):
         
         with self.model:
-            self.trace = pm.sample(draws, tune=tune, target_accept=0.95, return_inferencedata=True)
+            self.trace = pm.sample(draws, tune=tune, target_accept=target_accept, return_inferencedata=True)
         
         return self.trace
     
@@ -166,6 +166,16 @@ class EvidenceModel(object):
 
 class EvidenceModelSinglePrior(EvidenceModel):
 
+    def _get_model_input(self, data=None):
+
+        d = super()._get_model_input(data)
+        
+        self.data['log(n1)'] = np.log(self.data['n1'])
+
+        d['mean_n1'] =  self.data.groupby(['subject'])['log(n1)'].mean().values
+
+        return d
+
     def build_model(self):
 
         choices = self.data.chose_risky.values
@@ -182,42 +192,52 @@ class EvidenceModelSinglePrior(EvidenceModel):
             for key, value in inputs.items():
                 inputs[key] = pm.Data(key, value)
 
-            # Hyperpriors for group nodes
-            prior_mu_mu = pm.HalfNormal("prior_mu_mu", sigma=np.log(20.))
-            prior_mu_sd = pm.HalfCauchy('prior_mu_sd', .5)
-            prior_mu_offset = pm.Normal('prior_mu_offset', mu=0, sd=1, dims='subject')#shape=n_subjects)
-            prior_mu = pm.Deterministic('prior_mu', prior_mu_mu + prior_mu_sd * prior_mu_offset,
-                                             dims='subject')
 
-            prior_sd_mu = pm.HalfNormal("prior_sd_mu", sigma=1.25)
-            prior_sd_sd = pm.HalfCauchy('prior_sd_sd', .5)
+            def build_hierarchical_nodes(name, mu=0.0, sigma=.5, dims=(), only_positive=True):
+                nodes = {}
 
-            prior_sd = pm.TruncatedNormal('prior_sd',
-                                           mu=prior_sd_mu,
-                                          sigma=prior_sd_sd,
-                                          lower=0,
-                                          dims='subject')
+                if only_positive:
+                    nodes[f'{name}_mu_trans'] = pm.Normal(f"{name}_mu_trans", 
+                                                mu=mu, 
+                                                sigma=sigma,
+                                                dims=dims)
+                    nodes[f'{name}_mu'] = pm.Deterministic(f'{name}_mu', softplus(nodes[f'{name}_mu_trans']), dims=dims)
+                else:
+                    nodes[f'{name}_mu'] = pm.Normal(f"{name}_mu", 
+                                                mu=mu, 
+                                                sigma=sigma,
+                                                dims=dims)
+                nodes[f'{name}_sd'] = pm.HalfCauchy(f'{name}_sd', .25, dims=dims)
+                nodes[f'{name}_offset'] = pm.Normal(f'{name}_offset', mu=0, sd=1, dims=('subject', ) + dims)
 
-            # ix0 = first presented, ix1=later presented
-            evidence_sd_mu = pm.HalfNormal("evidence_sd_mu", sigma=1., dims=('presentation', 'risky'))
-            evidence_sd_sd = pm.HalfCauchy("evidence_sd_sd", 1., dims=('presentation', 'risky'))
-            evidence_sd = pm.TruncatedNormal('evidence_sd',
-                                              mu=evidence_sd_mu,
-                                              sigma=evidence_sd_sd,
-                                              lower=0,
-                                              dims=('subject', 'presentation', 'risky'))
+                if only_positive:
+                    nodes[name] = pm.Deterministic(name, 
+                                                softplus(nodes[f'{name}_mu_trans'] + nodes[f'{name}_sd'] * nodes[f'{name}_offset']),
+                                                dims=('subject', ) + dims)
+                else:
+                    nodes[name] = pm.Deterministic(name, 
+                                                nodes[f'{name}_mu'] + nodes[f'{name}_sd'] * nodes[f'{name}_offset'],
+                                                dims=('subject', ) + dims)
+                
+                return nodes
 
 
-            post_risky_mu, post_risky_sd = get_posterior(prior_mu[inputs['subject_ix']],
-                                                         prior_sd[inputs['subject_ix']],
+            nodes = {}
+
+            # nodes.update(build_hierarchical_nodes('prior_mu', mu=np.log(11.), sigma=.5))
+            nodes.update(build_hierarchical_nodes('prior_sd', mu=0., sigma=.5))
+            nodes.update(build_hierarchical_nodes('evidence_sd', mu=-1., sigma=1., dims=('presentation', 'risky')))
+
+            post_risky_mu, post_risky_sd = get_posterior(inputs['mean_n1'][inputs['subject_ix']],
+                                                         nodes['prior_sd'][inputs['subject_ix']],
                                                          inputs['risky_mu'],
-                                                         evidence_sd[inputs['subject_ix'], inputs['risky_ix'], 0])
+                                                         nodes['evidence_sd'][inputs['subject_ix'], inputs['risky_ix'], 0])
 
 
-            post_safe_mu, post_safe_sd = get_posterior(prior_mu[inputs['subject_ix']],
-                                                       prior_sd[inputs['subject_ix']],
+            post_safe_mu, post_safe_sd = get_posterior(inputs['mean_n1'][inputs['subject_ix']],
+                                                       nodes['prior_sd'][inputs['subject_ix']],
                                                        inputs['safe_mu'],
-                                                       evidence_sd[inputs['subject_ix'], inputs['safe_ix'], 1])
+                                                         nodes['evidence_sd'][inputs['subject_ix'], inputs['safe_ix'], 1])
 
             diff_mu, diff_sd = get_diff_dist(post_risky_mu, post_risky_sd, post_safe_mu, post_safe_sd)
 

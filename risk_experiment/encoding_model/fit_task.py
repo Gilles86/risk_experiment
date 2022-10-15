@@ -18,13 +18,18 @@ import seaborn as sns
 def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
         stimulus='1',
         allow_neg=False,
-        pca_confounds=False):
+        pca_confounds=False,
+        denoise=False):
 
     key = 'glm_stim1'
     target_dir = 'encoding_model'
 
     if allow_neg:
         target_dir += '.posneg'
+
+    if denoise:
+        key += '.denoise'
+        target_dir += '.denoise'
 
     if smoothed:
         key += '.smoothed'
@@ -50,7 +55,6 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
         paradigm = paradigm[paradigm.trial_type == 'stimulus 2'].set_index('trial_nr')
         paradigm = np.log(paradigm['n2'])
     elif stimulus == 'both':
-
         p1 = paradigm[paradigm.trial_type == 'stimulus 1'].set_index('trial_nr')
         p2 = paradigm[paradigm.trial_type == 'stimulus 2'].set_index('trial_nr')
         paradigm = pd.concat((np.log(p1['n1']), np.log(p2['n2'])), keys=['stim1', 'stim2'], names=['stimulus'])
@@ -113,9 +117,10 @@ if __name__ == '__main__':
     parser.add_argument('--bids_folder', default='/data')
     parser.add_argument('--smoothed', action='store_true')
     parser.add_argument('--pca_confounds', action='store_true')
+    parser.add_argument('--denoise', action='store_true')
     parser.add_argument('--stimulus', default='1')
     args = parser.parse_args()
 
     main(args.subject, args.session, bids_folder=args.bids_folder, smoothed=args.smoothed,
             pca_confounds=args.pca_confounds,
-            stimulus=args.stimulus)
+            stimulus=args.stimulus, denoise=args.denoise)

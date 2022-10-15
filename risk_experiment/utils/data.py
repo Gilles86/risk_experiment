@@ -174,6 +174,43 @@ class Subject(object):
 
         return df.droplevel(-1, 1)
         
+    def get_preprocessed_bold(self, session='3t2', runs=None, space='T1w'):
+        if runs is None:
+            runs = range(1, 9)
+
+        images = [op.join(self.bids_folder, 'derivatives', 'fmriprep', f'sub-{self.subject}',
+         f'ses-{session}', 'func', f'sub-{self.subject}_ses-{session}_task-task_run-{run}_space-{space}_desc-preproc_bold.nii.gz') for run in runs]
+
+        return images
+
+    def get_fmri_events(self, session, runs=None):
+
+        if runs is None:
+            runs = range(1,9)
+
+        behavior = []
+        for run in runs:
+            behavior.append(pd.read_table(op.join(
+                self.bids_folder, f'sub-{self.subject}/ses-{session}/func/sub-{self.subject}_ses-{session}_task-task_run-{run}_events.tsv')))
+
+        behavior = pd.concat(behavior, keys=runs, names=['run'])
+        behavior = behavior.reset_index().set_index(
+            ['run', 'trial_type'])
+
+
+        stimulus1 = behavior.xs('stimulus 1', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_nr', 'trial_type']]
+        stimulus1['duration'] = 0.6
+        stimulus1['trial_type'] = stimulus1.trial_nr.map(lambda trial: f'trial_{trial:03d}_n1')
+
+        
+        stimulus2 = behavior.xs('stimulus 2', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_nr', 'trial_type', 'n2']]
+        stimulus2['duration'] = 0.6
+        stimulus2['trial_type'] = stimulus2.n2.map(lambda n2: f'n2_{int(n2)}')
+
+        events = pd.concat((stimulus1, stimulus2)).sort_index()
+
+        return events
+
 
 def get_fmriprep_confounds(subject, session, sourcedata,
                            confounds_to_include=None):
@@ -815,5 +852,3 @@ def get_single_trial_volume(subject, session, mask=None, bids_folder='/data',
     data = pd.DataFrame(masker.fit_transform(im))
 
     return data
-
-
