@@ -165,7 +165,7 @@ class Subject(object):
                 d[d.sort_values().index] = np.floor(ix)
                 
                 return d
-        df['bin(risky/safe)'] = df.groupby(['subject'])['frac'].apply(get_risk_bin)
+        df['bin(risky/safe)'] = df.groupby(['subject'], group_keys=False)['frac'].apply(get_risk_bin)
 
         df['chose_risky'] = df['chose_risky'].astype(bool)
 
