@@ -16,6 +16,7 @@ import seaborn as sns
 
 def main(subject, session, bids_folder='/data/ds-risk', smoothed=False, pca_confounds=False):
          
+    runs = range(1,9)
 
     key = 'glm_stim1'
     target_dir = 'encoding_model.cv'
@@ -32,8 +33,8 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False, pca_conf
 
     paradigm = [pd.read_csv(op.join(bids_folder, f'sub-{subject}', f'ses-{session}',
                                     'func', f'sub-{subject}_ses-{session}_task-task_run-{run}_events.tsv'), sep='\t')
-                for run in range(1, 9)]
-    paradigm = pd.concat(paradigm, keys=range(1, 9), names=['run'])
+                for run in runs]
+    paradigm = pd.concat(paradigm, keys=runs, names=['run'])
     paradigm = paradigm[paradigm.trial_type ==
                         'stimulus 1'].set_index('trial_nr', append=True)
 
@@ -60,7 +61,9 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False, pca_conf
 
     data = pd.DataFrame(data, index=paradigm.index)
 
-    for test_run in range(1, 9):
+    cv_r2s = []
+
+    for test_run in runs:
 
         test_data, test_paradigm = data.loc[test_run].copy(
         ), paradigm.loc[test_run].copy()
@@ -97,6 +100,15 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False, pca_conf
                 target_dir, f'sub-{subject}_ses-{session}_run-{test_run}_desc-{par}.optim_space-T1w_pars.nii.gz')
 
             masker.inverse_transform(values).to_filename(target_fn)
+
+        cv_r2s.append(cv_r2)
+    
+    cv_r2 = pd.concat(cv_r2s, keys=runs, names=['run']).groupby(level=1, axis=0).mean()
+
+    target_fn = op.join(
+        target_dir, f'sub-{subject}_ses-{session}_desc-cvr2.optim_space-T1w_pars.nii.gz')
+
+    masker.inverse_transform(cv_r2).to_filename(target_fn)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
