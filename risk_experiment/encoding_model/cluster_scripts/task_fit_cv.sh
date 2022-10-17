@@ -16,5 +16,4 @@ module load nvidia/cuda11.2-cudnn8.1.0
 export PARTICIPANT_LABEL=$(printf "%02d" $SLURM_ARRAY_TASK_ID)
 
 source activate tf2-gpu
-python $HOME/git/risk_experiment/risk_experiment/encoding_model/fit_task_cv.py $PARTICIPANT_LABEL 3t2 --bids_folder /scratch/gdehol/ds-risk --pca_confounds
-python $HOME/git/risk_experiment/risk_experiment/encoding_model/fit_task_cv.py $PARTICIPANT_LABEL 7t2 --bids_folder /scratch/gdehol/ds-risk --pca_confounds
+python $HOME/git/risk_experiment/risk_experiment/encoding_model/fit_task_cv.py $PARTICIPANT_LABEL 7t2 --bids_folder /scratch/gdehol/ds-risk
