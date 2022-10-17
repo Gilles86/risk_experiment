@@ -8,8 +8,8 @@ from nilearn import surface
 from braincoder.optimize import ResidualFitter
 from braincoder.models import GaussianPRF
 from braincoder.utils import get_rsq
-from risk_experiment.utils import get_single_trial_volume, get_surf_mask, get_prf_parameters_volume, Subject
 import numpy as np
+from risk_experiment.utils import Subject
 
 
 stimulus_range = np.linspace(0, 6, 1000)
@@ -47,7 +47,7 @@ denoise=False, retroicor=False, mask='wang15_ips'):
     paradigm['log(n1)'] = np.log(paradigm['n1'])
     paradigm = paradigm.droplevel(['subject', 'session'])
 
-    data = sub.get_single_trial_volume(session, mask=mask, smoothed=smoothed, pca_confounds=pca_confounds, denoise=denoise, retroicor=retroicor).astype(np.float32)
+    data = sub.get_single_trial_volume(session, roi=mask, smoothed=smoothed, pca_confounds=pca_confounds, denoise=denoise, retroicor=retroicor).astype(np.float32)
     data.index = paradigm.index
     print(data)
 
@@ -60,9 +60,9 @@ denoise=False, retroicor=False, mask='wang15_ips'):
         train_data, train_paradigm = data.drop(test_run, level='run').copy(), paradigm.drop(test_run, level='run').copy()
 
         pars = sub.get_prf_parameters_volume(session, cross_validated=True,
-        denoise=denoise retroicor=retroicor,
+        denoise=denoise, retroicor=retroicor,
                 smoothed=smoothed, pca_confounds=pca_confounds,
-                run=test_run, mask=mask)
+                run=test_run, roi=mask)
         print(pars)
 
         model = GaussianPRF(parameters=pars)
@@ -117,10 +117,14 @@ if __name__ == '__main__':
     parser.add_argument('--bids_folder', default='/data')
     parser.add_argument('--smoothed', action='store_true')
     parser.add_argument('--pca_confounds', action='store_true')
-    parser.add_argument('--mask', default='wang15_ips')
+    parser.add_argument('--denoise', action='store_true')
+    parser.add_argument('--retroicor', action='store_true')
+    parser.add_argument('--mask', default='npcr')
     parser.add_argument('--n_voxels', default=100, type=int)
     args = parser.parse_args()
 
     main(args.subject, args.session, args.smoothed, args.pca_confounds,
             args.n_voxels,
+            denoise=args.denoise,
+            retroicor=args.retroicor,
             bids_folder=args.bids_folder, mask=args.mask)

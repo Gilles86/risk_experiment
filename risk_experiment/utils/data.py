@@ -183,6 +183,115 @@ class Subject(object):
 
         return images
 
+    def get_single_trial_volume(self, session, roi=None, 
+            denoise=False,
+            smoothed=False,
+            pca_confounds=False,
+            retroicor=False):
+
+        key= 'glm_stim1'
+
+        if denoise:
+            key += '.denoise'
+
+        if (retroicor) and (not denoise):
+            raise Exception("When not using GLMSingle RETROICOR is *always* used!")
+
+        if retroicor:
+            key += '.retroicor'
+
+        if smoothed:
+            key += '.smoothed'
+
+        if pca_confounds:
+            key += '.pca_confounds'
+
+        fn = op.join(self.bids_folder, 'derivatives', key, f'sub-{self.subject}', f'ses-{session}', 'func', 
+                f'sub-{self.subject}_ses-{session}_task-task_space-T1w_desc-stims1_pe.nii.gz')
+
+        im = image.load_img(fn)
+        
+        mask = self.get_volume_mask(roi=roi, session=session, epi_space=True)
+        masker = NiftiMasker(mask_img=mask)
+
+        data = pd.DataFrame(masker.fit_transform(im))
+
+        return data
+
+    def get_volume_mask(self, roi=None, session=None, epi_space=False):
+
+        if roi is None:
+            if epi_space:
+                base_mask = op.join(self.bids_folder, 'derivatives', f'fmriprep/sub-{self.subject}/ses-{session}/func/sub-{self.subject}_ses-{session}_task-task_run-1_space-T1w_desc-brain_mask.nii.gz')
+                return image.load_img(base_mask)
+            else:
+                raise NotImplementedError
+        else:
+            mask = op.join(self.derivatives_dir
+            ,'ips_masks',
+            f'sub-{self.subject}',
+            'anat',
+            f'sub-{self.subject}_space-T1w_desc-{roi}_mask.nii.gz'
+            )
+
+        if epi_space:
+            base_mask = op.join(self.bids_folder, 'derivatives', f'fmriprep/sub-{self.subject}/ses-{session}/func/sub-{self.subject}_ses-{session}_task-task_run-1_space-T1w_desc-brain_mask.nii.gz')
+
+            mask = image.resample_to_img(mask, base_mask, interpolation='nearest')
+
+        return mask
+    
+    def get_prf_parameters_volume(self, session, 
+            run=None,
+            smoothed=False,
+            pca_confounds=False,
+            denoise=False,
+            retroicor=False,
+            cross_validated=True,
+            roi=None):
+
+        dir = 'encoding_model'
+        if cross_validated:
+            if run is None:
+                raise Exception('Give run')
+
+            dir += '.cv'
+
+        if denoise:
+            dir += '.denoise'
+            
+        if (retroicor) and (not denoise):
+            raise Exception("When not using GLMSingle RETROICOR is *always* used!")
+
+        if retroicor:
+            dir += '.retroicor'
+
+        if smoothed:
+            dir += '.smoothed'
+
+        if pca_confounds:
+            dir += '.pca_confounds'
+
+        parameters = []
+
+        keys = ['mu', 'sd', 'amplitude', 'baseline']
+
+        mask = self.get_volume_mask(session=session, roi=roi, epi_space=True)
+        masker = NiftiMasker(mask)
+
+        for parameter_key in keys:
+            if cross_validated:
+                fn = op.join(self.bids_folder, 'derivatives', dir, f'sub-{self.subject}', f'ses-{session}', 
+                        'func', f'sub-{self.subject}_ses-{session}_run-{run}_desc-{parameter_key}.optim_space-T1w_pars.nii.gz')
+            else:
+                fn = op.join(self.bids_folder, 'derivatives', dir, f'sub-{self.subject}', f'ses-{session}', 
+                        'func', f'sub-{self.subject}_ses-{session}_desc-{parameter_key}.optim_space-T1w_pars.nii.gz')
+            
+            pars = pd.Series(masker.fit_transform(fn).ravel())
+            parameters.append(pars)
+
+        return pd.concat(parameters, axis=1, keys=keys, names=['parameter'])
+
     def get_fmri_events(self, session, runs=None):
 
         if runs is None:
@@ -828,28 +937,3 @@ def get_volume_mask(subject, session, mask, bids_folder='/data'):
     mask = image.resample_to_img(mask, base_mask, interpolation='nearest')
 
     return mask
-
-def get_single_trial_volume(subject, session, mask=None, bids_folder='/data',
-        smoothed=False,
-        pca_confounds=False):
-
-    key= 'glm_stim1'
-
-    if smoothed:
-        key += '.smoothed'
-
-    if pca_confounds:
-        key += '.pca_confounds'
-
-    fn = op.join(bids_folder, 'derivatives', key, f'sub-{subject}', f'ses-{session}', 'func', 
-            f'sub-{subject}_ses-{session}_task-task_space-T1w_desc-stims1_pe.nii.gz')
-
-    im = image.load_img(fn)
-    
-    mask = get_volume_mask(subject, session, mask, bids_folder)
-    # paradigm = get_task_behavior(subject, session, bids_folder)
-    masker = NiftiMasker(mask_img=mask)
-
-    data = pd.DataFrame(masker.fit_transform(im))
-
-    return data
