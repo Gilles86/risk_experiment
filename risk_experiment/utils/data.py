@@ -212,113 +212,114 @@ class Subject(object):
         return events
 
 
-def get_fmriprep_confounds(subject, session, sourcedata,
-                           confounds_to_include=None):
+    def get_fmriprep_confounds(self, session, confounds_to_include=None):
 
 
-    runs = get_runs(subject, session)
+        runs = get_runs(self.subject, session)
 
-    if session.endswith('1'):
-        task = 'mapper'
-    elif session.endswith('2'):
-        task = 'task'
-    else:
-        raise ValueError(f'Invalid session: {session}')
-
-
-    if confounds_to_include is None:
-        fmriprep_confounds_include = ['dvars', 'framewise_displacement', 'trans_x',
-                                      'trans_y', 'trans_z', 'rot_x', 'rot_y', 'rot_z',
-                                      'a_comp_cor_00', 'a_comp_cor_01', 'a_comp_cor_02', 'a_comp_cor_03',
-                                      'cosine00', 'cosine01', 'cosine02',
-                                      'non_steady_state_outlier00', 'non_steady_state_outlier01',
-                                      'non_steady_state_outlier02']
-    else:
-        fmriprep_confounds_include = confounds_to_include
-
-    fmriprep_confounds = [
-        op.join(sourcedata, f'derivatives/fmriprep/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-{task}_run-{run}_desc-confounds_timeseries.tsv') for run in runs]
-    fmriprep_confounds = [pd.read_table(
-        cf)[fmriprep_confounds_include] for cf in fmriprep_confounds]
-
-    fmriprep_confounds = [rc.set_index(get_frametimes(
-        subject, session, run)) for run, rc in zip(runs, fmriprep_confounds)]
-
-    # confounds = pd.concat(fmriprep_confounds, 0, keys=runs, names=['run'])
-    return fmriprep_confounds
+        if session.endswith('1'):
+            task = 'mapper'
+        elif session.endswith('2'):
+            task = 'task'
+        else:
+            raise ValueError(f'Invalid session: {session}')
 
 
-def get_retroicor_confounds(subject, session, sourcedata, n_cardiac=2, n_respiratory=2, n_interaction=0):
+        if confounds_to_include is None:
+            fmriprep_confounds_include = ['dvars', 'framewise_displacement', 'trans_x',
+                                        'trans_y', 'trans_z', 'rot_x', 'rot_y', 'rot_z',
+                                        'a_comp_cor_00', 'a_comp_cor_01', 'a_comp_cor_02', 'a_comp_cor_03',
+                                        'cosine00', 'cosine01', 'cosine02',
+                                        'non_steady_state_outlier00', 'non_steady_state_outlier01',
+                                        'non_steady_state_outlier02']
+        else:
+            fmriprep_confounds_include = confounds_to_include
 
-    runs = get_runs(subject, session)
+        fmriprep_confounds = [
+            op.join(self.bids_folder, f'derivatives/fmriprep/sub-{self.subject}/ses-{session}/func/sub-{self.subject}_ses-{session}_task-{task}_run-{run}_desc-confounds_timeseries.tsv') for run in runs]
+        fmriprep_confounds = [pd.read_table(
+            cf)[fmriprep_confounds_include] for cf in fmriprep_confounds]
 
-    if ((subject == '25') & (session == '7t1')) | ((subject == '10') & (session == '3t2')):
-        print('No physiological data')
-        index = get_frametimes(subject, session)
-        return [pd.DataFrame(index=index, columns=[]) for run in runs]
+        fmriprep_confounds = [rc.set_index(get_frametimes(
+            self.subject, session, run)) for run, rc in zip(runs, fmriprep_confounds)]
 
-    if session.endswith('1'):
-        task = 'mapper'
-        nvols = 125
-    elif session.endswith('2'):
-        task = 'task'
-        nvols = 160
-    else:
-        raise ValueError(f'Invalid session: {session}')
+        # confounds = pd.concat(fmriprep_confounds, 0, keys=runs, names=['run'])
+        return fmriprep_confounds
 
-    # Make columns
-    columns = []
-    for n, modality in zip([3, 4, 2], ['cardiac', 'respiratory', 'interaction']):
-        for order in range(1, n+1):
-            columns += [(modality, order, 'sin'), (modality, order, 'cos')]
 
-    columns = pd.MultiIndex.from_tuples(
-        columns, names=['modality', 'order', 'type'])
+    def get_retroicor_confounds(self, session, n_cardiac=2, n_respiratory=2, n_interaction=0):
 
-    retroicor_confounds = [
-        op.join(sourcedata, f'derivatives/physiotoolbox/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-{task}_run-{run}_desc-retroicor_timeseries.tsv') for run in runs]
-    retroicor_confounds = [pd.read_table(
-        cf, header=None, usecols=range(18), names=columns) if op.exists(cf) else pd.DataFrame(np.zeros((nvols,0))) for cf in retroicor_confounds ]
+        runs = get_runs(self.subject, session)
 
-    retroicor_confounds = [rc.set_index(get_frametimes(
-        subject, session, run)) for run, rc in zip(runs, retroicor_confounds)]
+        if ((self.subject == '25') & (session == '7t1')) | ((self.subject == '10') & (session == '3t2')):
+            print('No physiological data')
+            index = get_frametimes(self.subject, session)
+            return [pd.DataFrame(index=index, columns=[]) for run in runs]
 
-    confounds = pd.concat(retroicor_confounds, 0, keys=runs,
-                          names=['run']).sort_index(axis=1)
+        if session.endswith('1'):
+            task = 'mapper'
+            nvols = 125
+        elif session.endswith('2'):
+            task = 'task'
+            nvols = 160
+        else:
+            raise ValueError(f'Invalid session: {session}')
 
-    confounds = pd.concat((confounds.loc[:, ('cardiac', slice(n_cardiac))],
-                           confounds.loc[:, ('respiratory',
-                                             slice(n_respiratory))],
-                           confounds .loc[:, ('interaction', slice(n_interaction))]), axis=1)
+        # Make columns
+        columns = []
+        for n, modality in zip([3, 4, 2], ['cardiac', 'respiratory', 'interaction']):
+            for order in range(1, n+1):
+                columns += [(modality, order, 'sin'), (modality, order, 'cos')]
 
-    confounds = [cf.droplevel('run') for _, cf in confounds.groupby(['run'])]
-    return confounds
+        columns = pd.MultiIndex.from_tuples(
+            columns, names=['modality', 'order', 'type'])
 
-def get_confounds(subject, session, bids_folder, include_fmriprep=None, pca=False, pca_n_components=.95):
-    
-    fmriprep_confounds = get_fmriprep_confounds(subject, session, bids_folder, confounds_to_include=include_fmriprep)
-    retroicor_confounds = get_retroicor_confounds(subject, session, bids_folder, n_cardiac=2, n_respiratory=2, n_interaction=0)
-    confounds = [pd.concat((rcf, fcf), axis=1) for rcf, fcf in zip(retroicor_confounds, fmriprep_confounds)]
-    confounds = [c.fillna(method='bfill') for c in confounds]
-    confounds = [c.fillna(0.0) for c in confounds]
+        retroicor_confounds = [
+            op.join(self.bids_folder, f'derivatives/physiotoolbox/sub-{self.subject}/ses-{session}/func/sub-{self.subject}_ses-{session}_task-{task}_run-{run}_desc-retroicor_timeseries.tsv') for run in runs]
+        retroicor_confounds = [pd.read_table(
+            cf, header=None, usecols=range(18), names=columns) if op.exists(cf) else pd.DataFrame(np.zeros((nvols,0))) for cf in retroicor_confounds ]
 
-    original_size = confounds[0].shape[1]
+        retroicor_confounds = [rc.set_index(get_frametimes(
+            self.subject, session, run)) for run, rc in zip(runs, retroicor_confounds)]
 
-    if pca:
-        def map_cf(cf, n_components=pca_n_components):
-            pca = PCA(n_components=n_components)
-            cf = cf.loc[:, cf.std() > 0.0]
-            cf -= cf.mean(0)
-            cf /= cf.std(0)
-            cf = pd.DataFrame(pca.fit_transform(cf))
-            cf.columns = [f'pca_{i}' for i in range(1, cf.shape[1]+1)]
-            return cf
-        confounds = [map_cf(cf) for cf in confounds]
+        confounds = pd.concat(retroicor_confounds, 0, keys=runs,
+                            names=['run']).sort_index(axis=1)
 
-    new_size = np.mean([cf.shape[1] for cf in confounds])
-    print(f"RESIZED CONFOUNDS: {original_size} to {new_size}")
+        print(confounds)
+        if confounds.shape[1] > 0:
+            confounds = pd.concat((confounds.loc[:, ('cardiac', slice(n_cardiac))],
+                                confounds.loc[:, ('respiratory',
+                                                    slice(n_respiratory))],
+                                confounds .loc[:, ('interaction', slice(n_interaction))]), axis=1)
 
-    return confounds
+        confounds = [cf.droplevel('run') for _, cf in confounds.groupby(['run'])]
+        return confounds
+
+    def get_confounds(self, session, include_fmriprep=None, pca=False, pca_n_components=.95):
+        
+        fmriprep_confounds = self.get_fmriprep_confounds(session, confounds_to_include=include_fmriprep)
+        retroicor_confounds = self.get_retroicor_confounds(session, n_cardiac=2, n_respiratory=2, n_interaction=0)
+        confounds = [pd.concat((rcf, fcf), axis=1) for rcf, fcf in zip(retroicor_confounds, fmriprep_confounds)]
+        confounds = [c.fillna(method='bfill') for c in confounds]
+        confounds = [c.fillna(0.0) for c in confounds]
+
+        original_size = confounds[0].shape[1]
+
+        if pca:
+            def map_cf(cf, n_components=pca_n_components):
+                pca = PCA(n_components=n_components)
+                cf = cf.loc[:, cf.std() > 0.0]
+                cf -= cf.mean(0)
+                cf /= cf.std(0)
+                cf = pd.DataFrame(pca.fit_transform(cf))
+                cf.columns = [f'pca_{i}' for i in range(1, cf.shape[1]+1)]
+                return cf
+            confounds = [map_cf(cf) for cf in confounds]
+
+        new_size = np.mean([cf.shape[1] for cf in confounds])
+        print(f"RESIZED CONFOUNDS: {original_size} to {new_size}")
+
+        return confounds
 
 def get_tr(subject, sesion):
     return 2.3
