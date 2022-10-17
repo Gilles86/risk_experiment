@@ -18,12 +18,21 @@ mask = 'wang15_ips'
 space = 'T1w'
 
 def main(subject, session, smoothed, pca_confounds, n_voxels=1000, bids_folder='/data',
-        mask='wang15_ips'):
+denoise=False, retroicor=False, mask='wang15_ips'):
 
     target_dir = op.join(bids_folder, 'derivatives', 'decoded_pdfs.volume')
 
+    if denoise:
+        target_dir += '.denoise'
+
     if smoothed:
         target_dir += '.smoothed'
+
+    if (retroicor) and (not denoise):
+        raise Exception("When not using GLMSingle RETROICOR is *always* used!")
+
+    if retroicor:
+        target_dir += '.retroicor'
 
     if pca_confounds:
         target_dir += '.pca_confounds'
@@ -38,7 +47,7 @@ def main(subject, session, smoothed, pca_confounds, n_voxels=1000, bids_folder='
     paradigm['log(n1)'] = np.log(paradigm['n1'])
     paradigm = paradigm.droplevel(['subject', 'session'])
 
-    data = get_single_trial_volume(subject, session, bids_folder=bids_folder, mask=mask, smoothed=smoothed, pca_confounds=pca_confounds).astype(np.float32)
+    data = sub.get_single_trial_volume(session, mask=mask, smoothed=smoothed, pca_confounds=pca_confounds, denoise=denoise, retroicor=retroicor).astype(np.float32)
     data.index = paradigm.index
     print(data)
 
@@ -50,10 +59,10 @@ def main(subject, session, smoothed, pca_confounds, n_voxels=1000, bids_folder='
         test_data, test_paradigm = data.loc[test_run].copy(), paradigm.loc[test_run].copy()
         train_data, train_paradigm = data.drop(test_run, level='run').copy(), paradigm.drop(test_run, level='run').copy()
 
-        pars = get_prf_parameters_volume(subject, session, cross_validated=True,
+        pars = sub.get_prf_parameters_volume(session, cross_validated=True,
+        denoise=denoise retroicor=retroicor,
                 smoothed=smoothed, pca_confounds=pca_confounds,
-                run=test_run, mask=mask, bids_folder=bids_folder)
-        # pars = get_prf_parameters_volume(subject, session, cross_validated=False,  mask=mask, bids_folder=bids_folder)
+                run=test_run, mask=mask)
         print(pars)
 
         model = GaussianPRF(parameters=pars)

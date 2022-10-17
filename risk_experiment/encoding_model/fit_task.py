@@ -19,6 +19,7 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
         stimulus='1',
         allow_neg=False,
         pca_confounds=False,
+        retroicor=False,
         denoise=False):
 
     key = 'glm_stim1'
@@ -30,6 +31,13 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
     if denoise:
         key += '.denoise'
         target_dir += '.denoise'
+
+    if (retroicor) and (not denoise):
+        raise Exception("When not using GLMSingle RETROICOR is *always* used!")
+
+    if retroicor:
+        key += '.retroicor'
+        target_dir += '.retroicor'
 
     if smoothed:
         key += '.smoothed'
@@ -61,8 +69,8 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
 
     model = GaussianPRF()
     # SET UP GRID
-    mus = np.log(np.linspace(5, 80, 60, dtype=np.float32))
-    sds = np.log(np.linspace(2, 30, 60, dtype=np.float32))
+    mus = np.log(np.linspace(5, 80, 40, dtype=np.float32))
+    sds = np.log(np.linspace(2, 30, 40, dtype=np.float32))
     if allow_neg:
         amplitudes = np.array([-1., 1.], dtype=np.float32)
     else:
@@ -118,9 +126,10 @@ if __name__ == '__main__':
     parser.add_argument('--smoothed', action='store_true')
     parser.add_argument('--pca_confounds', action='store_true')
     parser.add_argument('--denoise', action='store_true')
+    parser.add_argument('--retroicor', action='store_true')
     parser.add_argument('--stimulus', default='1')
     args = parser.parse_args()
 
     main(args.subject, args.session, bids_folder=args.bids_folder, smoothed=args.smoothed,
             pca_confounds=args.pca_confounds,
-            stimulus=args.stimulus, denoise=args.denoise)
+            stimulus=args.stimulus, denoise=args.denoise, retroicor=args.retroicor)
