@@ -360,7 +360,7 @@ class Subject(object):
 
         runs = get_runs(self.subject, session)
 
-        if ((self.subject == '25') & (session == '7t1')) | ((self.subject == '10') & (session == '3t2')):
+        if ((self.subject == '25') & (session == '7t1')) |Vy ((self.subject == '10') & (session == '3t2') | ((self.subject == '06') & (session == '7t2'))):
             print('No physiological data')
             index = get_frametimes(self.subject, session)
             return [pd.DataFrame(index=index, columns=[]) for run in runs]
