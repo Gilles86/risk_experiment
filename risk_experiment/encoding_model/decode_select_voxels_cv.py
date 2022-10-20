@@ -135,7 +135,7 @@ denoise=False, retroicor=False, mask='wang15_ips'):
 
         model.init_pseudoWWT(stimulus_range, model.parameters)
         residfit = ResidualFitter(model, train_data,
-                                  train_paradigm['log(n1)'].astype(np.float32))
+                                  train_paradigm.astype(np.float32))
 
         omega, dof = residfit.fit(init_sigma2=10.0,
                 method='t',
