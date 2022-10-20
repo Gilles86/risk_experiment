@@ -47,6 +47,7 @@ denoise=False, retroicor=False, mask='wang15_ips'):
     paradigm = sub.get_behavior(sessions=session, drop_no_responses=False)
     paradigm['log(n1)'] = np.log(paradigm['n1'])
     paradigm = paradigm.droplevel(['subject', 'session'])
+    paradigm = paradigm['log(n1)']
 
     data = sub.get_single_trial_volume(session, roi=mask, smoothed=smoothed, pca_confounds=pca_confounds, denoise=denoise, retroicor=retroicor).astype(np.float32)
     data.index = paradigm.index
@@ -55,10 +56,9 @@ denoise=False, retroicor=False, mask='wang15_ips'):
     pdfs = []
     runs = range(1, 9)
 
-    model = GaussianPRF()
     # SET UP GRID
-    mus = np.log(np.linspace(5, 80, 30, dtype=np.float32))
-    sds = np.log(np.linspace(2, 30, 30, dtype=np.float32))
+    mus = np.log(np.linspace(5, 80, 60, dtype=np.float32))
+    sds = np.log(np.linspace(2, 30, 60, dtype=np.float32))
     amplitudes = np.array([1.], dtype=np.float32)
     baselines = np.array([0], dtype=np.float32)
 
@@ -77,6 +77,10 @@ denoise=False, retroicor=False, mask='wang15_ips'):
             train_paradigm2 = train_paradigm.drop(test_run2, level='run').copy()
             print(test_data2.shape, train_data2.shape, train_paradigm2.shape, test_paradigm2.shape)
 
+            print(train_data2)
+            print(train_paradigm2)
+
+            model = GaussianPRF()
             optimizer = ParameterFitter(model, train_data2, train_paradigm2)
 
             grid_parameters = optimizer.fit_grid(
@@ -84,8 +88,12 @@ denoise=False, retroicor=False, mask='wang15_ips'):
             grid_parameters = optimizer.refine_baseline_and_amplitude(
                 grid_parameters, n_iterations=2)
 
-            optimizer.fit(init_pars=grid_parameters, learning_rate=.05, store_intermediate_parameters=False, max_n_iterations=10000,
+            print(grid_parameters.describe())
+
+            optimizer.fit(init_pars=grid_parameters, learning_rate=.005, store_intermediate_parameters=False, max_n_iterations=10000,
                       r2_atol=0.00001)
+
+            print(optimizer.estimated_parameters.describe())
         
             cv_r2 = get_rsq(test_data2, model.predict(parameters=optimizer.estimated_parameters,
                                                     paradigm=test_paradigm2.astype(np.float32))).to_frame('r2').T
