@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1
 #SBATCH --mem=96G
 #SBATCH --gres gpu:1
-#SBATCH --time=1:00:00
+#SBATCH --time=1:30:00
 module load volta
 module load nvidia/cuda11.2-cudnn8.1.0
 

@@ -1,11 +1,11 @@
 #!/bin/bash
-#SBATCH --job-name=task_fit_cv
-#SBATCH --output=/home/cluster/gdehol/logs/task_fit_cv_3t_%A-%a.txt
+#SBATCH --job-name=fit_nprf_unsmoothed
+#SBATCH --output=/home/cluster/gdehol/logs/task_fit_3t_%A-%a.txt
 #SBATCH --partition=vesta
 #SBATCH --ntasks=1
 #SBATCH --mem=96G
 #SBATCH --gres gpu:1
-#SBATCH --time=1:00:00
+#SBATCH --time=10:00
 module load volta
 module load nvidia/cuda11.2-cudnn8.1.0
 
@@ -16,4 +16,4 @@ module load nvidia/cuda11.2-cudnn8.1.0
 export PARTICIPANT_LABEL=$(printf "%02d" $SLURM_ARRAY_TASK_ID)
 
 source activate tf2-gpu
-python $HOME/git/risk_experiment/risk_experiment/encoding_model/fit_task_cv.py $PARTICIPANT_LABEL 3t2 --bids_folder /scratch/gdehol/ds-risk --denoise --retroicor
+python $HOME/git/risk_experiment/risk_experiment/encoding_model/fit_task.py $PARTICIPANT_LABEL 3t2 --bids_folder /scratch/gdehol/ds-risk --denoise --retroicor 
