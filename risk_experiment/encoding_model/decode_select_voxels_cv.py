@@ -154,8 +154,8 @@ denoise=False, retroicor=False, mask='wang15_ips'):
         print(pdf)
         E = (pdf * pdf.columns).sum(1) / pdf.sum(1)
 
-        print(pd.concat((E, test_paradigm['log(n1)']), axis=1))
-        print(pingouin.corr(E, test_paradigm['log(n1)']))
+        print(pd.concat((E, test_paradigm), axis=1))
+        print(pingouin.corr(E, test_paradigm))
 
         pdfs.append(pdf)
 
