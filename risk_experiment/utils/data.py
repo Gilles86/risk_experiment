@@ -169,6 +169,8 @@ class Subject(object):
 
         df['chose_risky'] = df['chose_risky'].astype(bool)
 
+        df['log(n1)'] = np.log(df['n1'])
+
         if drop_no_responses:
             df = df[~df.chose_risky.isnull()]
 
@@ -248,6 +250,7 @@ class Subject(object):
             denoise=False,
             retroicor=False,
             cross_validated=True,
+            include_r2=False,
             roi=None):
 
         dir = 'encoding_model'
@@ -275,6 +278,11 @@ class Subject(object):
         parameters = []
 
         keys = ['mu', 'sd', 'amplitude', 'baseline']
+
+        if include_r2:
+            keys += ['r2']
+            if cross_validated:
+                keys += ['cvr2']
 
         mask = self.get_volume_mask(session=session, roi=roi, epi_space=True)
         masker = NiftiMasker(mask)
