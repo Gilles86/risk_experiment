@@ -304,6 +304,105 @@ class Subject(object):
 
         return pd.concat(parameters, axis=1, keys=keys, names=['parameter'])
 
+    def get_prf_parameters_surf(self, session, run=None, smoothed=False, cross_validated=False, hemi=None, mask=None, space='fsnative'):
+
+        if mask is not None:
+            raise NotImplementedError
+
+        if hemi is None:
+            prf_l = self.get_prf_parameters_surf(session, 
+                    run, smoothed, cross_validated, hemi='L',
+                    mask=mask, space=space)
+            prf_r = self.get_prf_parameters_surf(session, 
+                    run, smoothed, cross_validated, hemi='R',
+                    mask=mask, space=space)
+            
+            return pd.concat((prf_l, prf_r), axis=0, 
+                    keys=pd.Index(['L', 'R'], name='hemi'))
+
+
+        if cross_validated:
+            dir = 'encoding_model.cv.denoise.retroicor'
+        else:
+            dir = 'encoding_model.denoise.retroicor'
+
+        if smoothed:
+            dir += '.smoothed'
+
+        parameters = []
+
+        keys = ['mu', 'sd', 'amplitude', 'baseline', 'r2', 'cvr2']
+
+        for parameter_key in keys:
+            if cross_validated:
+                fn = op.join(self.bids_folder, 'derivatives', dir, f'sub-{self.subject}', f'ses-{session}', 
+                        'func', f'sub-{self.subject}_ses-{session}_run-{run}_desc-{parameter_key}.volume.optim_space-{space}_hemi-{hemi}.func.gii')
+            else:
+                fn = op.join(self.bids_folder, 'derivatives', dir, f'sub-{self.subject}', f'ses-{session}', 
+                        'func', f'sub-{self.subject}_ses-{session}_desc-{parameter_key}.volume.optim_space-{space}_hemi-{hemi}.func.gii')
+
+            pars = pd.Series(surface.load_surf_data(fn))
+            pars.index.name = 'vertex'
+
+            parameters.append(pars)
+
+        return pd.concat(parameters, axis=1, keys=keys, names=['parameter'])
+
+
+def get_surf_distance_matrix(subject, mask, hemi=None, bids_folder='/data'):
+
+    if subject == 'fsaverage':
+        fs_subject = 'fsaverage'
+    else:
+        fs_subject = f'sub-{subject}'
+
+
+    fs_hemi = {'L':'lh', 'R':'rh'}[hemi]
+
+    if hemi is None:
+        
+        dist_matrix_l = get_surf_distance_matrix(subject, mask, 'L', bids_folder)
+        dist_matrix_r = get_surf_distance_matrix(subject, mask, 'R', bids_folder)
+
+        dist_matrix = pd.concat((dist_matrix_l, dist_matrix_r), axis=0).fillna(100)
+
+    else:
+        distance = op.join(bids_folder, 'derivatives', 'freesurfer', fs_subject, 'surf', f'{fs_hemi}.{mask}_distance.mgz')
+        v = surface.load_surf_data(distance)
+
+        mask = get_surf_mask(subject, mask, hemi, bids_folder)
+        nlverts = int(mask.sum())
+        
+        dist_matrix = np.zeros((nlverts,nlverts))
+        dist_matrix[np.triu_indices(nlverts, k = 1)] = v
+        dist_matrix = dist_matrix + dist_matrix.T
+
+        dist_matrix = pd.DataFrame(dist_matrix, index=mask.index[mask], columns=mask.index[mask])
+
+        dist_matrix = pd.concat((dist_matrix,), axis=0, keys=[hemi], names=['hemi'])
+        dist_matrix = pd.concat((dist_matrix,), axis=1, keys=[hemi], names=['hemi'])
+
+        return dist_matrix
+
+
+def get_volume_mask(subject, session, mask, bids_folder='/data'):
+
+    if session.endswith('1'):
+        task  = 'mapper'
+    else:
+        task  = 'task'
+
+    base_mask = op.join(bids_folder, 'derivatives', f'fmriprep/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-{task}_run-1_space-T1w_desc-brain_mask.nii.gz')
+
+    if mask is None:
+        return base_mask
+
+    mask = mask.replace('_', '')
+    mask = op.join(bids_folder, 'derivatives', 'ips_masks', f'sub-{subject}', 'anat', f'sub-{subject}_space-T1w_desc-{mask}_mask.nii.gz')
+    mask = image.resample_to_img(mask, base_mask, interpolation='nearest')
+
+    return mask
+
     def get_fmri_events(self, session, runs=None):
 
         if runs is None:
@@ -851,155 +950,3 @@ def get_surf_mask(subject, mask, hemi=None, bids_folder='/data'):
 
 
 
-def get_prf_parameters_volume(subject, session, bids_folder,
-        run=None,
-        smoothed=False,
-        pca_confounds=False,
-        cross_validated=True,
-        hemi=None,
-        mask=None,
-        space='fsnative'):
-
-    dir = 'encoding_model'
-    if cross_validated:
-        if run is None:
-            raise Exception('Give run')
-
-        dir += '.cv'
-
-    if smoothed:
-        dir += '.smoothed'
-
-    if pca_confounds:
-        dir += '.pca_confounds'
-
-    parameters = []
-
-    keys = ['mu', 'sd', 'amplitude', 'baseline']
-
-    mask = get_volume_mask(subject, session, mask, bids_folder)
-    masker = NiftiMasker(mask)
-
-    for parameter_key in keys:
-        if cross_validated:
-            fn = op.join(bids_folder, 'derivatives', dir, f'sub-{subject}', f'ses-{session}', 
-                    'func', f'sub-{subject}_ses-{session}_run-{run}_desc-{parameter_key}.optim_space-T1w_pars.nii.gz')
-        else:
-            fn = op.join(bids_folder, 'derivatives', dir, f'sub-{subject}', f'ses-{session}', 
-                    'func', f'sub-{subject}_ses-{session}_desc-{parameter_key}.optim_space-T1w_pars.nii.gz')
-        
-        pars = pd.Series(masker.fit_transform(fn).ravel())
-        parameters.append(pars)
-
-    return pd.concat(parameters, axis=1, keys=keys, names=['parameter'])
-
-
-def get_prf_parameters_surf(subject, session, bids_folder,
-        run=None,
-        smoothed=False,
-        cross_validated=False,
-        hemi=None,
-        mask=None,
-        space='fsnative'):
-
-    if hemi is None:
-        prf_l = get_prf_parameters(subject, session, bids_folder,
-                run, smoothed, cross_validated, hemi='L',
-                mask=mask, space=space)
-        prf_r = get_prf_parameters(subject, session, bids_folder,
-                run, smoothed, cross_validated, hemi='R',
-                mask=mask, space=space)
-        
-        return pd.concat((prf_l, prf_r), axis=0, 
-                keys=pd.Index(['L', 'R'], name='hemi'))
-
-
-    dir = 'encoding_model'
-    if cross_validated:
-        if run is None:
-            raise Exception('Give run')
-
-        dir += '.cv'
-
-    if smoothed:
-        dir += '.smoothed'
-
-    parameters = []
-
-    keys = ['mu', 'sd', 'amplitude', 'baseline']
-
-    if mask is not None:
-        mask = get_surf_mask(subject, mask, hemi, bids_folder)
-
-    for parameter_key in keys:
-        if cross_validated:
-            fn = op.join(bids_folder, 'derivatives', 'encoding_model.cv', f'sub-{subject}', f'ses-{session}', 
-                    'func', f'sub-{subject}_ses-{session}_run-{run}_desc-{parameter_key}.optim_space-{space}_hemi-{hemi}.func.gii')
-        else:
-            fn = op.join(bids_folder, 'derivatives', 'encoding_model', f'sub-{subject}', f'ses-{session}', 
-                    'func', f'sub-{subject}_ses-{session}_desc-{parameter_key}.optim_space-{space}_hemi-{hemi}.func.gii')
-
-        pars = pd.Series(surface.load_surf_data(fn))
-        pars.index.name = 'vertex'
-
-        if mask is not None:
-            pars = pars.loc[mask.values]
-
-        parameters.append(pars)
-
-    return pd.concat(parameters, axis=1, keys=keys, names=['parameter'])
-
-
-def get_surf_distance_matrix(subject, mask, hemi=None, bids_folder='/data'):
-
-    if subject == 'fsaverage':
-        fs_subject = 'fsaverage'
-    else:
-        fs_subject = f'sub-{subject}'
-
-
-    fs_hemi = {'L':'lh', 'R':'rh'}[hemi]
-
-    if hemi is None:
-        
-        dist_matrix_l = get_surf_distance_matrix(subject, mask, 'L', bids_folder)
-        dist_matrix_r = get_surf_distance_matrix(subject, mask, 'R', bids_folder)
-
-        dist_matrix = pd.concat((dist_matrix_l, dist_matrix_r), axis=0).fillna(100)
-
-    else:
-        distance = op.join(bids_folder, 'derivatives', 'freesurfer', fs_subject, 'surf', f'{fs_hemi}.{mask}_distance.mgz')
-        v = surface.load_surf_data(distance)
-
-        mask = get_surf_mask(subject, mask, hemi, bids_folder)
-        nlverts = int(mask.sum())
-        
-        dist_matrix = np.zeros((nlverts,nlverts))
-        dist_matrix[np.triu_indices(nlverts, k = 1)] = v
-        dist_matrix = dist_matrix + dist_matrix.T
-
-        dist_matrix = pd.DataFrame(dist_matrix, index=mask.index[mask], columns=mask.index[mask])
-
-        dist_matrix = pd.concat((dist_matrix,), axis=0, keys=[hemi], names=['hemi'])
-        dist_matrix = pd.concat((dist_matrix,), axis=1, keys=[hemi], names=['hemi'])
-
-        return dist_matrix
-
-
-def get_volume_mask(subject, session, mask, bids_folder='/data'):
-
-    if session.endswith('1'):
-        task  = 'mapper'
-    else:
-        task  = 'task'
-
-    base_mask = op.join(bids_folder, 'derivatives', f'fmriprep/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-{task}_run-1_space-T1w_desc-brain_mask.nii.gz')
-
-    if mask is None:
-        return base_mask
-
-    mask = mask.replace('_', '')
-    mask = op.join(bids_folder, 'derivatives', 'ips_masks', f'sub-{subject}', 'anat', f'sub-{subject}_space-T1w_desc-{mask}_mask.nii.gz')
-    mask = image.resample_to_img(mask, base_mask, interpolation='nearest')
-
-    return mask

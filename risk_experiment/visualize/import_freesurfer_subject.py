@@ -10,9 +10,6 @@ def main(subject, bids_folder):
     freesurfer.import_subj(f'sub-{subject:02d}', 
             freesurfer_subject_dir=op.join(bids_folder, 'derivatives', 'freesurfer'))
 
-
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('subject')
