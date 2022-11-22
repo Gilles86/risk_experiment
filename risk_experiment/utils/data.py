@@ -9,6 +9,7 @@ from nibabel import gifti
 from tqdm import tqdm
 from tqdm.contrib.itertools import product
 from sklearn.decomposition import PCA
+from .math import resample_run
 
 import os
 import sys
@@ -135,6 +136,9 @@ class Subject(object):
             return self._cleanup_behavior(df, drop_no_responses=drop_no_responses)
         else:
             return pd.DataFrame([])
+
+    def get_runs(self, session):
+        return get_runs(self.subject, session)
 
     @staticmethod
     def _cleanup_behavior(df_, drop_no_responses=True):
@@ -429,6 +433,55 @@ class Subject(object):
         print(f"RESIZED CONFOUNDS: {original_size} to {new_size}")
 
         return confounds
+
+
+    def get_pupil(self, session, samplerate=10):
+        pupil = self._get_pupil_data(session, 'pupil.tsv.gz')
+        if samplerate is not None:
+            pupil = pupil.groupby(['subject', 'run']).apply(resample_run)
+
+        return pupil
+
+        
+
+    def get_blinks(self, session):
+
+        blinks = self._get_pupil_data(session, 'blinks.tsv')
+
+        blinks.index.set_names(names='n', level=-1, inplace=True)
+        return blinks
+
+        # blinks.reset_index('duration', inplace=True)
+
+        # return blinks[blinks.duration < 0.1]
+
+    def get_saccades(self, session, eyelink_detection=False):
+
+        if eyelink_detection:
+            suffix = 'saccadesel.tsv'
+        else:
+            suffix = 'saccades.tsv'
+
+        saccades = self._get_pupil_data(session, suffix)
+        saccades.index.set_names(names='n', level=-1, inplace=True)
+        return saccades
+
+        # saccades.reset_index('duration', inplace=True)
+        # return saccades[saccades.duration < 0.1]
+
+    def _get_pupil_data(self, session, suffix='saccades.tsv'):
+        assert session in ['3t2'], 'Only for session 3t2'
+
+        runs = self.get_runs(session)
+
+        data = []
+
+        for run in runs:
+            data.append(pd.read_csv(op.join(self.bids_folder, 'derivatives',
+            'pupil_preproc', f'sub-{self.subject}', f'ses-{session}', 'func',
+             f'sub-{self.subject}_ses-{session}_run-{run}_{suffix}'), sep='\t'))#, index_col=0))
+
+        return pd.concat(data, keys=zip([self.subject]*len(runs), runs), names=['subject', 'run'])
 
 def get_tr(subject, sesion):
     return 2.3
