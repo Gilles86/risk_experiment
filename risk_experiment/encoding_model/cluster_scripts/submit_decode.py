@@ -17,25 +17,22 @@ if not op.exists(job_directory):
 
 
 sourcedata = '/scratch/gdehol/ds-risk'
-n_voxels = 250
 
 subjects = [f'{subject:02d}' for subject in range(2, 33)]
 subjects.pop(subjects.index('24'))
 
-# subjects = ['26', '28', '30']
-
 sessions = ['3t2', '7t2']
-masks = ['npcr']
-masks += ['wang15_ips', 'wang15_ipsL', 'wang15_ipsR', 'npcl', 'npc']
+masks = ['npc', 'wang15ipsL', 'wang15ipsR', 'wang15ips']
 
-# n_voxels = [100, 250, 500, 1000]
-n_voxels = [250]
+n_voxels = [100, 250]
+smoothed = [False]
+pca_confounds = [False]
+denoise = [True]
+retroicor = [True]
 
-smoothed = [True]
-
-for ix, (subject, session, mask, nv, smooth) in enumerate(product(subjects, sessions, masks, n_voxels, smoothed)):
+for ix, (subject, session, mask, nv, smooth, pcac, dn, retroi) in enumerate(product(subjects, sessions, masks, n_voxels, smoothed, pca_confounds, denoise, retroicor)):
 # for ix, (nv, subject, session, mask) in enumerate(missing):
-    print(f'*** RUNNING {subject}, {mask}, {nv}')
+    print(f'*** RUNNING {subject}, {mask}, {nv} {smooth} {pcac}')
 
     job_file = os.path.join(job_directory, f"{ix}.job")
     
@@ -60,8 +57,18 @@ for ix, (subject, session, mask, nv, smooth) in enumerate(product(subjects, sess
         # cmd = f"python $HOME/git/risk_experiment/risk_experiment/encoding_model/decode.py {subject} {session} --bids_folder /scratch/gdehol/ds-risk --n_voxels {nv} --mask {mask}"
         cmd = f"python $HOME/git/risk_experiment/risk_experiment/encoding_model/decode.py {subject} {session} --bids_folder /scratch/gdehol/ds-risk --n_voxels {nv} --mask {mask}"
 
-        if smoothed:
+        if smooth:
             cmd += ' --smoothed'
+
+        if pcac:
+            cmd += ' --pca_confounds'
+
+        if dn:
+            cmd += ' --denoise'
+
+        if retroi:
+            cmd += ' --retroicor'
+
         fh.writelines(cmd)
         print(cmd)
 

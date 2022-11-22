@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH --job-name=task_fit_cv
-#SBATCH --output=/home/cluster/gdehol/logs/fit_nprf_unsmoothed_surf_%A-%a.txt
+#SBATCH --output=/home/cluster/gdehol/logs/task_fit_cv_7t_smoothed_%A-%a.txt
 #SBATCH --partition=volta
 #SBATCH --ntasks=1
 #SBATCH --mem=96G
 #SBATCH --gres gpu:1
-#SBATCH --time=1:00:00
+#SBATCH --time=1:30:00
 module load volta
 module load nvidia/cuda11.2-cudnn8.1.0
 

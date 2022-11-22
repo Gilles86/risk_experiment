@@ -173,6 +173,8 @@ class Subject(object):
 
         df['chose_risky'] = df['chose_risky'].astype(bool)
 
+        df['log(n1)'] = np.log(df['n1'])
+
         if drop_no_responses:
             df = df[~df.chose_risky.isnull()]
 
@@ -252,6 +254,7 @@ class Subject(object):
             denoise=False,
             retroicor=False,
             cross_validated=True,
+            include_r2=False,
             roi=None):
 
         dir = 'encoding_model'
@@ -279,6 +282,11 @@ class Subject(object):
         parameters = []
 
         keys = ['mu', 'sd', 'amplitude', 'baseline']
+
+        if include_r2:
+            keys += ['r2']
+            if cross_validated:
+                keys += ['cvr2']
 
         mask = self.get_volume_mask(session=session, roi=roi, epi_space=True)
         masker = NiftiMasker(mask)
@@ -364,10 +372,15 @@ class Subject(object):
 
         runs = get_runs(self.subject, session)
 
-        if ((self.subject == '25') & (session == '7t1')) |Vy ((self.subject == '10') & (session == '3t2') | ((self.subject == '06') & (session == '7t2'))):
+        if ((self.subject == '25') & (session == '7t1')) | ((self.subject == '10') & (session == '3t2') | ((self.subject == '06') & (session == '7t2'))):
             print('No physiological data')
             index = get_frametimes(self.subject, session)
             return [pd.DataFrame(index=index, columns=[]) for run in runs]
+
+        # No good breathing data
+        if ((self.subject == '30') & (session == '7t2')):
+            n_respiratory = 0
+            n_interaction = 0
 
         if session.endswith('1'):
             task = 'mapper'
@@ -398,14 +411,14 @@ class Subject(object):
         confounds = pd.concat(retroicor_confounds, 0, keys=runs,
                             names=['run']).sort_index(axis=1)
 
-        print(confounds)
         if confounds.shape[1] > 0:
             confounds = pd.concat((confounds.loc[:, ('cardiac', slice(n_cardiac))],
                                 confounds.loc[:, ('respiratory',
                                                     slice(n_respiratory))],
                                 confounds .loc[:, ('interaction', slice(n_interaction))]), axis=1)
 
-        confounds = [cf.droplevel('run') for _, cf in confounds.groupby(['run'])]
+        confounds = [cf.droplevel('run').loc[:, ~((cf == 0).all(0))] for _, cf in confounds.groupby(['run'])]
+
         return confounds
 
     def get_confounds(self, session, include_fmriprep=None, pca=False, pca_n_components=.95):

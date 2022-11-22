@@ -26,16 +26,16 @@ retroicor=False):
         key += '.denoise'
         target_dir += '.denoise'
 
-    if smoothed:
-        key += '.smoothed'
-        target_dir += '.smoothed'
-
     if (retroicor) and (not denoise):
         raise Exception("When not using GLMSingle RETROICOR is *always* used!")
 
     if retroicor:
         key += '.retroicor'
         target_dir += '.retroicor'
+
+    if smoothed:
+        key += '.smoothed'
+        target_dir += '.smoothed'
 
     if pca_confounds:
         key += '.pca_confounds'
