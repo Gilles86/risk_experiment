@@ -43,8 +43,14 @@ def main(subject, session, bids_folder):
         ho.add_edf_file(fn)
         ho.edf_message_data_to_hdf(hedf_key)
 
+        properties = ho.block_properties(hedf_key)
+        print(properties.loc[0, 'sample_rate'])
+
+
+        sample_rate = properties.loc[0, 'sample_rate'])
+
         ho.edf_gaze_data_to_hdf(alias=hedf_key,
-                                sample_rate=analysis_params['sample_rate'],
+                                sample_rate=sample_rate,
                                 pupil_lp=analysis_params['lp'],
                                 pupil_hp=analysis_params['hp'],
                                 normalization=analysis_params['normalization'],
@@ -54,8 +60,6 @@ def main(subject, session, bids_folder):
                                 )
 
 
-        properties = ho.block_properties(hedf_key)
-        print(properties.loc[0, 'sample_rate'])
 
         # # Detect behavioral messages
         messages = pd.DataFrame(ho.edf_operator.read_generic_events())
