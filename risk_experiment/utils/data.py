@@ -162,7 +162,7 @@ class Subject(object):
     def _cleanup_behavior(df_, drop_no_responses=True):
         df = df_[[]].copy()
         df['rt'] = df_.loc[:, ('onset', 'choice')] - df_.loc[:, ('onset', 'stimulus 2')]
-        df['certainty'] = df_.loc[:, ('choice', 'certainty')]
+        df['uncertainty'] = df_.loc[:, ('choice', 'certainty')]
         df['n1'], df['n2'] = df_['n1']['stimulus 1'], df_['n2']['stimulus 1']
         df['prob1'], df['prob2'] = df_['prob1']['stimulus 1'], df_['prob2']['stimulus 1']
 
