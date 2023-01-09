@@ -1,6 +1,6 @@
 import argparse
 import pandas as pd
-from braincoder.models import GaussianPRF
+from braincoder.models import GaussianPRF, LogGaussianPRF
 from braincoder.optimize import ParameterFitter
 from braincoder.utils import get_rsq
 from risk_experiment.utils import get_surf_data, get_mapper_paradigm, write_gifti, get_target_dir
@@ -15,7 +15,7 @@ import seaborn as sns
 
 
 def main(subject, session, bids_folder='/data/ds-risk', smoothed=False, pca_confounds=False, denoise=False,
-retroicor=False):
+retroicor=False, natural_space=False):
          
     runs = range(1,9)
 
@@ -41,6 +41,9 @@ retroicor=False):
         key += '.pca_confounds'
         target_dir += '.pca_confounds'
 
+    if natural_space:
+        target_dir += '.pca_confounds'
+
     target_dir = get_target_dir(subject, session, bids_folder, target_dir)
 
     paradigm = [pd.read_csv(op.join(bids_folder, f'sub-{subject}', f'ses-{session}',
@@ -50,13 +53,21 @@ retroicor=False):
     paradigm = paradigm[paradigm.trial_type ==
                         'stimulus 1'].set_index('trial_nr', append=True)
 
-    paradigm['log(n1)'] = np.log(paradigm['n1'])
-    paradigm = paradigm['log(n1)']
 
-    model = GaussianPRF()
-    # SET UP GRID
-    mus = np.log(np.linspace(5, 80, 30, dtype=np.float32))
-    sds = np.log(np.linspace(2, 30, 30, dtype=np.float32))
+    if natural_space:
+        paradigm = paradigm['n1']
+        model = LogGaussianPRF()
+        # SET UP GRID
+        mus = np.linspace(5, 80, 60, dtype=np.float32)
+        sds = np.linspace(5, 40, 60, dtype=np.float32)
+    else:
+        paradigm['log(n1)'] = np.log(paradigm['n1'])
+        paradigm = paradigm['log(n1)']
+        model = GaussianPRF()
+        # SET UP GRID
+        mus = np.log(np.linspace(5, 80, 60, dtype=np.float32))
+        sds = np.log(np.linspace(2, 30, 60, dtype=np.float32))
+
     amplitudes = np.array([1.], dtype=np.float32)
     baselines = np.array([0], dtype=np.float32)
 
@@ -131,7 +142,9 @@ if __name__ == '__main__':
     parser.add_argument('--pca_confounds', action='store_true')
     parser.add_argument('--denoise', action='store_true')
     parser.add_argument('--retroicor', action='store_true')
+    parser.add_argument('--natural_space', action='store_true')
     args = parser.parse_args()
 
     main(args.subject, args.session, bids_folder=args.bids_folder, smoothed=args.smoothed,
-    pca_confounds=args.pca_confounds, denoise=args.denoise, retroicor=args.retroicor)
+    pca_confounds=args.pca_confounds, denoise=args.denoise, retroicor=args.retroicor,
+    natural_space=args.natural_space)
