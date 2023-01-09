@@ -273,7 +273,8 @@ class Subject(object):
             retroicor=False,
             cross_validated=True,
             include_r2=False,
-            roi=None):
+            roi=None,
+            natural_space=False):
 
         dir = 'encoding_model'
         if cross_validated:
@@ -296,6 +297,9 @@ class Subject(object):
 
         if pca_confounds:
             dir += '.pca_confounds'
+
+        if natural_space:
+            dir += '.natural_space'
 
         parameters = []
 
