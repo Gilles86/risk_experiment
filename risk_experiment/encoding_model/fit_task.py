@@ -3,16 +3,12 @@ import argparse
 import pandas as pd
 from braincoder.models import GaussianPRF, LogGaussianPRF
 from braincoder.optimize import ParameterFitter
-from risk_experiment.utils import get_surf_data, get_mapper_paradigm, write_gifti, get_target_dir
-from risk_experiment.utils.surface import transform_data
-from nilearn import surface
+from risk_experiment.utils import get_target_dir
 from nilearn.input_data import NiftiMasker
 from nilearn import image
 
-import os
 import os.path as op
 import numpy as np
-import seaborn as sns
 
 
 def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
@@ -91,13 +87,7 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
     data_folder = op.join(bids_folder, 'derivatives', key,
                                               f'sub-{subject}', f'ses-{session}', 'func')
     data = op.join(data_folder, f'sub-{subject}_ses-{session}_task-task_space-T1w_desc-stims1_pe.nii.gz')
-    print(data)
-    print(image.load_img(data).get_fdata())
-
     data = pd.DataFrame(masker.fit_transform(data), index=paradigm.index)
-    print(data)
-
-    data = pd.DataFrame(data, index=paradigm.index)
 
     optimizer = ParameterFitter(model, data, paradigm)
 
