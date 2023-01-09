@@ -154,6 +154,7 @@ RUN apt-get update -qq \
     &&   python -m pip install --no-cache-dir  \
              "nilearn" \
              "nipype" \
+             "fmriprep" \
              "pybids" \
              "nistats" \
              "https://github.com/Gilles86/niworkflows/archive/risk_project.zip" \
@@ -183,3 +184,200 @@ COPY ["./nipype.cfg", \
       "/root/.nipype/nipype.cfg"]
 COPY ["./edf2asc", \
       "/usr/local/bin"]
+
+# Save specification to JSON.
+RUN printf '{ \
+  "pkg_manager": "apt", \
+  "existing_users": [ \
+    "root" \
+  ], \
+  "instructions": [ \
+    { \
+      "name": "from_", \
+      "kwds": { \
+        "base_image": "ubuntu" \
+      } \
+    }, \
+    { \
+      "name": "env", \
+      "kwds": { \
+        "OS": "Linux", \
+        "PATH": "/opt/freesurfer-6.0.1/bin:/opt/freesurfer-6.0.1/fsfast/bin:/opt/freesurfer-6.0.1/tktools:/opt/freesurfer-6.0.1/mni/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", \
+        "FREESURFER_HOME": "/opt/freesurfer-6.0.1", \
+        "FREESURFER": "/opt/freesurfer-6.0.1", \
+        "SUBJECTS_DIR": "/opt/freesurfer-6.0.1/subjects", \
+        "LOCAL_DIR": "/opt/freesurfer-6.0.1/local", \
+        "FSFAST_HOME": "/opt/freesurfer-6.0.1/fsfast", \
+        "FMRI_ANALYSIS_DIR": "/opt/freesurfer-6.0.1/fsfast", \
+        "FUNCTIONALS_DIR": "/opt/freesurfer-6.0.1/sessions", \
+        "FS_OVERRIDE": "0", \
+        "FIX_VERTEX_AREA": "", \
+        "FSF_OUTPUT_FORMAT": "nii.gz# mni env requirements", \
+        "MINC_BIN_DIR": "/opt/freesurfer-6.0.1/mni/bin", \
+        "MINC_LIB_DIR": "/opt/freesurfer-6.0.1/mni/lib", \
+        "MNI_DIR": "/opt/freesurfer-6.0.1/mni", \
+        "MNI_DATAPATH": "/opt/freesurfer-6.0.1/mni/data", \
+        "MNI_PERL5LIB": "/opt/freesurfer-6.0.1/mni/share/perl5", \
+        "PERL5LIB": "/opt/freesurfer-6.0.1/mni/share/perl5" \
+      } \
+    }, \
+    { \
+      "name": "run", \
+      "kwds": { \
+        "command": "apt-get update -qq\\napt-get install -y -q --no-install-recommends \\\\\\n    bc \\\\\\n    ca-certificates \\\\\\n    curl \\\\\\n    libgomp1 \\\\\\n    libxmu6 \\\\\\n    libxt6 \\\\\\n    perl \\\\\\n    tcsh\\nrm -rf /var/lib/apt/lists/*\\necho \\"Downloading FreeSurfer ...\\"\\nmkdir -p /opt/freesurfer-6.0.1\\ncurl -fL ftp://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/6.0.1/freesurfer-Linux-centos6_x86_64-stable-pub-v6.0.1.tar.gz \\\\\\n| tar -xz -C /opt/freesurfer-6.0.1 --owner root --group root --no-same-owner --strip-components 1 \\\\\\n  --exclude='average/mult-comp-cor' \\\\\\n  --exclude='lib/cuda' \\\\\\n  --exclude='lib/qt' \\\\\\n  --exclude='subjects/V1_average' \\\\\\n  --exclude='subjects/bert' \\\\\\n  --exclude='subjects/cvs_avg35' \\\\\\n  --exclude='subjects/cvs_avg35_inMNI152' \\\\\\n  --exclude='subjects/fsaverage3' \\\\\\n  --exclude='subjects/fsaverage4' \\\\\\n  --exclude='subjects/fsaverage5' \\\\\\n  --exclude='subjects/fsaverage6' \\\\\\n  --exclude='subjects/fsaverage_sym' \\\\\\n  --exclude='trctrain'" \
+      } \
+    }, \
+    { \
+      "name": "env", \
+      "kwds": { \
+        "FSLDIR": "/opt/fsl-6.0.1", \
+        "PATH": "/opt/fsl-6.0.1/bin:$PATH", \
+        "FSLOUTPUTTYPE": "NIFTI_GZ", \
+        "FSLMULTIFILEQUIT": "TRUE", \
+        "FSLTCLSH": "/opt/fsl-6.0.1/bin/fsltclsh", \
+        "FSLWISH": "/opt/fsl-6.0.1/bin/fslwish", \
+        "FSLLOCKDIR": "", \
+        "FSLMACHINELIST": "", \
+        "FSLREMOTECALL": "", \
+        "FSLGECUDAQ": "cuda.q" \
+      } \
+    }, \
+    { \
+      "name": "run", \
+      "kwds": { \
+        "command": "apt-get update -qq\\napt-get install -y -q --no-install-recommends \\\\\\n    bc \\\\\\n    ca-certificates \\\\\\n    curl \\\\\\n    dc \\\\\\n    file \\\\\\n    libfontconfig1 \\\\\\n    libfreetype6 \\\\\\n    libgl1-mesa-dev \\\\\\n    libgl1-mesa-dri \\\\\\n    libglu1-mesa-dev \\\\\\n    libgomp1 \\\\\\n    libice6 \\\\\\n    libopenblas-base \\\\\\n    libxcursor1 \\\\\\n    libxft2 \\\\\\n    libxinerama1 \\\\\\n    libxrandr2 \\\\\\n    libxrender1 \\\\\\n    libxt6 \\\\\\n    nano \\\\\\n    sudo \\\\\\n    wget\\nrm -rf /var/lib/apt/lists/*\\necho \\"Downloading FSL ...\\"\\nmkdir -p /opt/fsl-6.0.1\\ncurl -fL https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-6.0.1-centos6_64.tar.gz \\\\\\n| tar -xz -C /opt/fsl-6.0.1 --strip-components 1 \\necho \\"Installing FSL conda environment ...\\"\\nbash /opt/fsl-6.0.1/etc/fslconf/fslpython_install.sh -f /opt/fsl-6.0.1\\necho \\"Downgrading deprecation module per https://github.com/kaczmarj/neurodocker/issues/271#issuecomment-514523420\\"\\n/opt/fsl-6.0.1/fslpython/bin/conda install -n fslpython -c conda-forge -y deprecation==1.*\\necho \\"Removing bundled with FSLeyes libz likely incompatible with the one from OS\\"\\nrm -f /opt/fsl-6.0.1/bin/FSLeyes/libz.so.1" \
+      } \
+    }, \
+    { \
+      "name": "env", \
+      "kwds": { \
+        "ANTSPATH": "/opt/ants-2.3.4/", \
+        "PATH": "/opt/ants-2.3.4:$PATH" \
+      } \
+    }, \
+    { \
+      "name": "run", \
+      "kwds": { \
+        "command": "apt-get update -qq\\napt-get install -y -q --no-install-recommends \\\\\\n    ca-certificates \\\\\\n    curl\\nrm -rf /var/lib/apt/lists/*\\necho \\"Downloading ANTs ...\\"\\nmkdir -p /opt/ants-2.3.4\\ncurl -fsSL https://dl.dropbox.com/s/gwf51ykkk5bifyj/ants-Linux-centos6_x86_64-v2.3.4.tar.gz \\\\\\n| tar -xz -C /opt/ants-2.3.4 --strip-components 1" \
+      } \
+    }, \
+    { \
+      "name": "install", \
+      "kwds": { \
+        "pkgs": [ \
+          "zsh", \
+          "wget", \
+          "git", \
+          "build-essential" \
+        ], \
+        "opts": null \
+      } \
+    }, \
+    { \
+      "name": "run", \
+      "kwds": { \
+        "command": "apt-get update -qq \\\\\\n    && apt-get install -y -q --no-install-recommends \\\\\\n           build-essential \\\\\\n           git \\\\\\n           wget \\\\\\n           zsh \\\\\\n    && rm -rf /var/lib/apt/lists/*" \
+      } \
+    }, \
+    { \
+      "name": "env", \
+      "kwds": { \
+        "CONDA_DIR": "/opt/miniconda-latest", \
+        "PATH": "/opt/miniconda-latest/bin:$PATH" \
+      } \
+    }, \
+    { \
+      "name": "run", \
+      "kwds": { \
+        "command": "apt-get update -qq\\napt-get install -y -q --no-install-recommends \\\\\\n    bzip2 \\\\\\n    ca-certificates \\\\\\n    curl\\nrm -rf /var/lib/apt/lists/*\\n# Install dependencies.\\nexport PATH=\\"/opt/miniconda-latest/bin:$PATH\\"\\necho \\"Downloading Miniconda installer ...\\"\\nconda_installer=\\"/tmp/miniconda.sh\\"\\ncurl -fsSL -o \\"$conda_installer\\" https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh\\nbash \\"$conda_installer\\" -b -p /opt/miniconda-latest\\nrm -f \\"$conda_installer\\"\\nconda update -yq -nbase conda\\n# Prefer packages in conda-forge\\nconda config --system --prepend channels conda-forge\\n# Packages in lower-priority channels not considered if a package with the same\\n# name exists in a higher priority channel. Can dramatically speed up installations.\\n# Conda recommends this as a default\\n# https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-channels.html\\nconda config --set channel_priority strict\\nconda config --system --set auto_update_conda false\\nconda config --system --set show_channel_urls true\\n# Enable `conda activate`\\nconda init bash\\nconda create -y  --name neuro\\nconda install -y  --name neuro \\\\\\n    \\"python=3.7\\" \\\\\\n    \\"pandas\\" \\\\\\n    \\"matplotlib\\" \\\\\\n    \\"scikit-learn\\" \\\\\\n    \\"seaborn\\" \\\\\\n    \\"ipython\\" \\\\\\n    \\"pytables\\" \\\\\\n    \\"tensorflow\\" \\\\\\n    \\"tensorflow-probability\\" \\\\\\n    \\"pingouin\\" \\\\\\n    \\"mkl-service\\"\\nbash -c \\"source activate neuro\\n  python -m pip install --no-cache-dir  \\\\\\n      \\"nilearn\\" \\\\\\n      \\"nipype\\" \\\\\\n      \\"fmriprep\\" \\\\\\n      \\"pybids\\" \\\\\\n      \\"nistats\\" \\\\\\n      \\"https://github.com/Gilles86/niworkflows/archive/risk_project.zip\\" \\\\\\n      \\"tensorflow_probability\\" \\\\\\n      \\"https://github.com/Gilles86/hedfpy/archive/refactor_gilles.zip\\" \\\\\\n      \\"pytest\\" \\\\\\n      \\"neuropythy\\" \\\\\\n      \\"bambi\\" \\\\\\n      \\"pymc3\\" \\\\\\n      \\"svgutils==0.3.1\\"\\"\\n# Clean up\\nsync && conda clean --all --yes && sync\\nrm -rf ~/.cache/pip/*" \
+      } \
+    }, \
+    { \
+      "name": "run", \
+      "kwds": { \
+        "command": "wget https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh -O - | zsh || true" \
+      } \
+    }, \
+    { \
+      "name": "run", \
+      "kwds": { \
+        "command": "conda init zsh" \
+      } \
+    }, \
+    { \
+      "name": "run", \
+      "kwds": { \
+        "command": "echo \\"conda activate neuro\\" >> ~/.zshrc && conda init" \
+      } \
+    }, \
+    { \
+      "name": "workdir", \
+      "kwds": { \
+        "path": "/risk_experiment" \
+      } \
+    }, \
+    { \
+      "name": "copy", \
+      "kwds": { \
+        "source": [ \
+          "braincoder", \
+          "/braincoder" \
+        ], \
+        "destination": "/braincoder" \
+      } \
+    }, \
+    { \
+      "name": "run", \
+      "kwds": { \
+        "command": "bash -c 'source activate neuro && cd /braincoder && python setup.py develop --no-deps'" \
+      } \
+    }, \
+    { \
+      "name": "copy", \
+      "kwds": { \
+        "source": [ \
+          "risk_experiment", \
+          "/risk_experiment" \
+        ], \
+        "destination": "/risk_experiment" \
+      } \
+    }, \
+    { \
+      "name": "copy", \
+      "kwds": { \
+        "source": [ \
+          "setup.py", \
+          "/setup.py" \
+        ], \
+        "destination": "/setup.py" \
+      } \
+    }, \
+    { \
+      "name": "run", \
+      "kwds": { \
+        "command": "bash -c 'source activate neuro && cd / && python setup.py develop --no-deps'" \
+      } \
+    }, \
+    { \
+      "name": "copy", \
+      "kwds": { \
+        "source": [ \
+          "./nipype.cfg", \
+          "/root/.nipype/nipype.cfg" \
+        ], \
+        "destination": "/root/.nipype/nipype.cfg" \
+      } \
+    }, \
+    { \
+      "name": "copy", \
+      "kwds": { \
+        "source": [ \
+          "./edf2asc", \
+          "/usr/local/bin" \
+        ], \
+        "destination": "/usr/local/bin" \
+      } \
+    } \
+  ] \
+}' > /.reproenv.json
+# End saving to specification to JSON.
