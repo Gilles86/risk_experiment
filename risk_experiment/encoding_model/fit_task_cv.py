@@ -42,7 +42,7 @@ retroicor=False, natural_space=False):
         target_dir += '.pca_confounds'
 
     if natural_space:
-        target_dir += '.pca_confounds'
+        target_dir += '.natural_space'
 
     target_dir = get_target_dir(subject, session, bids_folder, target_dir)
 
