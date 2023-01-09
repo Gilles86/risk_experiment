@@ -116,25 +116,42 @@ class Subject(object):
         if type(sessions) is not list:
             sessions = [sessions]
 
+
         df = []
         for session in sessions:
+
+            if session.endswith('1'):
+                task = 'mapper'
+            else:
+                task = 'task'
 
             runs = get_runs(self.subject, session)
             for run in runs:
 
-                fn = op.join(self.bids_folder, f'sub-{self.subject}/ses-{session}/func/sub-{self.subject}_ses-{session}_task-task_run-{run}_events.tsv')
+                fn = op.join(self.bids_folder, f'sub-{self.subject}/ses-{session}/func/sub-{self.subject}_ses-{session}_task-{task}_run-{run}_events.tsv')
+                print(fn)
 
                 if op.exists(fn):
-                    d = pd.read_csv(fn, sep='\t',
-                                index_col=['trial_nr', 'trial_type'])
+                    if session.endswith('1'):
+                        d = pd.read_csv(fn, sep='\t',
+                                    index_col=['trial_type'])
+                    else:
+                        d = pd.read_csv(fn, sep='\t',
+                                    index_col=['trial_nr', 'trial_type'])
+
                     d['subject'], d['session'], d['run'] = int(self.subject), session, run
                     df.append(d)
 
         if len(df) > 0:
             df = pd.concat(df)
-            df = df.reset_index().set_index(['subject', 'session', 'run', 'trial_nr', 'trial_type']) 
-            df = df.unstack('trial_type')
-            return self._cleanup_behavior(df, drop_no_responses=drop_no_responses)
+            if session.endswith('1'):
+                df = df.reset_index().set_index(['subject', 'session', 'run', 'trial_type']) 
+                print(df)
+                return df
+            else:
+                df = df.reset_index().set_index(['subject', 'session', 'run', 'trial_nr', 'trial_type']) 
+                df = df.unstack('trial_type')
+                return self._cleanup_behavior(df, drop_no_responses=drop_no_responses)
         else:
             return pd.DataFrame([])
 
@@ -479,8 +496,7 @@ class Subject(object):
         fmriprep_confounds = [pd.read_table(
             cf)[fmriprep_confounds_include] for cf in fmriprep_confounds]
 
-        fmriprep_confounds = [rc.set_index(get_frametimes(
-            self.subject, session, run)) for run, rc in zip(runs, fmriprep_confounds)]
+        fmriprep_confounds = [rc.set_index(self.get_frametimes(session, run)) for run, rc in zip(runs, fmriprep_confounds)]
 
         # confounds = pd.concat(fmriprep_confounds, 0, keys=runs, names=['run'])
         return fmriprep_confounds
@@ -492,7 +508,7 @@ class Subject(object):
 
         if ((self.subject == '25') & (session == '7t1')) | ((self.subject == '10') & (session == '3t2') | ((self.subject == '06') & (session == '7t2'))):
             print('No physiological data')
-            index = get_frametimes(self.subject, session)
+            index = self.get_frametimes(session)
             return [pd.DataFrame(index=index, columns=[]) for run in runs]
 
         # No good breathing data
@@ -523,8 +539,7 @@ class Subject(object):
         retroicor_confounds = [pd.read_table(
             cf, header=None, usecols=range(18), names=columns) if op.exists(cf) else pd.DataFrame(np.zeros((nvols,0))) for cf in retroicor_confounds ]
 
-        retroicor_confounds = [rc.set_index(get_frametimes(
-            self.subject, session, run)) for run, rc in zip(runs, retroicor_confounds)]
+        retroicor_confounds = [rc.set_index(self.get_frametimes(session, run)) for run, rc in zip(runs, retroicor_confounds)]
 
         confounds = pd.concat(retroicor_confounds, 0, keys=runs,
                             names=['run']).sort_index(axis=1)
@@ -617,41 +632,89 @@ class Subject(object):
 
         return pd.concat(data, keys=zip([self.subject]*len(runs), runs), names=['subject', 'run'])
 
-def get_tr(subject, sesion):
-    return 2.3
+    def get_mapper_response_hrf(self, session):
+
+        assert(session[-1] == '1')
+
+        behavior = self.get_behavior(sessions=session)
+
+        responses = behavior.xs('response', 0, 'trial_type', drop_level=False).reset_index(
+            'trial_type')[['onset', 'trial_type']]
+        responses['duration'] = 0.0
+        responses = responses[responses.onset > 0]
+
+        tr = self.get_tr(session)
+        frametimes = np.linspace(0, (125-1)*tr, 125)
+
+        print(responses)
+
+        response_hrf = responses.groupby('run').apply(lambda d: make_first_level_design_matrix(frametimes, d,
+                                                                                            drift_order=0))
+        print(response_hrf)
+        return response_hrf[['response']]
+
+    def get_brain_mask(self, session, run, space='T1w', bold=True):
+
+        if not bold:
+            raise NotImplementedError
+
+        dir_ = op.join(self.bids_folder, 'derivatives', 'fmriprep', f'sub-{self.subject}',
+                    f'ses-{session}', 'func',)
+
+        if session[-1] == '1':
+            task = 'mapper'
+        elif session[-1] == '2':
+            task = 'task'
+
+        fn = op.join(
+            dir_, f'sub-{self.subject}_ses-{session}_task-{task}_run-{run}_space-{space}_desc-brain_mask.nii.gz')
+
+        return image.load_img(fn)
+
+    def get_tr(self, sesion):
+        return 2.3
 
 
-def get_frametimes(subject, session, run=None):
+    def get_frametimes(self, session, run=None):
 
-    if session[-1] == '1':
+        if session[-1] == '1':
+            n_vols = 125
+        else:
+            n_vols = 160
+
+        if (session == '7t2') & (self.subject == '02') & (run == 1):
+            n_vols = 213
+
+        tr = self.get_tr(session)
+        return np.linspace(0, (n_vols-1)*tr, n_vols)
+
+    def get_mapper_paradigm(self, session, run=None, natural_space=False):
+
+        if run is None:
+            run = 1
+
+        events = pd.read_table(op.join(
+            self.bids_folder, f'sub-{self.subject}/ses-{session}/func/sub-{self.subject}_ses-{session}_task-mapper_run-{run}_events.tsv'))
+
+        events = events[events['trial_type'] == 'stimulation'].sort_values('onset')
+        events['onset_halfway'] = events['onset']+events['duration'] / 2.
+        events.index = pd.to_timedelta(events.onset_halfway, unit='s')
+        tmp = pd.DataFrame([0, 0], columns=['n_dots'])
         n_vols = 125
-    else:
-        n_vols = 160
+        tr = self.get_tr(session)
+        tmp.index = pd.Index(pd.to_timedelta([0, (n_vols-1)*tr], 's'), name='time')
+        
+        paradigm = pd.concat((tmp, events)).n_dots.resample(
+            '2.3S').nearest().to_frame('n_dots').astype(np.float32)
+        if natural_space:
+            paradigm['n_dots'] = paradigm['n_dots'].replace(0.0, 1e6)
+        else:
+            paradigm['n_dots'] = np.log(paradigm['n_dots']).replace(-np.inf, -1e6)
 
-    if (session == '7t2') & (subject == '02') & (run == 1):
-        n_vols = 213
+        paradigm.index = pd.Index(self.get_frametimes(session), name='time')
 
-    tr = get_tr(subject, session)
-    return np.linspace(0, (n_vols-1)*tr, n_vols)
+        return paradigm
 
-
-def get_mapper_response_hrf(subject, session, sourcedata):
-
-    assert(session[-1] == '1')
-
-    behavior = get_behavior(subject, session, sourcedata)
-
-    responses = behavior.xs('response', 0, 'trial_type', drop_level=False).reset_index(
-        'trial_type')[['onset', 'trial_type']]
-    responses['duration'] = 0.0
-    responses = responses[responses.onset > 0]
-
-    tr = get_tr(subject, session)
-    frametimes = np.linspace(0, (125-1)*tr, 125)
-
-    response_hrf = responses.groupby('run').apply(lambda d: make_first_level_design_matrix(frametimes,
-                                                                                           drift_order=0))
-    return response_hrf[['response']]
 
 
 def get_surf_file(subject, session, run, sourcedata,
@@ -708,6 +771,9 @@ def get_single_trial_surf_data(subject, session, bids_folder, smoothed=False,
 
 def get_surf_data(subject, session, sourcedata, smoothed=False, space='fsnative'):
 
+
+    raise NotImplementedError
+
     runs = get_runs(subject, session)
 
     if smoothed:
@@ -739,29 +805,6 @@ def get_surf_data(subject, session, sourcedata, smoothed=False, space='fsnative'
         data.append(pd.concat(d_, 1))
     return pd.concat(data, 0)
 
-
-def get_mapper_paradigm(subject, session, sourcedata, run=None):
-
-    if run is None:
-        run = 1
-
-    events = pd.read_table(op.join(
-        sourcedata, f'sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-mapper_run-{run}_events.tsv'))
-
-    events = events[events['trial_type'] == 'stimulation'].sort_values('onset')
-    events['onset_halfway'] = events['onset']+events['duration'] / 2.
-    events.index = pd.to_timedelta(events.onset_halfway, unit='s')
-    tmp = pd.DataFrame([0, 0], columns=['n_dots'])
-    n_vols = 125
-    tr = get_tr(subject, session)
-    tmp.index = pd.Index(pd.to_timedelta([0, (n_vols-1)*tr], 's'), name='time')
-    paradigm = pd.concat((tmp, events)).n_dots.resample(
-        '2.3S').nearest().to_frame('n_dots').astype(np.float32)
-    paradigm['n_dots'] = np.log(paradigm['n_dots']).replace(-np.inf, -1e6)
-
-    paradigm.index = pd.Index(get_frametimes(subject, session), name='time')
-
-    return paradigm
 
 def get_task_paradigm(subject=None, session=None, bids_folder='/data', run=None):
 
@@ -904,10 +947,7 @@ def write_gifti(subject, session, sourcedata, space, data, filename):
         im.to_filename(filename.format(hemi=hemi))
 
 
-def get_volume_data(subject, session, run, sourcedata, smoothed=False, space='T1w'):
-
-    if smoothed:
-        raise NotImplementedError
+def get_volume_data(subject, session, run, sourcedata, space='T1w'):
 
     dir_ = op.join(sourcedata, 'derivatives', 'fmriprep', f'sub-{subject}',
                    f'ses-{session}', 'func',)
@@ -923,24 +963,6 @@ def get_volume_data(subject, session, run, sourcedata, smoothed=False, space='T1
 
     return image.load_img(fn)
 
-
-def get_brain_mask(subject, session, run, sourcedata, space='T1w', bold=True):
-
-    if not bold:
-        raise NotImplementedError
-
-    dir_ = op.join(sourcedata, 'derivatives', 'fmriprep', f'sub-{subject}',
-                   f'ses-{session}', 'func',)
-
-    if session[-1] == '1':
-        task = 'mapper'
-    elif session[-1] == '2':
-        task = 'task'
-
-    fn = op.join(
-        dir_, f'sub-{subject}_ses-{session}_task-{task}_run-{run}_space-{space}_desc-brain_mask.nii.gz')
-
-    return image.load_img(fn)
 
 def get_fs_subject(subject):
 
