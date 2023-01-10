@@ -4,11 +4,11 @@
 #SBATCH --ntasks=1
 #SBATCH --mem=96G
 #SBATCH --gres gpu:1
-#SBATCH --time=10:00
+#SBATCH --time=20:00
 
 source /etc/profile.d/lmod.sh
-module load cuda
 module load gpu
+module load cuda
 
 . $HOME/init_conda.sh
 

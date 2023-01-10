@@ -7,8 +7,8 @@
 #SBATCH --time=10:00
 
 source /etc/profile.d/lmod.sh
-module load cuda
 module load gpu
+module load cuda
 
 . $HOME/init_conda.sh
 
