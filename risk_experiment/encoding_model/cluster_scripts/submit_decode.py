@@ -44,12 +44,12 @@ for ix, (subject, session, mask, nv, smooth, pcac, dn, retroi, natural_space) in
         fh.writelines("#!/bin/bash\n")
         id = f'{subject}.{session}.{mask}.{nv}.{time_str}'
         fh.writelines(f"#SBATCH --job-name=decode_volume.{id}.job\n")
-        fh.writelines(f"#SBATCH --output={os.environ['HOME']}/.out/decode_volume.{id}.txt\n")
+        fh.writelines(f"#SBATCH --output={os.environ['HOME']}/data/.out/decode_volume.{id}.txt\n")
         fh.writelines("#SBATCH --time=30:00\n")
         fh.writelines("#SBATCH --ntasks=1\n")
         fh.writelines("#SBATCH --mem=96G\n")
         fh.writelines("#SBATCH --gres gpu:1\n")
-        fh.writelines("source /etc/profile.d/lmod.sh\nmodule load cuda\nmodule load gpu\n")
+        fh.writelines("source /etc/profile.d/lmod.sh\nmodule load gpu\nmodule load cuda\n")
         fh.writelines(". $HOME/init_conda.sh\n")
         fh.writelines("conda activate tf2-gpu\n")
         # cmd = f"python $HOME/git/risk_experiment/risk_experiment/encoding_model/decode.py {subject} {session} --bids_folder /scratch/gdehol/ds-risk --n_voxels {nv} --mask {mask}"
