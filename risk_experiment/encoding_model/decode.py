@@ -6,7 +6,7 @@ import os.path as op
 import pandas as pd
 from nilearn import surface
 from braincoder.optimize import ResidualFitter
-from braincoder.models import GaussianPRF
+from braincoder.models import GaussianPRF, LogGaussianPRF
 from braincoder.utils import get_rsq
 import numpy as np
 from risk_experiment.utils import Subject
@@ -73,7 +73,12 @@ denoise=False, retroicor=False, mask='wang15_ips', natural_space=False):
                 run=test_run, roi=mask, natural_space=natural_space)
         print(pars)
 
+
+        if natural_space:
+            model = LogGaussianPRF(parameters=pars)
+        else:
         model = GaussianPRF(parameters=pars)
+
         pred = model.predict(paradigm=train_paradigm.astype(np.float32))
 
         r2 = get_rsq(train_data, pred)
