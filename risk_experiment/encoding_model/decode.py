@@ -77,7 +77,7 @@ denoise=False, retroicor=False, mask='wang15_ips', natural_space=False):
         if natural_space:
             model = LogGaussianPRF(parameters=pars)
         else:
-        model = GaussianPRF(parameters=pars)
+            model = GaussianPRF(parameters=pars)
 
         pred = model.predict(paradigm=train_paradigm.astype(np.float32))
 
@@ -108,9 +108,8 @@ denoise=False, retroicor=False, mask='wang15_ips', natural_space=False):
                 omega=omega,
                 dof=dof)
 
-
-        print(pdf)
-        E = (pdf * pdf.columns).sum(1) / pdf.sum(1)
+        pdf /= np.trapz(pdf, pdf.columns,axis=1)[:, np.newaxis]
+        E = pd.Series(np.trapz(pdf*pdf.columns.values[np.newaxis,:], pdf.columns, axis=1), index=pdf.index)
 
         print(pd.concat((E, test_paradigm), axis=1))
         print(pingouin.corr(E, test_paradigm))
