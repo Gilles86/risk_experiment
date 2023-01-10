@@ -95,7 +95,7 @@ denoise=False, retroicor=False, mask='wang15_ips', natural_space=False):
         residfit = ResidualFitter(model, train_data,
                                   train_paradigm.astype(np.float32))
 
-        omega, dof = residfit.fit(init_sigma2=10.0,
+        omega, dof = residfit.fit(init_sigma2=1.0,
                 method='t',
                 max_n_iterations=10000)
 
