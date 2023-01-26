@@ -33,6 +33,16 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
         groupby = ['risky_first', 'n_safe']
     elif plot_type in [3, 5]:
         groupby = ['risky_first', 'n_safe', 'log(risky/safe)']
+    elif plot_type in [6]:
+        groupby = ['uncertainty', 'log(risky/safe)']
+    elif plot_type in [7]:
+        groupby = ['risky_first', 'uncertainty', 'log(risky/safe)']
+    elif plot_type in [8]:
+        groupby = ['risky_first', 'uncertainty', 'n_safe']
+    elif plot_type in [9]:
+        groupby = ['risky_first', 'median_split_uncertainty', 'log(risky/safe)']
+    elif plot_type in [10]:
+        groupby = ['risky_first', 'median_split_uncertainty', 'n_safe']
     else:
         raise NotImplementedError
 
@@ -42,15 +52,18 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
     if level == 'subject':
         groupby = ['subject'] + groupby
 
-    print(ppc)
+    # print(ppc)
     ppc_summary = summarize_ppc(ppc, groupby=groupby)
     print(ppc_summary)
     p = df.groupby(groupby).mean()[['chose_risky']]
-    # ppc_summary = pd.concat((p, ppc_summary)).sort_index()
+    print(p)
+    # ppc_summary = pd.concat((p, ppc_summary), axis=1).sort_index()
     ppc_summary = ppc_summary.join(p).reset_index()
 
     print(ppc_summary)
-    ppc_summary['Order'] = ppc_summary['risky_first'].map({True:'Risky first', False:'Safe first'})
+
+    if 'risky_first' in groupby:
+        ppc_summary['Order'] = ppc_summary['risky_first'].map({True:'Risky first', False:'Safe first'})
 
     if 'n_safe' in groupby:
         ppc_summary['Safe offer'] = ppc_summary['n_safe'].astype(int)
@@ -63,15 +76,15 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
         else:
             ppc_summary['Log-ratio offer'] = ppc_summary['log(risky/safe)']
 
-    if level == 'group':
-        x = 'Predicted acceptance'
+    if plot_type in [2,8, 10]:
+            x = 'Safe offer'
     else:
-        x = 'Log-ratio offer'
+        if level == 'group':
+            x = 'Predicted acceptance'
+        else:
+            x = 'Log-ratio offer'
 
     if plot_type in [1, 2]:
-        if plot_type == 2:
-            x = 'Safe offer'
-
         fac = sns.FacetGrid(ppc_summary,
                             col='subject' if level == 'subject' else None,
                             hue='Order',
@@ -112,16 +125,37 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
                             row='subject' if level == 'subject' else None,
                             palette='coolwarm')
 
-    if plot_type in [1,2,3, 5]:
+    elif plot_type == 6:
+        fac = sns.FacetGrid(ppc_summary,
+                            hue='uncertainty',
+                            row='subject' if level == 'subject' else None,
+                            aspect=2.,
+                            palette=sns.color_palette('viridis', n_colors=4))
+    elif plot_type in [7, 8]:
+        fac = sns.FacetGrid(ppc_summary,
+                            col='Order',
+                            hue='uncertainty',
+                            row='subject' if level == 'subject' else None,
+                            palette=sns.color_palette('viridis', n_colors=4))
+    elif plot_type in [9, 10]:
+        fac = sns.FacetGrid(ppc_summary,
+                            col='Order',
+                            hue='median_split_uncertainty',
+                            row='subject' if level == 'subject' else None,
+                            palette=sns.color_palette('viridis', n_colors=2))
+
+    print("X", x)
+    if plot_type in [1,2,3, 5, 6, 7, 8, 9, 10]:
         fac.map_dataframe(plot_prediction, x=x)
         fac.map(plt.scatter, x, 'Prop. chosen risky')
         fac.map(lambda *args, **kwargs: plt.axhline(.5, c='k', ls='--'))
 
-    if plot_type in [1, 3, 5]:
+    if plot_type in [1, 3, 5, 6, 7, 9]:
         if level == 'subject':
             fac.map(lambda *args, **kwargs: plt.axvline(np.log(1./.55), c='k', ls='--'))
         else:
-            fac.map(lambda *args, **kwargs: plt.axvline(2.5, c='k', ls='--'))
+            fac.map(lambda *args, **kwargs: plt.axvline(3.5, c='k', ls='--'))
+            plt.xticks([])
 
     
     fac.add_legend()
@@ -170,8 +204,7 @@ def format_bambi_ppc(trace, model, df):
     return pred
 
 
-def plot_subjectwise_posterior(trace, key, hue=None, ref_value=None, color=None,
-palette=sns.color_palette()):
+def plot_subjectwise_posterior(trace, key, hue=None, ref_value=None, color=None, palette=sns.color_palette()):
     d = trace.posterior[key].to_dataframe()
 
     if ref_value is not None:
