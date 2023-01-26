@@ -64,19 +64,6 @@ class Subject(object):
         self.subject = '%02d' % int(subject)
         self.bids_folder = bids_folder
 
-    def get_volume_mask(self, roi='NPC12r'):
-
-        if roi.startswith('NPC'):
-            return op.join(self.derivatives_dir
-            ,'ips_masks',
-            f'sub-{self.subject}',
-            'anat',
-            f'sub-{self.subject}_space-T1w_desc-{roi}_mask.nii.gz'
-            )
-
-        else:
-            raise NotImplementedError
-
     @property
     def derivatives_dir(self):
         return op.join(self.bids_folder, 'derivatives')
@@ -163,14 +150,26 @@ class Subject(object):
         df = df_[[]].copy()
         df['rt'] = df_.loc[:, ('onset', 'choice')] - df_.loc[:, ('onset', 'stimulus 2')]
         df['uncertainty'] = df_.loc[:, ('choice', 'certainty')]
+        df['z_uncertainty'] = df.groupby(['subject', 'session'])['uncertainty'].transform(lambda d: (d-d.mean())/d.std())
+
+        def get_median_split(d):
+            try:
+                return pd.qcut(d, 2, labels=['low uncertainty', 'high uncertainty'], duplicates='drop')
+            except Exception as e:
+                return (d > d.mean()).map({True:'high uncertainty', False:'low uncertainty'})
+
+        df['median_split_uncertainty'] = df.groupby(['subject', 'session'], group_keys=False)['uncertainty'].apply(get_median_split)
+
         df['n1'], df['n2'] = df_['n1']['stimulus 1'], df_['n2']['stimulus 1']
         df['prob1'], df['prob2'] = df_['prob1']['stimulus 1'], df_['prob2']['stimulus 1']
+        df['p1'], df['p2'] = df['prob1'], df['prob2']
 
         df['choice'] = df_[('choice', 'choice')]
         df['risky_first'] = df['prob1'] == 0.55
         df['chose_risky'] = (df['risky_first'] & (df['choice'] == 1.0)) | (~df['risky_first'] & (df['choice'] == 2.0))
         df.loc[df.choice.isnull(), 'chose_risky'] = np.nan
 
+        df['Order'] = df['risky_first'].map({True:'Risky first', False:'Safe first'})
 
         df['n_risky'] = df['n1'].where(df['risky_first'], df['n2'])
         df['n_safe'] = df['n2'].where(df['risky_first'], df['n1'])
@@ -244,9 +243,15 @@ class Subject(object):
 
     def get_volume_mask(self, roi=None, session=None, epi_space=False):
 
+        if session.endswith('1'):
+            task = 'mapper'
+        else:
+            task = 'task'
+
+        base_mask = op.join(self.bids_folder, 'derivatives', f'fmriprep/sub-{self.subject}/ses-{session}/func/sub-{self.subject}_ses-{session}_task-{task}_run-1_space-T1w_desc-brain_mask.nii.gz')
+
         if roi is None:
             if epi_space:
-                base_mask = op.join(self.bids_folder, 'derivatives', f'fmriprep/sub-{self.subject}/ses-{session}/func/sub-{self.subject}_ses-{session}_task-task_run-1_space-T1w_desc-brain_mask.nii.gz')
                 return image.load_img(base_mask)
             else:
                 raise NotImplementedError
@@ -259,8 +264,6 @@ class Subject(object):
             )
 
         if epi_space:
-            base_mask = op.join(self.bids_folder, 'derivatives', f'fmriprep/sub-{self.subject}/ses-{session}/func/sub-{self.subject}_ses-{session}_task-task_run-1_space-T1w_desc-brain_mask.nii.gz')
-
             mask = image.resample_to_img(mask, base_mask, interpolation='nearest')
 
         return mask
@@ -273,30 +276,40 @@ class Subject(object):
             retroicor=False,
             cross_validated=True,
             include_r2=False,
-            roi=None,
-            natural_space=False):
+            include_cvr2=False,
+            natural_space=True,
+            epi_space=True,
+            roi=None):
 
         dir = 'encoding_model'
+        cv_dir = dir + '.cv'
+
         if cross_validated:
             if run is None:
                 raise Exception('Give run')
 
-            dir += '.cv'
-
         if denoise:
             dir += '.denoise'
+            cv_dir += '.denoise'
             
         if (retroicor) and (not denoise):
             raise Exception("When not using GLMSingle RETROICOR is *always* used!")
 
         if retroicor:
             dir += '.retroicor'
+            cv_dir += '.retroicor'
 
         if smoothed:
             dir += '.smoothed'
+            cv_dir += '.smoothed'
 
         if pca_confounds:
             dir += '.pca_confounds'
+            cv_dir += '.pca_confounds'
+
+        if natural_space:
+            dir += '.natural_space'
+            cv_dir += '.natural_space'
 
         if natural_space:
             dir += '.natural_space'
@@ -310,16 +323,25 @@ class Subject(object):
             if cross_validated:
                 keys += ['cvr2']
 
-        mask = self.get_volume_mask(session=session, roi=roi, epi_space=True)
+
+        mask = self.get_volume_mask(session=session, roi=roi, epi_space=epi_space)
         masker = NiftiMasker(mask)
 
         for parameter_key in keys:
             if cross_validated:
-                fn = op.join(self.bids_folder, 'derivatives', dir, f'sub-{self.subject}', f'ses-{session}', 
+                fn = op.join(self.bids_folder, 'derivatives', cv_dir, f'sub-{self.subject}', f'ses-{session}', 
                         'func', f'sub-{self.subject}_ses-{session}_run-{run}_desc-{parameter_key}.optim_space-T1w_pars.nii.gz')
             else:
                 fn = op.join(self.bids_folder, 'derivatives', dir, f'sub-{self.subject}', f'ses-{session}', 
                         'func', f'sub-{self.subject}_ses-{session}_desc-{parameter_key}.optim_space-T1w_pars.nii.gz')
+            
+            pars = pd.Series(masker.fit_transform(fn).ravel())
+            parameters.append(pars)
+
+        if (not cross_validated) & (include_cvr2):
+            keys += ['cvr2']
+            fn = op.join(self.bids_folder, 'derivatives', cv_dir, f'sub-{self.subject}', f'ses-{session}', 
+                    'func', f'sub-{self.subject}_ses-{session}_desc-cvr2.optim_space-T1w_pars.nii.gz')
             
             pars = pd.Series(masker.fit_transform(fn).ravel())
             parameters.append(pars)
@@ -363,67 +385,18 @@ class Subject(object):
                 dir = 'encoding_model'
 
             if smoothed:
-                dir += '.smoothed.bak'
+                dir += '.smoothed'
 
         else:
             if cross_validated:
-                dir = 'encoding_model.cv.denoise.retroicor'
+                dir = 'encoding_model.cv.denoise'
             else:
-                dir = 'encoding_model.denoise.retroicor'
+                dir = 'encoding_model.denoise'
 
             if smoothed:
                 dir += '.smoothed'
 
-        parameters = []
-
-        for parameter_key in parameter_keys:
-            if cross_validated:
-                fn = op.join(self.bids_folder, 'derivatives', dir, f'sub-{self.subject}', f'ses-{session}', 
-                        'func', f'sub-{self.subject}_ses-{session}_run-{run}_desc-{parameter_key}.volume.optim_space-{space}_hemi-{hemi}.func.gii')
-            else:
-                if mapper:
-                    fn = op.join(self.bids_folder, 'derivatives', dir, f'sub-{self.subject}', f'ses-{session}', 
-                            'func', f'sub-{self.subject}_ses-{session}_desc-{parameter_key}.optim_space-{space}_hemi-{hemi}.func.gii')
-                else:
-                    fn = op.join(self.bids_folder, 'derivatives', dir, f'sub-{self.subject}', f'ses-{session}', 
-                            'func', f'sub-{self.subject}_ses-{session}_desc-{parameter_key}.volume.optim_space-{space}_hemi-{hemi}.func.gii')
-
-            pars = pd.Series(surface.load_surf_data(fn))
-            pars.index.name = 'vertex'
-
-            parameters.append(pars)
-
-        return pd.concat(parameters, axis=1, keys=parameter_keys, names=['parameter'])
-
-    def _get_prf_parameter_surf1(self, session, run=None, smoothed=False, cross_validated=False, hemi=None, mask=None, space='fsnative', parameters=None):
-
-        if mask is not None:
-            raise NotImplementedError
-
-        if parameters is None:
-            parameter_keys = ['mu', 'sd', 'r2']
-        else:
-            parameter_keys = parameters
-
-        if hemi is None:
-            prf_l = self._get_prf_parameter_surf1(session, 
-                    run, smoothed, cross_validated, hemi='L',
-                    mask=mask, space=space)
-            prf_r = self._get_prf_parameter_surf1(session, 
-                    run, smoothed, cross_validated, hemi='R',
-                    mask=mask, space=space)
-            
-            return pd.concat((prf_l, prf_r), axis=0, 
-                    keys=pd.Index(['L', 'R'], name='hemi'))
-
-
-        if cross_validated:
-            raise NotImplementedError
-        else:
-            dir = 'encoding_model'
-
-        if smoothed:
-            dir += '.smoothed.bak'
+        dir += '.natural_space'
 
         parameters = []
 
@@ -433,7 +406,7 @@ class Subject(object):
                         'func', f'sub-{self.subject}_ses-{session}_run-{run}_desc-{parameter_key}.volume.optim_space-{space}_hemi-{hemi}.func.gii')
             else:
                 fn = op.join(self.bids_folder, 'derivatives', dir, f'sub-{self.subject}', f'ses-{session}', 
-                        'func', f'sub-{self.subject}_ses-{session}_desc-{parameter_key}.optim_space-{space}_hemi-{hemi}.func.gii')
+                        'func', f'sub-{self.subject}_ses-{session}_desc-{parameter_key}.volume.optim_space-{space}_hemi-{hemi}.func.gii')
 
             pars = pd.Series(surface.load_surf_data(fn))
             pars.index.name = 'vertex'
@@ -441,7 +414,6 @@ class Subject(object):
             parameters.append(pars)
 
         return pd.concat(parameters, axis=1, keys=parameter_keys, names=['parameter'])
-
 
     def get_fmri_events(self, session, runs=None):
 
