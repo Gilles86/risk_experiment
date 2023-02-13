@@ -3,10 +3,13 @@ import arviz as az
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.stats as ss
+from risk_experiment.utils import get_all_subjects
 
 
 def cluster_offers(d, n=6, key='log(risky/safe)'):
     return pd.qcut(d[key], n, duplicates='drop').apply(lambda x: x.mid)
+
 
 
 def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col_wrap=5):
@@ -16,11 +19,6 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
     ppc = ppc.xs(var_name, 0, 'variable').copy()
 
     df = df.copy()
-
-    # Make sure that we group data from (Roughly) same fractions
-    if not (df.groupby(['subject', 'log(risky/safe)']).size().groupby('subject').size() < 7).all():
-        df['log(risky/safe)'] = df.groupby(['subject'],
-                                        group_keys=False).apply(cluster_offers)
 
     if level == 'group':
         df['log(risky/safe)'] = df['bin(risky/safe)']
@@ -43,6 +41,18 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
         groupby = ['risky_first', 'median_split_uncertainty', 'log(risky/safe)']
     elif plot_type in [10]:
         groupby = ['risky_first', 'median_split_uncertainty', 'n_safe']
+    elif plot_type in [11]:
+        groupby = ['median_split(sd)', 'log(risky/safe)']
+    elif plot_type in [12]:
+        groupby = ['risky_first', 'median_split(sd)', 'n_safe']
+    elif plot_type in [13]:
+        groupby = ['median_split_pupil_baseline', 'log(risky/safe)']
+    elif plot_type in [14]:
+        groupby = ['risky_first', 'median_split_pupil_baseline', 'n_safe']
+    elif plot_type in [15]:
+        groupby = ['risky_first', 'median_split_pupil_baseline', 'log(risky/safe)']
+    elif plot_type in [16]:
+        groupby = ['risky_first', 'median_split(sd)', 'log(risky/safe)']
     else:
         raise NotImplementedError
 
@@ -76,7 +86,7 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
         else:
             ppc_summary['Log-ratio offer'] = ppc_summary['log(risky/safe)']
 
-    if plot_type in [2,8, 10]:
+    if plot_type in [2, 7]:
             x = 'Safe offer'
     else:
         if level == 'group':
@@ -124,7 +134,6 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
                             hue='Safe offer',
                             row='subject' if level == 'subject' else None,
                             palette='coolwarm')
-
     elif plot_type == 6:
         fac = sns.FacetGrid(ppc_summary,
                             hue='uncertainty',
@@ -144,13 +153,52 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
                             row='subject' if level == 'subject' else None,
                             palette=sns.color_palette('viridis', n_colors=2))
 
+    elif plot_type == 11:
+        fac = sns.FacetGrid(ppc_summary,
+                            hue='median_split(sd)',
+                            col='subject' if level == 'subject' else None,
+                            palette=sns.color_palette()[2:],
+                            col_wrap=col_wrap if level == 'subject' else None)
+    elif plot_type == 12:
+        x = 'n_safe'
+        fac = sns.FacetGrid(ppc_summary,
+                            hue='median_split(sd)',
+                            col='Order',
+                            palette=sns.color_palette()[2:],
+                            row='subject' if level == 'subject' else None,)
+    elif plot_type == 13:
+        fac = sns.FacetGrid(ppc_summary,
+                            hue='median_split_pupil_baseline',
+                            col='subject' if level == 'subject' else None,
+                            palette=sns.color_palette()[4:],
+                            col_wrap=col_wrap if level == 'subject' else None)
+    elif plot_type == 14:
+        x = 'n_safe'
+        fac = sns.FacetGrid(ppc_summary,
+                            hue='median_split_pupil_baseline',
+                            col='Order',
+                            palette=sns.color_palette()[4:],
+                            row='subject' if level == 'subject' else None,)
+    elif plot_type == 15:
+        fac = sns.FacetGrid(ppc_summary,
+                            hue='median_split_pupil_baseline',
+                            col='Order',
+                            palette=sns.color_palette()[4:],
+                            row='subject' if level == 'subject' else None,)
+    elif plot_type == 16:
+        fac = sns.FacetGrid(ppc_summary,
+                            hue='median_split(sd)',
+                            col='Order',
+                            palette=sns.color_palette()[2:],
+                            row='subject' if level == 'subject' else None,)
+
     print("X", x)
-    if plot_type in [1,2,3, 5, 6, 7, 8, 9, 10]:
+    if plot_type in [1,2,3, 5, 11, 12, 13, 14, 15, 16]:
         fac.map_dataframe(plot_prediction, x=x)
         fac.map(plt.scatter, x, 'Prop. chosen risky')
         fac.map(lambda *args, **kwargs: plt.axhline(.5, c='k', ls='--'))
 
-    if plot_type in [1, 3, 5, 6, 7, 9]:
+    if plot_type in [1, 3, 5, 11, 13, 15, 16]:
         if level == 'subject':
             fac.map(lambda *args, **kwargs: plt.axvline(np.log(1./.55), c='k', ls='--'))
         else:
@@ -161,7 +209,6 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
     fac.add_legend()
 
     return fac
-
 
 def plot_prediction(data, x, color, y='p_predicted', alpha=.25, **kwargs):
     data = data[~data['hdi025'].isnull()]
@@ -260,3 +307,56 @@ def plot_groupwise_posterior(trace, key, hue, ref_value, palette=sns.color_palet
     fac.set(ylabel=f'p({key})')
 
     return fac
+
+def invprobit(x):
+    return ss.norm.ppf(x)
+
+def extract_intercept_gamma(trace, model, data, group=False):
+
+    fake_data = get_fake_data(data, group)
+
+    pred = model.predict(trace, 'mean', fake_data, inplace=False, include_group_specific=not group)['posterior']['chose_risky_mean']
+
+    pred = pred.to_dataframe().unstack([0, 1])
+    pred = pred.set_index(pd.MultiIndex.from_frame(fake_data))
+
+    # return pred
+
+    pred0 = pred.xs(0, 0, 'x')
+    intercept = pd.DataFrame(invprobit(pred0), index=pred0.index, columns=pred0.columns)
+    gamma = invprobit(pred.xs(1, 0, 'x')) - intercept
+
+    intercept = pd.concat((intercept.droplevel(0, 1),), keys=['intercept'], axis=1)
+    gamma = pd.concat((gamma.droplevel(0, 1),), keys=['gamma'], axis=1)
+
+    return intercept, gamma
+
+def get_fake_data(data, group=False):
+
+    data = data.reset_index()
+
+    if group:
+        permutations = [[1]]
+    else:
+        permutations = [data['subject'].unique()]
+
+
+    permutations += [np.array([0., 1.]), data['n_safe'].unique(), [False, True]]
+    names=['subject', 'x', 'n_safe', 'risky_first']
+
+    if 'sd' in data.columns:
+        permutations += [[data['sd'].mean()]]
+        names += ['sd']
+
+    if 'median_split_sd' in data.columns:
+        permutations += [[True, False]]
+        names += ['median_split_sd']
+
+    if 'median_split_pupil_baseline' in data.columns:
+        permutations += [data['median_split_pupil_baseline'].unique()]
+        names += ['median_split_pupil_baseline']
+
+    print(names)
+    fake_data = pd.MultiIndex.from_product(permutations, names=names).to_frame().reset_index(drop=True)
+
+    return fake_data
