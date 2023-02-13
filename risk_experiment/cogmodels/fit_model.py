@@ -11,6 +11,9 @@ from risk_experiment.utils.data import get_all_behavior
 import os
 import os.path as op
 import arviz as az
+import pandas as pd
+from risk_experiment.utils import get_all_subjects
+from scipy.stats import zscore
 
 
 def main(model_label, session, burnin=1500, samples=1000, bids_folder='/data/ds-risk'):
@@ -41,6 +44,21 @@ def get_data(model_label, session, bids_folder):
     if model_label.startswith('certainty'):
         df = df[~df.z_uncertainty.isnull()]
 
+    if model_label in ['neural1', 'neural2', 'neural3']:
+        decoding_info = pd.concat([sub.get_decoding_info(session, mask='npcr', n_voxels=0.0) for sub in get_all_subjects(bids_folder)])
+        df = df.join(decoding_info)
+        df['median_split(sd)'] = df.groupby(['subject', 'session'], group_keys=False)['sd'].apply(lambda d: d>d.quantile()).map({True:'High neural uncertainty', False:'Low neural uncertainty'})
+
+    if model_label.startswith('pupil_baseline'):
+        pupil_baseline = pd.read_csv(op.join(bids_folder, 'derivatives', 'pupil', 'model-n1_n2_n', 'pre_stim_baseline.tsv'), sep='\t')
+        pupil_baseline['subject'] = pupil_baseline['subject'].map(lambda d: f'{d:02d}')
+        pupil_baseline = pupil_baseline.set_index(['subject', 'trial_nr'])
+        print(df)
+        print(pupil_baseline)
+        df = df.join(pupil_baseline)
+        df['median_split_pupil_baseline'] = df.groupby(['subject'], group_keys=False)['pupil'].apply(lambda d: d>d.quantile()).map({True:'High pre-baseline pupil dilation', False:'Low pre-baseline dilation'})
+
+
     return df
 
 def build_model(model_label, df):
@@ -55,6 +73,16 @@ def build_model(model_label, df):
         model = RiskLapseRegressionModel(df, prior_estimate='full', regressors={'p_lapse':'z_uncertainty'})
     elif model_label == 'certainty_hybrid':
         model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'z_uncertainty', 'n2_evidence_sd':'z_uncertainty', 'p_lapse':'z_uncertainty'})
+    elif model_label == 'neural1':
+        model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'sd', 'n2_evidence_sd':'sd'})
+    elif model_label == 'neural2':
+        model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'sd'})
+    elif model_label == 'neural3':
+        model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'sd', 'n2_evidence_sd':'sd', 'risky_prior_mu':'sd',
+        'risky_prior_std':'sd', 'safe_prior_mu':'sd', 'safe_prior_std':'sd'}) 
+    elif model_label == 'pupil_baseline1':
+        model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'pupil', 'n2_evidence_sd':'pupil', 'risky_prior_mu':'pupil',
+        'risky_prior_std':'pupil', 'safe_prior_mu':'pupil', 'safe_prior_std':'pupil'}) 
     else:
         raise Exception(f'Do not know model label {model_label}')
 

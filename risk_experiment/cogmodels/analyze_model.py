@@ -13,13 +13,13 @@ from bauer.utils.bayes import softplus, logistic
 from utils import plot_ppc, cluster_offers
 from bauer.models import RiskModel, RiskRegressionModel, RiskLapseModel, RiskLapseRegressionModel, RegressionModel
 
-def main(model_label, session, bids_folder='/data/ds-risk', col_wrap=5, plot_traces=False, group_only=False):
 
+
+def main(model_label, session, bids_folder='/data/ds-risk', col_wrap=5, plot_traces=False, group_only=False, only_ppc=False):
 
     df = get_data(model_label, session, bids_folder)
     model = build_model(model_label, df)
     model.build_estimation_model()
-
 
     print(issubclass(type(model), RiskRegressionModel))
 
@@ -29,11 +29,29 @@ def main(model_label, session, bids_folder='/data/ds-risk', col_wrap=5, plot_tra
     if not op.exists(target_folder):
         os.makedirs(target_folder)
 
-    if plot_traces:
-        az.plot_trace(idata, var_names=['~p'])
-        plt.savefig(op.join(target_folder, 'traces.pdf'))
+    if plot_traces and (not only_ppc):
+        plot_trace(idata, target_folder)
+
+    if not only_ppc: 
+        plot_parameters(model, idata,  target_folder, session)
+
+    if not (df.groupby(['subject', 'log(risky/safe)']).size().groupby('subject').size() < 7).all():
+        df['log(risky/safe)'] = df.groupby(['subject'],
+                                        group_keys=False).apply(cluster_offers)
+
+    ppc = model.ppc(trace=idata.sel(draw=slice(None, None, 10)), data=df)
+
+    # "Chose risky" vs "chose 2nd option coding"
+    ppc.loc[ppc.index.get_level_values('risky_first')] = 1 - ppc.loc[ppc.index.get_level_values('risky_first')]
+
+    plot_ppcs(model_label, ppc, df, bids_folder, session, col_wrap, group_only)
+
+def plot_trace(idata, target_folder):
+    az.plot_trace(idata, var_names=['~p'])
+    plt.savefig(op.join(target_folder, 'traces.pdf'))
 
 
+def plot_parameters(model, idata, target_folder, session):
     def plot_parameter(par, regressor, trace, transform=False, **kwargs):
         t = trace.copy()
         print(regressor, t)
@@ -144,24 +162,25 @@ def main(model_label, session, bids_folder='/data/ds-risk', col_wrap=5, plot_tra
                     plt.savefig(op.join(target_folder, f'group_par-{name}.{regressor}.png'))
                     plt.close()
 
-
-    n1_evidence_sd = idata.posterior['n1_evidence_sd']
-
-    if not (df.groupby(['subject', 'log(risky/safe)']).size().groupby('subject').size() < 7).all():
-        df['log(risky/safe)'] = df.groupby(['subject'],
-                                        group_keys=False).apply(cluster_offers)
-
-    ppc = model.ppc(trace=idata.sel(draw=slice(None, None, 10)), data=df)
-
-    # "Chose risky" vs "chose 2nd option coding"
-    ppc.loc[ppc.index.get_level_values('risky_first')] = 1 - ppc.loc[ppc.index.get_level_values('risky_first')]
+def plot_ppcs(model_label, ppc, df, bids_folder, session, col_wrap, group_only):
 
     levels = ['group']
     if not group_only:
         levels += ['subject']
 
-    # for plot_type in [1,2,3, 5, 6, 7]:
-    for plot_type in [1, 2, 3, 5, 6, 7, 8, 9, 10]:
+    plot_types = [1,2,3, 5]
+    plot_types = [15]
+
+    if model_label.startswith('pupil'):
+        plot_types += [13, 14]
+
+    if model_label.startswith('uncertainty'):
+        plot_types += [6, 7, 8, 9, 10]
+
+    if model_label.startswith('neural'):
+        plot_types += [11, 12]
+
+    for plot_type in plot_types:
         for var_name in ['p', 'll_bernoulli']:
             for level in ['subject', 'group']:
                 target_folder = op.join(bids_folder, 'derivatives', 'cogmodels', 'figures', model_label, session, level, var_name)
@@ -176,14 +195,15 @@ def main(model_label, session, bids_folder='/data/ds-risk', col_wrap=5, plot_tra
                 fn = f'{level}_plot-{plot_type}_model-{model_label}_pred.png'
                 g.savefig(op.join(target_folder, fn))
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('model_label', default=None)
     parser.add_argument('session', default=None)
     parser.add_argument('--bids_folder', default='/data/ds-risk')
     parser.add_argument('--no_trace', dest='plot_traces', action='store_false')
+    parser.add_argument('--only_ppc', dest='only_ppc', action='store_true')
     parser.add_argument('--group_only', dest='group_only', action='store_true')
     args = parser.parse_args()
 
-    main(args.model_label, args.session, bids_folder=args.bids_folder, plot_traces=args.plot_traces, group_only=args.group_only)
+    main(args.model_label, args.session, bids_folder=args.bids_folder, plot_traces=args.plot_traces, group_only=args.group_only,
+    only_ppc=args.only_ppc)
