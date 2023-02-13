@@ -849,6 +849,8 @@ def get_task_paradigm(subject=None, session=None, bids_folder='/data', run=None)
 
     return events
 
+def get_all_pupil_data(bids_folder):
+    return pd.read_parquet(op.join(bids_folder, 'derivatives', 'pupil', 'pupil.parquet'))
 
 def get_task_behavior(subject, session, bids_folder='/data'):
 
