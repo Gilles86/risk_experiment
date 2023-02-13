@@ -692,6 +692,40 @@ class Subject(object):
         return paradigm
 
 
+    def get_decoded_pdf(self, session, mask='npcr', n_voxels=100):
+        
+        if n_voxels == 0:
+            key = 'decoded_pdfs.volume.cv_voxel_selection.denoise.natural_space'
+            pdf = op.join(self.bids_folder, 'derivatives', key, f'sub-{self.subject}', 'func', f'sub-{self.subject}_ses-{session}_mask-{mask}_space-T1w_pars.tsv')
+        else:
+            key = 'decoded_pdfs.volume.denoise.natural_space'
+            pdf = op.join(self.bids_folder, 'derivatives', key, f'sub-{self.subject}', 'func', f'sub-{self.subject}_ses-{session}_mask-{mask}_nvoxels-{n_voxels}_space-T1w_pars.tsv')
+
+        if op.exists(pdf):
+            return pd.read_csv(pdf, sep='\t', index_col=[0])
+        else:
+            print(pdf)
+            return None
+
+    def get_decoding_info(self, session, mask='npcr', n_voxels=100):
+
+        pdf = self.get_decoded_pdf(session, mask=mask, n_voxels=n_voxels) 
+
+        if pdf is not None:
+            pdf.columns = pdf.columns.astype(float)
+
+            E = (pdf*pdf.columns.values[np.newaxis, :] / pdf.sum(1).values[:, np.newaxis]).sum(1)
+            E = pd.Series(np.trapz(pdf*pdf.columns.values[np.newaxis,:], pdf.columns, axis=1), index=pdf.index)
+
+            E = pd.concat((E,), keys=[(self.subject, session, mask, n_voxels)],
+            names=['subject', 'session', 'mask', 'n_voxels', 'trial_nr']).to_frame('E')
+
+            E['sd'] = np.trapz(np.abs(E.values - pdf.columns.astype(float).values[np.newaxis, :]) * pdf, pdf.columns, axis=1)
+
+            return E
+        else:
+            return pd.DataFrame(np.zeros((0, 0)))
+
 
 def get_surf_file(subject, session, run, sourcedata,
                   hemi='lh', space='fsnative'):
