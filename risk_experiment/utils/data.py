@@ -43,17 +43,20 @@ def get_runs(subject, session):
     else:
         return range(1, 9)
 
-def get_all_subject_ids():
+def get_all_subject_ids(drop_outliers=False):
     subjects = ['%02d' % i for i in range(2, 33)]
     subjects.pop(subjects.index('24'))
+
+    if drop_outliers:
+        subjects.pop(subjects.index('03'))
     return subjects
 
-def get_all_subjects(bids_folder):
-    return [Subject(subject, bids_folder) for subject in get_all_subject_ids()]
+def get_all_subjects(bids_folder, drop_outliers=False):
+    return [Subject(subject, bids_folder) for subject in get_all_subject_ids(drop_outliers=drop_outliers)]
 
 def get_all_behavior(sessions=['3t2', '7t2'], bids_folder='/data',
-        drop_no_responses=True):
-    subjects = get_all_subjects(bids_folder=bids_folder)
+        drop_no_responses=True, drop_outliers=False):
+    subjects = get_all_subjects(bids_folder=bids_folder, drop_outliers=drop_outliers)
     behavior = [s.get_behavior(sessions=sessions, drop_no_responses=drop_no_responses) for s in tqdm(subjects)]
     return pd.concat(behavior)
 
