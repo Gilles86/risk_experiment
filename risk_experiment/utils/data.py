@@ -119,7 +119,6 @@ class Subject(object):
             for run in runs:
 
                 fn = op.join(self.bids_folder, f'sub-{self.subject}/ses-{session}/func/sub-{self.subject}_ses-{session}_task-{task}_run-{run}_events.tsv')
-                print(fn)
 
                 if op.exists(fn):
                     if session.endswith('1'):
@@ -136,7 +135,6 @@ class Subject(object):
             df = pd.concat(df)
             if session.endswith('1'):
                 df = df.reset_index().set_index(['subject', 'session', 'run', 'trial_type']) 
-                print(df)
                 return df
             else:
                 df = df.reset_index().set_index(['subject', 'session', 'run', 'trial_nr', 'trial_type']) 
@@ -313,9 +311,6 @@ class Subject(object):
         if natural_space:
             dir += '.natural_space'
             cv_dir += '.natural_space'
-
-        if natural_space:
-            dir += '.natural_space'
 
         parameters = []
 
