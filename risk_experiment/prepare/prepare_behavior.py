@@ -4,18 +4,24 @@ import argparse
 import pandas as pd
 import numpy as np
 from nilearn import image
+from risk_experiment.utils import Subject
 
 def main(subject, session, bids_folder, max_rt=1.0):
 
     sourcedata = op.join(bids_folder, 'sourcedata')
 
+    sub = Subject(subject, bids_folder=bids_folder)
+
     target_dir = op.join(bids_folder, f'sub-{subject}', f'ses-{session}', 'func')
     if not op.exists(target_dir):
         os.makedirs(target_dir)
 
+    runs = sub.get_runs(session)
+
     if session[-1] == '1':
 
-        for run in range(1, 5):
+
+        for run in runs:
 
             nii = op.join(target_dir, f'sub-{subject}_ses-{session}_task-mapper_run-{run}_bold.nii.gz')
             n_volumes = image.load_img(nii).shape[-1]
@@ -75,7 +81,7 @@ def main(subject, session, bids_folder, max_rt=1.0):
 
 
 
-        for run in range(1, 9):
+        for run in runs:
             nii = op.join(target_dir, f'sub-{subject}_ses-{session}_task-task_run-{run}_bold.nii.gz')
             n_volumes = image.load_img(nii).shape[-1]
 
