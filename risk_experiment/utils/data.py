@@ -363,16 +363,20 @@ class Subject(object):
                 dir = 'encoding_model'
 
             if smoothed:
-                dir += '.smoothed.bak'
+                dir += '.smoothed'
+
+            dir += '.natural_space'
 
         else:
             if cross_validated:
-                dir = 'encoding_model.cv.denoise.retroicor'
+                dir = 'encoding_model.cv.denoise'
             else:
-                dir = 'encoding_model.denoise.retroicor'
+                dir = 'encoding_model.denoise'
 
             if smoothed:
                 dir += '.smoothed'
+
+            dir += '.natural_space'
 
         parameters = []
 
@@ -423,7 +427,7 @@ class Subject(object):
             dir = 'encoding_model'
 
         if smoothed:
-            dir += '.smoothed.bak'
+            dir += '.smoothed'
 
         parameters = []
 
