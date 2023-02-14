@@ -33,8 +33,8 @@ def main(subject, session, bids_folder):
 
     ho = hedfpy.HDFEyeOperator(hdf5_file)
 
-    if subject in [32]:
-        analysis_params['sample_rate'] = 1000
+    # if subject in [32]:
+    #     analysis_params['sample_rate'] = 1000
 
     for run in range(1, 9):
 
@@ -43,14 +43,13 @@ def main(subject, session, bids_folder):
         ho.add_edf_file(fn)
         ho.edf_message_data_to_hdf(hedf_key)
 
-        properties = ho.block_properties(hedf_key)
-        print(properties.loc[0, 'sample_rate'])
-
-
-        sample_rate = properties.loc[0, 'sample_rate'])
+        if (subject == '32') & (run == 1):
+            analysis_params['sample_rate'] = 1000
+        else:
+            analysis_params['sample_rate'] = 500
 
         ho.edf_gaze_data_to_hdf(alias=hedf_key,
-                                sample_rate=sample_rate,
+                                sample_rate=analysis_params['sample_rate'],
                                 pupil_lp=analysis_params['lp'],
                                 pupil_hp=analysis_params['hp'],
                                 normalization=analysis_params['normalization'],
@@ -60,6 +59,8 @@ def main(subject, session, bids_folder):
                                 )
 
 
+        properties = ho.block_properties(hedf_key)
+        assert(analysis_params['sample_rate'] == properties.loc[0, 'sample_rate']), print(analysis_params['sample_rate'], properties.loc[0, 'sample_rate'])
 
         # # Detect behavioral messages
         messages = pd.DataFrame(ho.edf_operator.read_generic_events())
@@ -71,6 +72,8 @@ def main(subject, session, bids_folder):
         start_ix = messages[messages.key == 't'].index[0]
         start_ts = messages[messages.key == 't'].iloc[0]['EL_timestamp']
         last_ts = messages.EL_timestamp.max()
+
+        print(messages)
 
         events = messages.loc[start_ix+2:]
 
@@ -102,7 +105,6 @@ def main(subject, session, bids_folder):
         d['interpolated'] = d[f'{eye}_interpolated_timepoints'].astype(bool)
         d['pupil'] = d[f'{eye}_pupil_bp']
         d = d[['interpolated', 'pupil']]
-
 
         # # Save everything
         saccades.to_csv(op.join(target_folder, f'sub-{subject}_ses-{session}_run-{run}_saccades.tsv'), sep='\t', index=False)
