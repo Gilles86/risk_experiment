@@ -572,18 +572,21 @@ class Subject(object):
 
         
 
-    def get_blinks(self, session):
+    def get_blinks(self, session, min_duration=0.13, max_duration=0.9):
 
         blinks = self._get_pupil_data(session, 'blinks.tsv')
 
-        blinks.index.set_names(names='n', level=-1, inplace=True)
+        blinks = blinks.loc[(blinks.duration > min_duration) & (blinks.duration < max_duration)]
+
+        blinks.index.set_names(names='ix', level=-1, inplace=True)
+
         return blinks
 
         # blinks.reset_index('duration', inplace=True)
 
         # return blinks[blinks.duration < 0.1]
 
-    def get_saccades(self, session, eyelink_detection=False):
+    def get_saccades(self, session, eyelink_detection=False, min_interval=0.1):
 
         if eyelink_detection:
             suffix = 'saccadesel.tsv'
@@ -591,7 +594,11 @@ class Subject(object):
             suffix = 'saccades.tsv'
 
         saccades = self._get_pupil_data(session, suffix)
-        saccades.index.set_names(names='n', level=-1, inplace=True)
+        saccades['onset_diff'] = saccades.groupby('run')['onset'].diff()
+        saccades = saccades.loc[saccades.onset_diff > min_interval]
+        
+
+        saccades.index.set_names(names='ix', level=-1, inplace=True)
         return saccades
 
         # saccades.reset_index('duration', inplace=True)
