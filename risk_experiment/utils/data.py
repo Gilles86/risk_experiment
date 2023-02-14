@@ -129,7 +129,7 @@ class Subject(object):
                         d = pd.read_csv(fn, sep='\t',
                                     index_col=['trial_nr', 'trial_type'])
 
-                    d['subject'], d['session'], d['run'] = int(self.subject), session, run
+                    d['subject'], d['session'], d['run'] = self.subject, session, run
                     df.append(d)
 
         if len(df) > 0:
