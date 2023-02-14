@@ -11,7 +11,7 @@ neurodocker generate docker --base-image ubuntu --pkg-manager apt\
       conda_install="python=3.7 pandas matplotlib scikit-learn seaborn ipython pytables tensorflow tensorflow-probability pingouin mkl-service" \
       pip_install="nilearn
       nipype
-      fmriprep
+      fmriprep==22
       pybids
 		  nistats
 		  https://github.com/Gilles86/niworkflows/archive/risk_project.zip
