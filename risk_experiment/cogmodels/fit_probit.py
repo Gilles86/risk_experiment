@@ -1,92 +1,97 @@
-import os
-import os.path as op
-import arviz as az
-from risk_experiment.utils.data import get_all_behavior
+import numpy as np
 import argparse
+from risk_experiment.utils.data import get_all_behavior, get_all_subjects
+import os.path as op
+import os
+import arviz as az
 import bambi
 import pandas as pd
-import scipy.stats as ss
-import numpy as np
 
+def main(model_label, session, burnin=1000, samples=1000, bids_folder='/data/ds-risk'):
 
-def main(model_label, session, bids_folder='/data/ds-risk'):
-
-    model = build_model(model_label, session, bids_folder)
-
-    idata = model.fit(init='adapt_diag',
-    target_accept=0.9, draws=500, tune=500)
-
+    df = get_data(model_label, session, bids_folder)
     target_folder = op.join(bids_folder, 'derivatives', 'cogmodels')
 
     if not op.exists(target_folder):
         os.makedirs(target_folder)
 
-    az.to_netcdf(idata,
-                 op.join(target_folder, f'ses-{session}_model-probit{model_label}_trace.netcdf'))
+    target_accept = 0.9
 
-def build_model(model_label, session, bids_folder='/data/ds-risk'):
+    model = build_model(model_label, df, session, bids_folder)
+    trace = model.fit(burnin, samples, init='adapt_diag', target_accept=target_accept)
+    az.to_netcdf(trace,
+                 op.join(target_folder, f'model-{model_label}_ses-{session}_trace.netcdf'))
 
-    model_label = int(model_label)
+def build_model(model_label, df, session=None, bids_folder='/data/ds-risk'):
+    if model_label == 'probit_simple':
+        model = bambi.Model('chose_risky ~ x  + (x|subject)', df.reset_index(), link='probit', family='bernoulli')
+    if model_label == 'probit_order':
+        model = bambi.Model('chose_risky ~ x*risky_first  + (x*risky_first|subject)', df.reset_index(), link='probit', family='bernoulli')
+    if model_label == 'probit_full':
+        model = bambi.Model('chose_risky ~ x*risky_first*n_safe  + (x*risky_first*n_safe|subject)', df.reset_index(), link='probit', family='bernoulli')
+    if model_label.startswith('probit_neural1'):
+        model = bambi.Model('chose_risky ~ x*risky_first*n_safe + x*sd  + (x*risky_first*n_safe + sd*x|subject)', df.reset_index(), link='probit', family='bernoulli')
+    if model_label.startswith('probit_neural2'):
+        model = bambi.Model('chose_risky ~ x*risky_first*n_safe + x*sd  + (x*risky_first*n_safe + sd*x|subject)', df.reset_index(), link='probit', family='bernoulli')
+    if model_label.startswith('probit_neural3'):
+        model = bambi.Model('chose_risky ~ x*risky_first*n_safe + x*median_split_sd  + (x*risky_first*n_safe + x*median_split_sd|subject)', df.reset_index(), link='probit', family='bernoulli')
+    if model_label.startswith('probit_neural4'):
+        model = bambi.Model('chose_risky ~ x*sd  + (x*sd|subject)', df.reset_index(), link='probit', family='bernoulli')
+    if model_label.startswith('probit_neural5'):
+        model = bambi.Model('chose_risky ~ x*risky_first*n_safe*median_split_sd  + (x*risky_first*n_safe*median_split_sd|subject)', df.reset_index(), link='probit', family='bernoulli')
+    if model_label.startswith('probit_neural6'):
+        model = bambi.Model('chose_risky ~ x*risky_first*n_safe*median_split_sd  + (x*risky_first*n_safe*median_split_sd|subject)', df.reset_index(), link='probit', family='bernoulli')
+    if model_label.startswith('probit_neural7'):
+        model = bambi.Model('chose_risky ~ x*median_split_sd  + (x*median_split_sd|subject)', df.reset_index(), link='probit', family='bernoulli')
+    if model_label.startswith('probit_neural8'):
+        model = bambi.Model('chose_risky ~ x*risky_first*median_split_sd  + (x*risky_first*median_split_sd|subject)', df.reset_index(), link='probit', family='bernoulli')
+    if model_label.startswith('probit_pupil1'):
+        model = bambi.Model('chose_risky ~ x*median_split_pupil_baseline  + (x*median_split_pupil_baseline|subject)', df.reset_index(), link='probit', family='bernoulli')
+    if model_label.startswith('probit_pupil2'):
+        model = bambi.Model('chose_risky ~ x*risky_first*median_split_pupil_baseline  + (x*risky_first*median_split_pupil_baseline|subject)', df.reset_index(), link='probit', family='bernoulli')
 
-    df = get_all_behavior(bids_folder=bids_folder)
-    df = df.xs(session, 0, 'session')
+    return model
 
+def get_data(model_label, session, bids_folder='/data/ds-risk', drop_outliers=False):
+
+    if model_label.endswith('_no_outliers'):
+        print('no outliers!')
+        drop_outliers = True
+
+    df = get_all_behavior(sessions=session, bids_folder=bids_folder, drop_outliers=drop_outliers)
     df['x'] = df['log(risky/safe)']
-    df['chose_risky'] = df['chose_risky'].astype(bool)
 
-    df = df.reset_index()
+    if model_label.startswith('probit_neural1') or model_label.startswith('probit_neural3') or model_label.startswith('probit_neural4') or model_label.startswith('probit_neural5'):
+        decoding_info = pd.concat([sub.get_decoding_info(session, mask='npcr', n_voxels=0.0) for sub in get_all_subjects(bids_folder)])
+        df = df.join(decoding_info)
+        df['median_split(sd)'] = df.groupby(['subject', 'session'], group_keys=False)['sd'].apply(lambda d: d>d.quantile())
+        df['median_split_sd'] = df['median_split(sd)']
+    elif model_label.startswith('probit_neural2'):
+        decoding_info = pd.concat([sub.get_decoding_info(session, mask='npcr', n_voxels=100) for sub in get_all_subjects(bids_folder)])
+        df = df.join(decoding_info)
+        df['median_split(sd)'] = df.groupby(['subject', 'session'], group_keys=False)['sd'].apply(lambda d: d>d.quantile())
+    elif model_label.startswith('probit_neural6') or model_label.startswith('probit_neural7') or model_label.startswith('probit_neural8'):
+        decoding_info = pd.concat([sub.get_decoding_info(session, mask='npcr', n_voxels=0.0) for sub in get_all_subjects(bids_folder)])
+        df = df.join(decoding_info)
+        df['median_split(sd)'] = df.groupby(['subject', 'session', 'n1', 'n2'], group_keys=False)['sd'].apply(lambda d: d>d.quantile())
+        df['median_split_sd'] = df['median_split(sd)']
+    elif model_label.startswith('probit_pupil'):
+        pupil_baseline = pd.read_csv(op.join(bids_folder, 'derivatives', 'pupil', 'model-n1_n2_n', 'pre_stim_baseline.tsv'), sep='\t')
+        pupil_baseline['subject'] = pupil_baseline['subject'].map(lambda d: f'{d:02d}')
+        pupil_baseline = pupil_baseline.set_index(['subject', 'trial_nr'])
+        df = df.join(pupil_baseline)
+        df['median_split_pupil_baseline'] = df.groupby(['subject'], group_keys=False)['pupil'].apply(lambda d: d>d.quantile()).map({True:'High pre-baseline pupil dilation', False:'Low pre-baseline dilation'})
 
-    if model_label == 1:
-        formula = 'chose_risky ~ x*C(risky_first)*C(n_safe) + (x*C(risky_first)*C(n_safe)|subject)'
-    elif model_label == 2:
-        formula = 'chose_risky ~ x + (x|subject)'
-    elif model_label == 3:
-        formula = 'chose_risky ~ x*C(risky_first) + (x*C(risky_first)|subject)'
-
-    return bambi.Model(formula, data=df, link='probit', family='bernoulli')
-
-def invprobit(x):
-    return ss.norm.ppf(x)
-
-def extract_rnp_precision(trace, model, data, group=False):
-
-    data = data.reset_index()
-
-    if group:
-        fake_data = pd.MultiIndex.from_product([data.reset_index()['subject'].unique()[[0]],
-                                                [0, 1],
-                                                data['n_safe'].unique(),
-                                                [False, True]],
-                                                names=['subject', 'x', 'n_safe', 'risky_first']
-                                                ).to_frame().reset_index(drop=True)
-    else:
-        fake_data = pd.MultiIndex.from_product([data.reset_index()['subject'].unique(),
-                                                [0, 1],
-                                                data['n_safe'].unique(),
-                                                [False, True]],
-                                                names=['subject', 'x', 'n_safe', 'risky_first']
-                                                ).to_frame().reset_index(drop=True)
-
-    pred = model.predict(trace, 'mean', fake_data, inplace=False)['posterior']['chose_risky_mean']
-
-    pred = pred.to_dataframe().unstack([0, 1])
-    pred = pred.set_index(pd.MultiIndex.from_frame(fake_data))
-
-    # return pred
-
-    pred0 = pred.xs(0, 0, 'x')
-    intercept = pd.DataFrame(invprobit(pred0), index=pred0.index, columns=pred0.columns)
-    gamma = invprobit(pred.xs(1, 0, 'x')) - intercept
-    gamma = gamma.stack([-1, -2]).iloc[:, 0]
-    rnp = np.exp(intercept/gamma)
-
-    return pd.concat((intercept, gamma, rnp), axis=1, keys=['intercept', 'gamma', 'rnp'])
+    return df
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('model_label', default=None)
-    parser.add_argument('session', default=None)
+    parser.add_argument('model_label')
+    parser.add_argument('session')
     parser.add_argument('--bids_folder', default='/data/ds-risk')
     args = parser.parse_args()
 
     main(args.model_label, args.session, bids_folder=args.bids_folder)
+
+
+

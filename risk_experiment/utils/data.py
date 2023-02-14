@@ -43,17 +43,20 @@ def get_runs(subject, session):
     else:
         return range(1, 9)
 
-def get_all_subject_ids():
+def get_all_subject_ids(drop_outliers=False):
     subjects = ['%02d' % i for i in range(2, 33)]
     subjects.pop(subjects.index('24'))
+
+    if drop_outliers:
+        subjects.pop(subjects.index('03'))
     return subjects
 
-def get_all_subjects(bids_folder):
-    return [Subject(subject, bids_folder) for subject in get_all_subject_ids()]
+def get_all_subjects(bids_folder, drop_outliers=False):
+    return [Subject(subject, bids_folder) for subject in get_all_subject_ids(drop_outliers=drop_outliers)]
 
 def get_all_behavior(sessions=['3t2', '7t2'], bids_folder='/data',
-        drop_no_responses=True):
-    subjects = get_all_subjects(bids_folder=bids_folder)
+        drop_no_responses=True, drop_outliers=False):
+    subjects = get_all_subjects(bids_folder=bids_folder, drop_outliers=drop_outliers)
     behavior = [s.get_behavior(sessions=sessions, drop_no_responses=drop_no_responses) for s in tqdm(subjects)]
     return pd.concat(behavior)
 
@@ -63,19 +66,6 @@ class Subject(object):
 
         self.subject = '%02d' % int(subject)
         self.bids_folder = bids_folder
-
-    def get_volume_mask(self, roi='NPC12r'):
-
-        if roi.startswith('NPC'):
-            return op.join(self.derivatives_dir
-            ,'ips_masks',
-            f'sub-{self.subject}',
-            'anat',
-            f'sub-{self.subject}_space-T1w_desc-{roi}_mask.nii.gz'
-            )
-
-        else:
-            raise NotImplementedError
 
     @property
     def derivatives_dir(self):
@@ -129,7 +119,6 @@ class Subject(object):
             for run in runs:
 
                 fn = op.join(self.bids_folder, f'sub-{self.subject}/ses-{session}/func/sub-{self.subject}_ses-{session}_task-{task}_run-{run}_events.tsv')
-                print(fn)
 
                 if op.exists(fn):
                     if session.endswith('1'):
@@ -139,14 +128,13 @@ class Subject(object):
                         d = pd.read_csv(fn, sep='\t',
                                     index_col=['trial_nr', 'trial_type'])
 
-                    d['subject'], d['session'], d['run'] = int(self.subject), session, run
+                    d['subject'], d['session'], d['run'] = self.subject, session, run
                     df.append(d)
 
         if len(df) > 0:
             df = pd.concat(df)
             if session.endswith('1'):
                 df = df.reset_index().set_index(['subject', 'session', 'run', 'trial_type']) 
-                print(df)
                 return df
             else:
                 df = df.reset_index().set_index(['subject', 'session', 'run', 'trial_nr', 'trial_type']) 
@@ -162,15 +150,27 @@ class Subject(object):
     def _cleanup_behavior(df_, drop_no_responses=True):
         df = df_[[]].copy()
         df['rt'] = df_.loc[:, ('onset', 'choice')] - df_.loc[:, ('onset', 'stimulus 2')]
-        df['certainty'] = df_.loc[:, ('choice', 'certainty')]
+        df['uncertainty'] = df_.loc[:, ('choice', 'certainty')]
+        df['z_uncertainty'] = df.groupby(['subject', 'session'])['uncertainty'].transform(lambda d: (d-d.mean())/d.std())
+
+        def get_median_split(d):
+            try:
+                return pd.qcut(d, 2, labels=['low uncertainty', 'high uncertainty'], duplicates='drop')
+            except Exception as e:
+                return (d > d.mean()).map({True:'high uncertainty', False:'low uncertainty'})
+
+        df['median_split_uncertainty'] = df.groupby(['subject', 'session'], group_keys=False)['uncertainty'].apply(get_median_split)
+
         df['n1'], df['n2'] = df_['n1']['stimulus 1'], df_['n2']['stimulus 1']
         df['prob1'], df['prob2'] = df_['prob1']['stimulus 1'], df_['prob2']['stimulus 1']
+        df['p1'], df['p2'] = df['prob1'], df['prob2']
 
         df['choice'] = df_[('choice', 'choice')]
         df['risky_first'] = df['prob1'] == 0.55
         df['chose_risky'] = (df['risky_first'] & (df['choice'] == 1.0)) | (~df['risky_first'] & (df['choice'] == 2.0))
         df.loc[df.choice.isnull(), 'chose_risky'] = np.nan
 
+        df['Order'] = df['risky_first'].map({True:'Risky first', False:'Safe first'})
 
         df['n_risky'] = df['n1'].where(df['risky_first'], df['n2'])
         df['n_safe'] = df['n2'].where(df['risky_first'], df['n1'])
@@ -244,9 +244,15 @@ class Subject(object):
 
     def get_volume_mask(self, roi=None, session=None, epi_space=False):
 
+        if session.endswith('1'):
+            task = 'mapper'
+        else:
+            task = 'task'
+
+        base_mask = op.join(self.bids_folder, 'derivatives', f'fmriprep/sub-{self.subject}/ses-{session}/func/sub-{self.subject}_ses-{session}_task-{task}_run-1_space-T1w_desc-brain_mask.nii.gz')
+
         if roi is None:
             if epi_space:
-                base_mask = op.join(self.bids_folder, 'derivatives', f'fmriprep/sub-{self.subject}/ses-{session}/func/sub-{self.subject}_ses-{session}_task-task_run-1_space-T1w_desc-brain_mask.nii.gz')
                 return image.load_img(base_mask)
             else:
                 raise NotImplementedError
@@ -259,8 +265,6 @@ class Subject(object):
             )
 
         if epi_space:
-            base_mask = op.join(self.bids_folder, 'derivatives', f'fmriprep/sub-{self.subject}/ses-{session}/func/sub-{self.subject}_ses-{session}_task-task_run-1_space-T1w_desc-brain_mask.nii.gz')
-
             mask = image.resample_to_img(mask, base_mask, interpolation='nearest')
 
         return mask
@@ -273,33 +277,40 @@ class Subject(object):
             retroicor=False,
             cross_validated=True,
             include_r2=False,
-            roi=None,
-            natural_space=False):
+            include_cvr2=False,
+            natural_space=True,
+            epi_space=True,
+            roi=None):
 
         dir = 'encoding_model'
+        cv_dir = dir + '.cv'
+
         if cross_validated:
             if run is None:
                 raise Exception('Give run')
 
-            dir += '.cv'
-
         if denoise:
             dir += '.denoise'
+            cv_dir += '.denoise'
             
         if (retroicor) and (not denoise):
             raise Exception("When not using GLMSingle RETROICOR is *always* used!")
 
         if retroicor:
             dir += '.retroicor'
+            cv_dir += '.retroicor'
 
         if smoothed:
             dir += '.smoothed'
+            cv_dir += '.smoothed'
 
         if pca_confounds:
             dir += '.pca_confounds'
+            cv_dir += '.pca_confounds'
 
         if natural_space:
             dir += '.natural_space'
+            cv_dir += '.natural_space'
 
         parameters = []
 
@@ -310,16 +321,25 @@ class Subject(object):
             if cross_validated:
                 keys += ['cvr2']
 
-        mask = self.get_volume_mask(session=session, roi=roi, epi_space=True)
+
+        mask = self.get_volume_mask(session=session, roi=roi, epi_space=epi_space)
         masker = NiftiMasker(mask)
 
         for parameter_key in keys:
             if cross_validated:
-                fn = op.join(self.bids_folder, 'derivatives', dir, f'sub-{self.subject}', f'ses-{session}', 
+                fn = op.join(self.bids_folder, 'derivatives', cv_dir, f'sub-{self.subject}', f'ses-{session}', 
                         'func', f'sub-{self.subject}_ses-{session}_run-{run}_desc-{parameter_key}.optim_space-T1w_pars.nii.gz')
             else:
                 fn = op.join(self.bids_folder, 'derivatives', dir, f'sub-{self.subject}', f'ses-{session}', 
                         'func', f'sub-{self.subject}_ses-{session}_desc-{parameter_key}.optim_space-T1w_pars.nii.gz')
+            
+            pars = pd.Series(masker.fit_transform(fn).ravel())
+            parameters.append(pars)
+
+        if (not cross_validated) & (include_cvr2):
+            keys += ['cvr2']
+            fn = op.join(self.bids_folder, 'derivatives', cv_dir, f'sub-{self.subject}', f'ses-{session}', 
+                    'func', f'sub-{self.subject}_ses-{session}_desc-cvr2.optim_space-T1w_pars.nii.gz')
             
             pars = pd.Series(masker.fit_transform(fn).ravel())
             parameters.append(pars)
@@ -365,8 +385,6 @@ class Subject(object):
             if smoothed:
                 dir += '.smoothed'
 
-            dir += '.natural_space'
-
         else:
             if cross_validated:
                 dir = 'encoding_model.cv.denoise'
@@ -376,58 +394,7 @@ class Subject(object):
             if smoothed:
                 dir += '.smoothed'
 
-            dir += '.natural_space'
-
-        parameters = []
-
-        for parameter_key in parameter_keys:
-            if cross_validated:
-                fn = op.join(self.bids_folder, 'derivatives', dir, f'sub-{self.subject}', f'ses-{session}', 
-                        'func', f'sub-{self.subject}_ses-{session}_run-{run}_desc-{parameter_key}.volume.optim_space-{space}_hemi-{hemi}.func.gii')
-            else:
-                if mapper:
-                    fn = op.join(self.bids_folder, 'derivatives', dir, f'sub-{self.subject}', f'ses-{session}', 
-                            'func', f'sub-{self.subject}_ses-{session}_desc-{parameter_key}.optim_space-{space}_hemi-{hemi}.func.gii')
-                else:
-                    fn = op.join(self.bids_folder, 'derivatives', dir, f'sub-{self.subject}', f'ses-{session}', 
-                            'func', f'sub-{self.subject}_ses-{session}_desc-{parameter_key}.volume.optim_space-{space}_hemi-{hemi}.func.gii')
-
-            pars = pd.Series(surface.load_surf_data(fn))
-            pars.index.name = 'vertex'
-
-            parameters.append(pars)
-
-        return pd.concat(parameters, axis=1, keys=parameter_keys, names=['parameter'])
-
-    def _get_prf_parameter_surf1(self, session, run=None, smoothed=False, cross_validated=False, hemi=None, mask=None, space='fsnative', parameters=None):
-
-        if mask is not None:
-            raise NotImplementedError
-
-        if parameters is None:
-            parameter_keys = ['mu', 'sd', 'r2']
-        else:
-            parameter_keys = parameters
-
-        if hemi is None:
-            prf_l = self._get_prf_parameter_surf1(session, 
-                    run, smoothed, cross_validated, hemi='L',
-                    mask=mask, space=space)
-            prf_r = self._get_prf_parameter_surf1(session, 
-                    run, smoothed, cross_validated, hemi='R',
-                    mask=mask, space=space)
-            
-            return pd.concat((prf_l, prf_r), axis=0, 
-                    keys=pd.Index(['L', 'R'], name='hemi'))
-
-
-        if cross_validated:
-            raise NotImplementedError
-        else:
-            dir = 'encoding_model'
-
-        if smoothed:
-            dir += '.smoothed'
+        dir += '.natural_space'
 
         parameters = []
 
@@ -437,7 +404,7 @@ class Subject(object):
                         'func', f'sub-{self.subject}_ses-{session}_run-{run}_desc-{parameter_key}.volume.optim_space-{space}_hemi-{hemi}.func.gii')
             else:
                 fn = op.join(self.bids_folder, 'derivatives', dir, f'sub-{self.subject}', f'ses-{session}', 
-                        'func', f'sub-{self.subject}_ses-{session}_desc-{parameter_key}.optim_space-{space}_hemi-{hemi}.func.gii')
+                        'func', f'sub-{self.subject}_ses-{session}_desc-{parameter_key}.volume.optim_space-{space}_hemi-{hemi}.func.gii')
 
             pars = pd.Series(surface.load_surf_data(fn))
             pars.index.name = 'vertex'
@@ -445,7 +412,6 @@ class Subject(object):
             parameters.append(pars)
 
         return pd.concat(parameters, axis=1, keys=parameter_keys, names=['parameter'])
-
 
     def get_fmri_events(self, session, runs=None):
 
@@ -458,18 +424,21 @@ class Subject(object):
                 self.bids_folder, f'sub-{self.subject}/ses-{session}/func/sub-{self.subject}_ses-{session}_task-task_run-{run}_events.tsv')))
 
         behavior = pd.concat(behavior, keys=runs, names=['run'])
+        behavior['session'] = session
         behavior = behavior.reset_index().set_index(
-            ['run', 'trial_type'])
+            ['session', 'run', 'trial_type'])
 
 
         stimulus1 = behavior.xs('stimulus 1', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_nr', 'trial_type']]
         stimulus1['duration'] = 0.6
         stimulus1['trial_type'] = stimulus1.trial_nr.map(lambda trial: f'trial_{trial:03d}_n1')
+        stimulus1['event'] = 'n1'
 
         
         stimulus2 = behavior.xs('stimulus 2', 0, 'trial_type', drop_level=False).reset_index('trial_type')[['onset', 'trial_nr', 'trial_type', 'n2']]
         stimulus2['duration'] = 0.6
         stimulus2['trial_type'] = stimulus2.n2.map(lambda n2: f'n2_{int(n2)}')
+        stimulus2['event'] = 'n2'
 
         events = pd.concat((stimulus1, stimulus2)).sort_index()
 
@@ -601,18 +570,21 @@ class Subject(object):
 
         
 
-    def get_blinks(self, session):
+    def get_blinks(self, session, min_duration=0.13, max_duration=0.9):
 
         blinks = self._get_pupil_data(session, 'blinks.tsv')
 
-        blinks.index.set_names(names='n', level=-1, inplace=True)
+        blinks = blinks.loc[(blinks.duration > min_duration) & (blinks.duration < max_duration)]
+
+        blinks.index.set_names(names='ix', level=-1, inplace=True)
+
         return blinks
 
         # blinks.reset_index('duration', inplace=True)
 
         # return blinks[blinks.duration < 0.1]
 
-    def get_saccades(self, session, eyelink_detection=False):
+    def get_saccades(self, session, eyelink_detection=False, min_interval=0.1):
 
         if eyelink_detection:
             suffix = 'saccadesel.tsv'
@@ -620,7 +592,11 @@ class Subject(object):
             suffix = 'saccades.tsv'
 
         saccades = self._get_pupil_data(session, suffix)
-        saccades.index.set_names(names='n', level=-1, inplace=True)
+        saccades['onset_diff'] = saccades.groupby('run')['onset'].diff()
+        saccades = saccades.loc[saccades.onset_diff > min_interval]
+        
+
+        saccades.index.set_names(names='ix', level=-1, inplace=True)
         return saccades
 
         # saccades.reset_index('duration', inplace=True)
@@ -723,6 +699,40 @@ class Subject(object):
 
         return paradigm
 
+
+    def get_decoded_pdf(self, session, mask='npcr', n_voxels=100):
+        
+        if n_voxels == 0:
+            key = 'decoded_pdfs.volume.cv_voxel_selection.denoise.natural_space'
+            pdf = op.join(self.bids_folder, 'derivatives', key, f'sub-{self.subject}', 'func', f'sub-{self.subject}_ses-{session}_mask-{mask}_space-T1w_pars.tsv')
+        else:
+            key = 'decoded_pdfs.volume.denoise.natural_space'
+            pdf = op.join(self.bids_folder, 'derivatives', key, f'sub-{self.subject}', 'func', f'sub-{self.subject}_ses-{session}_mask-{mask}_nvoxels-{n_voxels}_space-T1w_pars.tsv')
+
+        if op.exists(pdf):
+            return pd.read_csv(pdf, sep='\t', index_col=[0])
+        else:
+            print(pdf)
+            return None
+
+    def get_decoding_info(self, session, mask='npcr', n_voxels=100):
+
+        pdf = self.get_decoded_pdf(session, mask=mask, n_voxels=n_voxels) 
+
+        if pdf is not None:
+            pdf.columns = pdf.columns.astype(float)
+
+            E = (pdf*pdf.columns.values[np.newaxis, :] / pdf.sum(1).values[:, np.newaxis]).sum(1)
+            E = pd.Series(np.trapz(pdf*pdf.columns.values[np.newaxis,:], pdf.columns, axis=1), index=pdf.index)
+
+            E = pd.concat((E,), keys=[(self.subject, session, mask, n_voxels)],
+            names=['subject', 'session', 'mask', 'n_voxels', 'trial_nr']).to_frame('E')
+
+            E['sd'] = np.trapz(np.abs(E.values - pdf.columns.astype(float).values[np.newaxis, :]) * pdf, pdf.columns, axis=1)
+
+            return E
+        else:
+            return pd.DataFrame(np.zeros((0, 0)))
 
 
 def get_surf_file(subject, session, run, sourcedata,
@@ -881,6 +891,8 @@ def get_task_paradigm(subject=None, session=None, bids_folder='/data', run=None)
 
     return events
 
+def get_all_pupil_data(bids_folder):
+    return pd.read_parquet(op.join(bids_folder, 'derivatives', 'pupil', 'pupil.parquet'))
 
 def get_task_behavior(subject, session, bids_folder='/data'):
 

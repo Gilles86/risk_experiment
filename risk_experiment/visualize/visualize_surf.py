@@ -7,7 +7,7 @@ from risk_experiment.utils import Subject, get_all_subject_ids
 from utils import get_alpha_vertex
 from scipy import stats as ss
 
-vranges = {'mu':(np.log(5), np.log(80)), 'cvr2':(0.0, 0.2), 'r2':(0.0, 0.2)}
+vranges = {'mu':(5, 80), 'cvr2':(0.0, 0.2), 'r2':(0.0, 0.2)}
 cmaps = {'mu':'nipy_spectral', 'cvr2':'afmhot', 'r2':'afmhot'}
 
 def get_subject_vertices(subject, session, bids_folder, standard_space, thr, smoothed, show_unthresholded_map=False, show_pars=None):
@@ -22,7 +22,12 @@ def get_subject_vertices(subject, session, bids_folder, standard_space, thr, smo
 
     pars = sub.get_prf_parameters_surf(session, space=space, smoothed=smoothed)
 
-    alpha = ss.norm(thr, 0.025).cdf(pars['cvr2'].values)
+    thr1, thr2 = thr
+
+    if session.endswith('2'):
+        alpha = ss.norm(thr1, 0.025).cdf(pars['cvr2'].values)
+    else:
+        alpha = ss.norm(thr2, 0.025).cdf(pars['r2'].values)
 
     ds = {}
 
@@ -54,7 +59,7 @@ def main(subject, session, bids_folder, standard_space=False, thr=-np.inf, smoot
         subjects = [subject]
 
     if show_all_sessions:
-        sessions = ['3t2', '7t2']
+        sessions = ['3t1', '3t2', '7t1', '7t2']
     else:
         sessions = [session]
 
@@ -65,20 +70,21 @@ def main(subject, session, bids_folder, standard_space=False, thr=-np.inf, smoot
         except Exception as e:
             print(f'Problem with subject/sessions {subject}/{session}: {e}')
 
+    print(ds)
     ds = cortex.Dataset(**ds)
 
     cortex.webshow(ds)
 
-    vmax = vranges['mu'][1]
+    vmin, vmax = vranges['mu']
     x = np.linspace(0, 1, 101, True)
     im = plt.imshow(plt.cm.nipy_spectral(x)[np.newaxis, ...],
-            extent=[np.log(5), vmax, 0, 1], aspect=1./10.,
+            extent=[vmin, vmax, 0, 1], aspect='auto',
             origin='lower')
     print(im.get_extent())
 
     ns = np.array([5, 7, 10, 14, 20, 28, 40, 56, 80])
-    ns = ns[ns <= np.exp(vmax)]
-    plt.xticks(np.log(ns), ns)
+    ns = ns[ns <= vmax]
+    plt.xticks(ns, ns)
     print(ns)
     # plt.xlim(np.log(5), np.log(vmax))
     plt.show()
@@ -86,7 +92,7 @@ def main(subject, session, bids_folder, standard_space=False, thr=-np.inf, smoot
 if __name__ == '__main__':
     parser = make_default_parser()
     parser.add_argument('--standard_space', action='store_true')
-    parser.add_argument('--threshold', default=-0.05, type=float)
+    parser.add_argument('--threshold', default=(-0.05, 0.01), type=float, nargs=2)
     parser.add_argument('--smoothed', action='store_true')
     parser.add_argument('--all_subjects', action='store_true')
     parser.add_argument('--all_sessions', action='store_true')

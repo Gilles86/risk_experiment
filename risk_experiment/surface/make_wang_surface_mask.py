@@ -6,6 +6,19 @@ import numpy as np
 import cortex
 
 
+"""
+
+This script assumes there is already an individual Wang atalas 
+in te Freesurfer subject's directory.
+
+This can be achieved by running (something like)
+`docker run -ti --rm -v /data/ds-risk/derivatives/freesurfer:/subjects nben/neuropythy atlas --verbose sub-30`
+
+`docker run -ti --rm -v /data/ds-risk/derivatives/freesurfer:/input nben/occipital_atlas:latest
+
+"""
+
+
 def main(subject, bids_folder):
 
     fn = op.join(bids_folder, 'derivatives', 'freesurfer', 
@@ -26,12 +39,15 @@ def main(subject, bids_folder):
         for hemi in['lh', 'rh']:
 
             pts, poly = cortex.db.get_surf(f'sub-{subject}', 'pia', hemisphere=hemi)
+            print(pts, poly)
             surf = cortex.polyutils.Surface(pts, poly)
 
             im = nb.load(fn.format(hemi=hemi, label='wang15_fplbl', fs_subject=fs_subject))
             prob_mask = surface.load_surf_data(fn.format(hemi=hemi, label='wang15_fplbl', fs_subject=fs_subject))
             # print(prob_mask, op.exists(prob_mask))
             label_mask = (prob_mask[18:24] > 0.05).any(0).astype(np.int16)
+
+            print(label_mask.shape, pts.shape)
 
             ix_mask = np.where(label_mask)[0]
             ss = surf.create_subsurface(label_mask.astype(np.bool))

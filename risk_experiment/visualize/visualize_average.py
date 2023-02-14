@@ -9,7 +9,7 @@ from risk_experiment.utils import get_all_subjects
 from utils import get_alpha_vertex
 from scipy import stats as ss
 
-vranges = {'mu':(np.log(5), np.log(80)), 'cvr2':(0.0, 0.025), 'r2':(0.0, 0.2), 'mu_natural':(5, 80), 'sd':(np.log(2), np.log(12))}
+vranges = {'mu':(5, 80), 'cvr2':(0.0, 0.025), 'r2':(0.0, 0.2), 'mu_natural':(5, 80), 'sd':(2, 12)}
 cmaps = {'mu':'nipy_spectral', 'cvr2':'afmhot', 'r2':'afmhot', 'mu_natural':'nipy_spectral', 
 'sd':'hot'}
 
@@ -28,7 +28,7 @@ threshold_on='r2'):
             print(f'Problem with subject {sub.subject}: {e} ')
     
     pars = pd.concat(pars, keys=[sub.subject for sub in subjects], names=['subject'])
-    pars['mu_natural'] = np.exp(pars['mu'])
+    # pars['mu_natural'] = np.exp(pars['mu'])
 
     if 'cvr2' in pars.columns:
         pars['cvr2'] = np.clip(pars['cvr2'], -0.01, 1)
@@ -68,28 +68,30 @@ def main(sessions, bids_folder, thr=-np.inf, smoothed=False, show_pars=None):
         # sessions = ['3t2', '7t2']
         sessions = ['3t1', '3t2', '7t1', '7t2']
 
-    thresholds = {'3t1':0.075, '3t2':0.035, '7t1':0.1, '7t2':0.05}
+    thresholds = {'3t1':0.065, '3t2':0.04, '7t1':0.065, '7t2':0.04}
     ds = {}
-    for session in sessions:
-        ds.update(get_average_vertex(session, bids_folder, thresholds[session], smoothed, show_pars=show_pars))
+    # for session in sessions:
+    #     ds.update(get_average_vertex(session, bids_folder, thresholds[session], smoothed, show_pars=show_pars))
 
-    ds = cortex.Dataset(**ds)
+    # ds = cortex.Dataset(**ds)
 
-    cortex.webshow(ds)
+    # cortex.webshow(ds)
 
-    # vmax = vranges['mu'][1]
-    # x = np.linspace(0, 1, 101, True)
-    # im = plt.imshow(plt.cm.nipy_spectral(x)[np.newaxis, ...],
-    #         extent=[np.log(5), vmax, 0, 1], aspect=1./10.,
-    #         origin='lower')
-    # print(im.get_extent())
+    vmin, vmax = vranges['mu']
+    x = np.linspace(0, 1, 101, True)
+    
+    # Width is 80 x 1, so 
+    im = plt.imshow(plt.cm.nipy_spectral(x)[np.newaxis, ...],
+            extent=[vmin, vmax, 0, 1], aspect=1.*(vmax-vmin) / 20.,
+            origin='lower')
+    print(im.get_extent())
+    plt.yticks([])
+    plt.tight_layout()
 
-    # ns = np.array([5, 7, 10, 14, 20, 28, 40, 56, 80])
-    # ns = ns[ns <= np.exp(vmax)]
-    # plt.xticks(np.log(ns), ns)
-    # print(ns)
-    # # plt.xlim(np.log(5), np.log(vmax))
-    # plt.show()
+    ns = np.array([5, 7, 10, 14, 20, 28, 40, 56, 80])
+    ns = ns[ns <= vmax]
+    plt.xticks(ns)
+    plt.show()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
