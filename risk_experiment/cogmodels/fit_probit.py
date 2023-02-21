@@ -49,6 +49,8 @@ def build_model(model_label, df, session=None, bids_folder='/data/ds-risk'):
         model = bambi.Model('chose_risky ~ x*median_split_pupil_baseline  + (x*median_split_pupil_baseline|subject)', df.reset_index(), link='probit', family='bernoulli')
     if model_label.startswith('probit_pupil2'):
         model = bambi.Model('chose_risky ~ x*risky_first*median_split_pupil_baseline  + (x*risky_first*median_split_pupil_baseline|subject)', df.reset_index(), link='probit', family='bernoulli')
+    if model_label.startswith('probit_pupil3'):
+        model = bambi.Model('chose_risky ~ x*risky_first*pupil  + (x*risky_first*pupil|subject)', df.reset_index(), link='probit', family='bernoulli')
 
     return model
 
