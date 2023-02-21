@@ -12,7 +12,7 @@ sourcedata='/data/ds-risk'
 
 
 for smoothed in [True]:
-    folder = 'encoding_model'
+    folder = 'encoding_model.denoise.retroicor'
 
     if smoothed:
         folder += '.smoothed'

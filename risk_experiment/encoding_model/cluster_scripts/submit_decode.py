@@ -22,15 +22,16 @@ subjects = [f'{subject:02d}' for subject in range(2, 33)]
 subjects.pop(subjects.index('24'))
 
 sessions = ['3t2', '7t2']
-masks = ['npc', 'wang15ipsL', 'wang15ipsR', 'wang15ips']
+masks = ['npcl', 'npcr']
 
 n_voxels = [100, 250]
 smoothed = [False]
 pca_confounds = [False]
 denoise = [True]
-retroicor = [True]
+retroicor = [False]
+natural_spaces = [True]
 
-for ix, (subject, session, mask, nv, smooth, pcac, dn, retroi) in enumerate(product(subjects, sessions, masks, n_voxels, smoothed, pca_confounds, denoise, retroicor)):
+for ix, (subject, session, mask, nv, smooth, pcac, dn, retroi, natural_space) in enumerate(product(subjects, sessions, masks, n_voxels, smoothed, pca_confounds, denoise, retroicor, natural_spaces)):
 # for ix, (nv, subject, session, mask) in enumerate(missing):
     print(f'*** RUNNING {subject}, {mask}, {nv} {smooth} {pcac}')
 
@@ -43,16 +44,13 @@ for ix, (subject, session, mask, nv, smooth, pcac, dn, retroi) in enumerate(prod
         fh.writelines("#!/bin/bash\n")
         id = f'{subject}.{session}.{mask}.{nv}.{time_str}'
         fh.writelines(f"#SBATCH --job-name=decode_volume.{id}.job\n")
-        fh.writelines(f"#SBATCH --output={os.environ['HOME']}/.out/decode_volume.{id}.txt\n")
-        fh.writelines("#SBATCH --partition=vesta\n")
+        fh.writelines(f"#SBATCH --output={os.environ['HOME']}/data/.out/decode_volume.{id}.txt\n")
         fh.writelines("#SBATCH --time=30:00\n")
         fh.writelines("#SBATCH --ntasks=1\n")
         fh.writelines("#SBATCH --mem=96G\n")
         fh.writelines("#SBATCH --gres gpu:1\n")
-        fh.writelines("module load volta\n")
-        fh.writelines("module load nvidia/cuda11.2-cudnn8.1.0\n")
+        fh.writelines("source /etc/profile.d/lmod.sh\nmodule load gpu\nmodule load cuda\n")
         fh.writelines(". $HOME/init_conda.sh\n")
-        fh.writelines(". $HOME/init_freesurfer.sh\n")
         fh.writelines("conda activate tf2-gpu\n")
         # cmd = f"python $HOME/git/risk_experiment/risk_experiment/encoding_model/decode.py {subject} {session} --bids_folder /scratch/gdehol/ds-risk --n_voxels {nv} --mask {mask}"
         cmd = f"python $HOME/git/risk_experiment/risk_experiment/encoding_model/decode.py {subject} {session} --bids_folder /scratch/gdehol/ds-risk --n_voxels {nv} --mask {mask}"
@@ -68,6 +66,9 @@ for ix, (subject, session, mask, nv, smooth, pcac, dn, retroi) in enumerate(prod
 
         if retroi:
             cmd += ' --retroicor'
+
+        if natural_space:
+            cmd += ' --natural_space'
 
         fh.writelines(cmd)
         print(cmd)

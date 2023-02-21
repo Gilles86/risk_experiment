@@ -154,6 +154,7 @@ RUN apt-get update -qq \
     &&   python -m pip install --no-cache-dir  \
              "nilearn" \
              "nipype" \
+             "fmriprep" \
              "pybids" \
              "nistats" \
              "https://github.com/Gilles86/niworkflows/archive/risk_project.zip" \

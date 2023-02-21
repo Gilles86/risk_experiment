@@ -1,19 +1,18 @@
 #!/bin/bash
-#SBATCH --job-name=task_fit_cv
-#SBATCH --output=/home/cluster/gdehol/logs/fit_nprf_unsmoothed_surf_%A-%a.txt
-#SBATCH --partition=vesta
+#SBATCH --job-name=task_fit_cv_3t_smoothed
+#SBATCH --output=/home/gdehol/logs/task_fit_cv_3t_smoothed_%A-%a.txt
 #SBATCH --ntasks=1
 #SBATCH --mem=96G
 #SBATCH --gres gpu:1
 #SBATCH --time=1:00:00
-module load volta
-module load nvidia/cuda11.2-cudnn8.1.0
+
+source /etc/profile.d/lmod.sh
+module load cuda
+module load gpu
 
 . $HOME/init_conda.sh
-. $HOME/init_freesurfer.sh
-#. $HOME/bashrc.sh
 
 export PARTICIPANT_LABEL=$(printf "%02d" $SLURM_ARRAY_TASK_ID)
 
 source activate tf2-gpu
-python $HOME/git/risk_experiment/risk_experiment/encoding_model/fit_task_cv.py $PARTICIPANT_LABEL 3t2 --bids_folder /scratch/gdehol/ds-risk --smoothed --denoise --retroicor
+python $HOME/git/risk_experiment/risk_experiment/encoding_model/fit_task_cv.py $PARTICIPANT_LABEL 3t2 --bids_folder /scratch/gdehol/ds-risk --denoise --natural_space --smoothed

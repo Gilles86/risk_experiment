@@ -6,19 +6,17 @@ import os.path as op
 import pandas as pd
 from nilearn import surface
 from braincoder.optimize import ResidualFitter
-from braincoder.models import GaussianPRF
+from braincoder.models import GaussianPRF, LogGaussianPRF
 from braincoder.utils import get_rsq
 import numpy as np
 from risk_experiment.utils import Subject
 
 
-stimulus_range = np.linspace(0, 6, 1000)
-# stimulus_range = np.log(np.arange(400))
 mask = 'wang15_ips'
 space = 'T1w'
 
 def main(subject, session, smoothed, pca_confounds, n_voxels=1000, bids_folder='/data',
-denoise=False, retroicor=False, mask='wang15_ips'):
+denoise=False, retroicor=False, mask='wang15_ips', natural_space=False):
 
     target_dir = op.join(bids_folder, 'derivatives', 'decoded_pdfs.volume')
 
@@ -37,6 +35,9 @@ denoise=False, retroicor=False, mask='wang15_ips'):
     if pca_confounds:
         target_dir += '.pca_confounds'
 
+    if natural_space:
+        target_dir += '.natural_space'
+
     target_dir = op.join(target_dir, f'sub-{subject}', 'func')
 
     if not op.exists(target_dir):
@@ -46,6 +47,13 @@ denoise=False, retroicor=False, mask='wang15_ips'):
     paradigm = sub.get_behavior(sessions=session, drop_no_responses=False)
     paradigm['log(n1)'] = np.log(paradigm['n1'])
     paradigm = paradigm.droplevel(['subject', 'session'])
+
+    if natural_space:
+        paradigm = paradigm['n1']
+        stimulus_range = np.arange(5, 28*4+1)
+    else:
+        paradigm = paradigm['log(n1)']
+        stimulus_range = np.linspace(np.log(5), np.log(28*4+1), 200)
 
     data = sub.get_single_trial_volume(session, roi=mask, smoothed=smoothed, pca_confounds=pca_confounds, denoise=denoise, retroicor=retroicor).astype(np.float32)
     data.index = paradigm.index
@@ -62,11 +70,16 @@ denoise=False, retroicor=False, mask='wang15_ips'):
         pars = sub.get_prf_parameters_volume(session, cross_validated=True,
         denoise=denoise, retroicor=retroicor,
                 smoothed=smoothed, pca_confounds=pca_confounds,
-                run=test_run, roi=mask)
+                run=test_run, roi=mask, natural_space=natural_space)
         print(pars)
 
-        model = GaussianPRF(parameters=pars)
-        pred = model.predict(paradigm=train_paradigm['log(n1)'].astype(np.float32))
+
+        if natural_space:
+            model = LogGaussianPRF(parameters=pars)
+        else:
+            model = GaussianPRF(parameters=pars)
+
+        pred = model.predict(paradigm=train_paradigm.astype(np.float32))
 
         r2 = get_rsq(train_data, pred)
         print(r2.describe())
@@ -80,9 +93,9 @@ denoise=False, retroicor=False, mask='wang15_ips'):
 
         model.init_pseudoWWT(stimulus_range, model.parameters)
         residfit = ResidualFitter(model, train_data,
-                                  train_paradigm['log(n1)'].astype(np.float32))
+                                  train_paradigm.astype(np.float32))
 
-        omega, dof = residfit.fit(init_sigma2=10.0,
+        omega, dof = residfit.fit(init_sigma2=1.0,
                 method='t',
                 max_n_iterations=10000)
 
@@ -95,12 +108,11 @@ denoise=False, retroicor=False, mask='wang15_ips'):
                 omega=omega,
                 dof=dof)
 
+        pdf /= np.trapz(pdf, pdf.columns,axis=1)[:, np.newaxis]
+        E = pd.Series(np.trapz(pdf*pdf.columns.values[np.newaxis,:], pdf.columns, axis=1), index=pdf.index)
 
-        print(pdf)
-        E = (pdf * pdf.columns).sum(1) / pdf.sum(1)
-
-        print(pd.concat((E, test_paradigm['log(n1)']), axis=1))
-        print(pingouin.corr(E, test_paradigm['log(n1)']))
+        print(pd.concat((E, test_paradigm), axis=1))
+        print(pingouin.corr(E, test_paradigm))
 
         pdfs.append(pdf)
 
@@ -121,10 +133,12 @@ if __name__ == '__main__':
     parser.add_argument('--retroicor', action='store_true')
     parser.add_argument('--mask', default='npcr')
     parser.add_argument('--n_voxels', default=100, type=int)
+    parser.add_argument('--natural_space', action='store_true')
     args = parser.parse_args()
 
     main(args.subject, args.session, args.smoothed, args.pca_confounds,
             args.n_voxels,
             denoise=args.denoise,
             retroicor=args.retroicor,
-            bids_folder=args.bids_folder, mask=args.mask)
+            bids_folder=args.bids_folder, mask=args.mask,
+            natural_space=args.natural_space)

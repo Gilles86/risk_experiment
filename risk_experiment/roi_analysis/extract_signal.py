@@ -48,6 +48,7 @@ def main(subject, session, roi, bids_folder, single_trial=False):
 
     for run in tqdm(runs):
         d = pd.DataFrame(masker.fit_transform(data[run-1]))
+        d.index.name = 'frame'
 
         if not single_trial:
             d = (d / d.mean()) * 100 - 100

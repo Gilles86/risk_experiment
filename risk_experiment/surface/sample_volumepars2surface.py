@@ -13,26 +13,42 @@ session = '7t2'
 bids_folder = '/data/ds-risk'
 
 def main(subject, session, bids_folder='/data', smoothed=False):
-    parameters = ['r2', 'mu', 'sd']
     spaces = ['fsnative', 'fsaverage']
 
 
-    key = 'encoding_model'
+    if session.endswith('1'):
+        key = 'encoding_model'
+        parameters = ['r2', 'mu', 'sd', 'amplitude', 'baseline']
+    else:
+        parameters = ['r2', 'mu', 'sd', 'cvr2', 'amplitude', 'baseline']
+        key = 'encoding_model.denoise'
+        key_cv = 'encoding_model.cv.denoise'
 
     if smoothed:
         key += '.smoothed'
+
+        if session.endswith('2'):
+            key_cv += '.smoothed'
+
+    key += '.natural_space'
+
+    if session.endswith('2'):
+        key_cv += '.natural_space'
 
     print(key)
     wf = pe.Workflow(name=f'resample_{subject}_{session}_{key.replace(".", "_")}', base_dir='/tmp')
 
 
     for par in parameters:
-        surf_wf = init_bold_surf_wf(4, spaces, True, name=f'sample_{par}')
+        surf_wf = init_bold_surf_wf(mem_gb=4, surface_spaces=spaces, name=f'sample_{par}', medial_surface_nan=True)
         
         inputnode = pe.Node(niu.IdentityInterface(fields=['source_file', 'subjects_dir', 'subject_id', 't1w2fsnative_xfm']),
                        name=f'inputnode_{par}')
 
-        inputnode.inputs.source_file = op.join(bids_folder, f'derivatives/{key}/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_desc-{par}.optim_space-T1w_pars.nii.gz')
+        if par == 'cvr2':
+            inputnode.inputs.source_file = op.join(bids_folder, f'derivatives/{key_cv}/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_desc-{par}.optim_space-T1w_pars.nii.gz')
+        else:
+            inputnode.inputs.source_file = op.join(bids_folder, f'derivatives/{key}/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_desc-{par}.optim_space-T1w_pars.nii.gz')
 
         inputnode.inputs.subjects_dir = op.join(bids_folder, 'derivatives', 'freesurfer')
         inputnode.inputs.subject_id = f'sub-{subject}'
