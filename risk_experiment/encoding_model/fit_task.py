@@ -1,4 +1,3 @@
-
 import argparse
 import pandas as pd
 from braincoder.models import GaussianPRF, LogGaussianPRF
