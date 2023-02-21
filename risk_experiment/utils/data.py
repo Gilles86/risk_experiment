@@ -518,7 +518,7 @@ class Subject(object):
 
         retroicor_confounds = [rc.set_index(self.get_frametimes(session, run)) for run, rc in zip(runs, retroicor_confounds)]
 
-        confounds = pd.concat(retroicor_confounds, 0, keys=runs,
+        confounds = pd.concat(retroicor_confounds, axis=0, keys=runs,
                             names=['run']).sort_index(axis=1)
 
         if confounds.shape[1] > 0:
@@ -527,7 +527,7 @@ class Subject(object):
                                                     slice(n_respiratory))],
                                 confounds .loc[:, ('interaction', slice(n_interaction))]), axis=1)
 
-        confounds = [cf.droplevel('run').loc[:, ~((cf == 0).all(0))] for _, cf in confounds.groupby(['run'])]
+        confounds = [cf.droplevel('run').loc[:, ~((cf == 0).all(0))] for _, cf in confounds.groupby('run')]
 
         return confounds
 
@@ -733,6 +733,22 @@ class Subject(object):
             return E
         else:
             return pd.DataFrame(np.zeros((0, 0)))
+            
+    def get_roi_timeseries(self, session, roi):
+
+        if roi == 'lc':
+            ts1 = self.get_roi_timeseries(session, 'lcL')
+            ts2 = self.get_roi_timeseries(session, 'lcR')
+            ts3 = (ts1['lcL'] + ts2['lcR']).to_frame('lc')
+            return ts3
+
+        else:
+            fn = op.join(self.bids_folder, 'derivatives', 'extracted_signal', f'sub-{self.subject}', f'ses-{session}', 'func', f'sub-{self.subject}_ses-{session}_desc-{roi}_timeseries.tsv')
+            signal = pd.read_csv(fn, sep='\t').rename(columns={'Unnamed: 3':'frame'})
+            signal['subject'] = signal['subject'].map(lambda x: f'{x:02d}')
+            signal = signal.set_index(['subject', 'session', 'run', 'frame'])
+            return signal
+
 
 
 def get_surf_file(subject, session, run, sourcedata,
