@@ -165,6 +165,10 @@ class Subject(object):
         df['prob1'], df['prob2'] = df_['prob1']['stimulus 1'], df_['prob2']['stimulus 1']
         df['p1'], df['p2'] = df['prob1'], df['prob2']
 
+        df['ev1'] = df['n1'] * df['prob1']
+        df['ev2'] = df['n2'] * df['prob2']
+        df['ev_diff'] = df['ev2'] - df['ev1']
+
         df['choice'] = df_[('choice', 'choice')]
         df['risky_first'] = df['prob1'] == 0.55
         df['chose_risky'] = (df['risky_first'] & (df['choice'] == 1.0)) | (~df['risky_first'] & (df['choice'] == 2.0))
