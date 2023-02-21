@@ -39,7 +39,7 @@ def main(subject, session, bids_folder, smoothed=False, retroicor=False):
     if not op.exists(base_dir):
         os.makedirs(base_dir)
 
-    onsets = sub.get_fmri_events(session=session)
+    onsets = sub.get_fmri_events(session=session).loc[session]
     print(onsets)
     tr = 2.3
     n = 160
