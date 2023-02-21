@@ -356,6 +356,10 @@ def get_fake_data(data, group=False):
         permutations += [data['median_split_pupil_baseline'].unique()]
         names += ['median_split_pupil_baseline']
 
+    if 'pupil' in data.columns:
+        permutations += [[data['pupil'].mean()]]
+        names += ['pupil']
+
     print(names)
     fake_data = pd.MultiIndex.from_product(permutations, names=names).to_frame().reset_index(drop=True)
 

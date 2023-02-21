@@ -1,3 +1,4 @@
+import re
 import argparse
 from scipy.stats import zscore
 # from risk_experiment.cogmodels.evidence_model import (EvidenceModel,
@@ -44,20 +45,33 @@ def get_data(model_label, session, bids_folder):
     if model_label.startswith('certainty'):
         df = df[~df.z_uncertainty.isnull()]
 
-    if model_label in ['neural1', 'neural2', 'neural3']:
+    if model_label.startswith('neural'):
         decoding_info = pd.concat([sub.get_decoding_info(session, mask='npcr', n_voxels=0.0) for sub in get_all_subjects(bids_folder)])
         df = df.join(decoding_info)
         df['median_split(sd)'] = df.groupby(['subject', 'session'], group_keys=False)['sd'].apply(lambda d: d>d.quantile()).map({True:'High neural uncertainty', False:'Low neural uncertainty'})
+        df['median_split(E)'] = df.groupby(['subject', 'session', 'n1'], group_keys=False)['E'].apply(lambda d: d>d.quantile()).map({True:'Higher decoded', False:'Lower decoded'})
 
     if model_label.startswith('pupil_baseline'):
         pupil_baseline = pd.read_csv(op.join(bids_folder, 'derivatives', 'pupil', 'model-n1_n2_n', 'pre_stim_baseline.tsv'), sep='\t')
         pupil_baseline['subject'] = pupil_baseline['subject'].map(lambda d: f'{d:02d}')
-        pupil_baseline = pupil_baseline.set_index(['subject', 'trial_nr'])
+        pupil_baseline = pupil_baseline.set_index(['subject', 'run', 'trial_nr'])
         print(df)
         print(pupil_baseline)
         df = df.join(pupil_baseline)
+        df['pupil'] = df.groupby(['subject'], group_keys=False)['pupil'].apply(zscore)
         df['median_split_pupil_baseline'] = df.groupby(['subject'], group_keys=False)['pupil'].apply(lambda d: d>d.quantile()).map({True:'High pre-baseline pupil dilation', False:'Low pre-baseline dilation'})
 
+    if model_label.startswith('subcortical_'):
+        reg = re.compile('subcortical_(?P<roi>.+)')
+        roi = reg.match(model_label).group(1)
+
+        roi_baseline = pd.read_csv(op.join(bids_folder, 'derivatives', 'roi_analysis', 'model-n1_n2_n', roi, f'ses-{session}_pre_stim_baseline.tsv'), sep='\t')
+        roi_baseline['subject'] = roi_baseline['subject'].map(lambda d: f'{d:02d}')
+        roi_baseline = roi_baseline.set_index(['subject', 'run', 'trial_nr'])
+        print(df)
+        print(roi_baseline)
+        df = df.join(roi_baseline)
+        df['median_split_subcortical_baseline'] = df.groupby(['subject'], group_keys=False)[roi].apply(lambda d: d>d.quantile()).map({True:'High pre-baseline subcortical activation', False:'Low pre-baseline subcortical activation'})
 
     return df
 
@@ -80,9 +94,18 @@ def build_model(model_label, df):
     elif model_label == 'neural3':
         model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'sd', 'n2_evidence_sd':'sd', 'risky_prior_mu':'sd',
         'risky_prior_std':'sd', 'safe_prior_mu':'sd', 'safe_prior_std':'sd'}) 
+    elif model_label == 'neural4':
+        model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_mu':'0+E', 'n1_evidence_sd':'sd', 'risky_prior_std':'sd', 'safe_prior_std':'sd'}) 
     elif model_label == 'pupil_baseline1':
         model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'pupil', 'n2_evidence_sd':'pupil', 'risky_prior_mu':'pupil',
         'risky_prior_std':'pupil', 'safe_prior_mu':'pupil', 'safe_prior_std':'pupil'}) 
+    elif model_label == 'pupil_baseline2':
+        model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_mu':'0+pupil', 'n2_evidence_mu':'0+pupil'}) 
+    elif model_label.startswith('subcortical_'):
+        reg = re.compile('subcortical_(?P<roi>.+)')
+        roi = reg.match(model_label).group(1)
+        model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':roi, 'n2_evidence_sd':roi, 'risky_prior_mu':roi,
+        'risky_prior_std':roi, 'safe_prior_mu':roi, 'safe_prior_std':roi}) 
     else:
         raise Exception(f'Do not know model label {model_label}')
 

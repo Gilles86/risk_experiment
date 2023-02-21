@@ -33,7 +33,7 @@ def main(model_label, session, bids_folder='/data/ds-risk', col_wrap=5, plot_tra
         plot_trace(idata, target_folder)
 
     if not only_ppc: 
-        plot_parameters(model, idata,  target_folder, session)
+        plot_parameters(model, idata,  target_folder, session, df)
 
     if not (df.groupby(['subject', 'log(risky/safe)']).size().groupby('subject').size() < 7).all():
         df['log(risky/safe)'] = df.groupby(['subject'],
@@ -51,7 +51,7 @@ def plot_trace(idata, target_folder):
     plt.savefig(op.join(target_folder, 'traces.pdf'))
 
 
-def plot_parameters(model, idata, target_folder, session):
+def plot_parameters(model, idata, target_folder, session, df):
     def plot_parameter(par, regressor, trace, transform=False, **kwargs):
         t = trace.copy()
         print(regressor, t)
@@ -169,10 +169,12 @@ def plot_ppcs(model_label, ppc, df, bids_folder, session, col_wrap, group_only):
         levels += ['subject']
 
     plot_types = [1,2,3, 5]
-    plot_types = [15]
 
     if model_label.startswith('pupil'):
         plot_types += [13, 14]
+
+    if model_label.startswith('subcortical'):
+        plot_types += [16]
 
     if model_label.startswith('uncertainty'):
         plot_types += [6, 7, 8, 9, 10]
