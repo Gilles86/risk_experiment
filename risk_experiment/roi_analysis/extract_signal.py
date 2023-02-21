@@ -31,7 +31,7 @@ def main(subject, session, roi, bids_folder, single_trial=False):
     mask = op.join(bids_folder, f'derivatives', 'masks', f'sub-{subject}', 'anat', f'sub-{subject}_space-T1w_desc-{roi}_mask.nii.gz')
 
     if single_trial:
-        data = op.join(bids_folder, f'derivatives/glm_stim1/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-task_space-T1w_desc-stims1_pe.nii.gz')
+        data = op.join(bids_folder, f'derivatives/glm_stim1.denoise.retroicor/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-task_space-T1w_desc-stims1_pe.nii.gz')
         data = [data]
     else:
         data = op.join(bids_folder, 'derivatives/fmriprep/sub-{subject}/ses-{session}/func/sub-{subject}_ses-{session}_task-task_run-{run}_space-T1w_desc-preproc_bold.nii.gz')
