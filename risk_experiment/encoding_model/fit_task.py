@@ -1,9 +1,8 @@
-
 import argparse
 import pandas as pd
 from braincoder.models import GaussianPRF
 from braincoder.optimize import ParameterFitter
-from risk_experiment.utils import get_surf_data, get_mapper_paradigm, write_gifti, get_target_dir
+from risk_experiment.utils import get_target_dir
 from risk_experiment.utils.surface import transform_data
 from nilearn import surface
 from nilearn.input_data import NiftiMasker
