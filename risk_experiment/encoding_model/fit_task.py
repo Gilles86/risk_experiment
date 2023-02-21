@@ -16,10 +16,14 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
         pca_confounds=False,
         retroicor=False,
         denoise=False, 
+        expected_value=False,
         natural_space=False):
 
     key = 'glm_stim1'
     target_dir = 'encoding_model'
+
+    if expected_value:
+        target_dir += '.ev'
 
     if allow_neg:
         target_dir += '.posneg'
@@ -60,7 +64,12 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
     paradigm = paradigm[paradigm.trial_type == 'stimulus 1'].set_index('trial_nr')
 
     if natural_space:
-        paradigm = paradigm['n1']
+        if expected_value:
+            paradigm['ev1'] = paradigm['prob1'] * paradigm['n1']
+            paradigm = paradigm['ev1']
+        else:
+            paradigm = paradigm['n1']
+
         model = LogGaussianPRF()
         # SET UP GRID
         mus = np.linspace(5, 80, 60, dtype=np.float32)
@@ -120,9 +129,10 @@ if __name__ == '__main__':
     parser.add_argument('--retroicor', action='store_true')
     parser.add_argument('--stimulus', default='1')
     parser.add_argument('--natural_space', action='store_true')
+    parser.add_argument('--expected_value', action='store_true')
     args = parser.parse_args()
 
     main(args.subject, args.session, bids_folder=args.bids_folder, smoothed=args.smoothed,
             pca_confounds=args.pca_confounds,
             stimulus=args.stimulus, denoise=args.denoise, retroicor=args.retroicor,
-            natural_space=args.natural_space)
+            natural_space=args.natural_space, expected_value=args.expected_value)
