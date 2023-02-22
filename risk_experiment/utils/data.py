@@ -738,7 +738,7 @@ class Subject(object):
         else:
             return pd.DataFrame(np.zeros((0, 0)))
             
-    def get_roi_timeseries(self, session, roi):
+    def get_roi_timeseries(self, session, roi, single_trial=False):
 
         if roi == 'lc':
             ts1 = self.get_roi_timeseries(session, 'lcL')
@@ -747,10 +747,13 @@ class Subject(object):
             return ts3
 
         else:
-            fn = op.join(self.bids_folder, 'derivatives', 'extracted_signal', f'sub-{self.subject}', f'ses-{session}', 'func', f'sub-{self.subject}_ses-{session}_desc-{roi}_timeseries.tsv')
+            fn = op.join(self.bids_folder, 'derivatives', 'extracted_signal', f'sub-{self.subject}', f'ses-{session}', 'func', f'sub-{self.subject}_ses-{session}_desc-{roi}{".singletrial" if single_trial else ""}_timeseries.tsv')
             signal = pd.read_csv(fn, sep='\t').rename(columns={'Unnamed: 3':'frame'})
             signal['subject'] = signal['subject'].map(lambda x: f'{x:02d}')
-            signal = signal.set_index(['subject', 'session', 'run', 'frame'])
+            if single_trial:
+                signal = signal.set_index(['subject', 'session', 'trial_nr'])
+            else:
+                signal = signal.set_index(['subject', 'session', 'run', 'frame'])
             return signal
 
 
