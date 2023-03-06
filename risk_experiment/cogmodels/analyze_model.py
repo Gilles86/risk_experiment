@@ -15,17 +15,18 @@ from bauer.models import RiskModel, RiskRegressionModel, RiskLapseModel, RiskLap
 
 
 
-def main(model_label, session, bids_folder='/data/ds-risk', col_wrap=5, plot_traces=False, group_only=False, only_ppc=False):
+def main(model_label, session, bids_folder='/data/ds-risk', col_wrap=5, plot_traces=False, group_only=False, only_ppc=False, roi=None):
 
-    df = get_data(model_label, session, bids_folder)
-    model = build_model(model_label, df)
+    df = get_data(model_label, session, bids_folder, roi=roi)
+    model = build_model(model_label, df, roi=roi)
     model.build_estimation_model()
 
     print(issubclass(type(model), RiskRegressionModel))
 
-    idata = az.from_netcdf(op.join(bids_folder, f'derivatives/cogmodels/ses-{session}_model-{model_label}_trace.netcdf'))
+    roi_str = f'_{roi}' if roi is not None else ''    
+    idata = az.from_netcdf(op.join(bids_folder, 'derivatives', 'cogmodels', f'ses-{session}_model-{model_label}{roi_str}_trace.netcdf'))
 
-    target_folder = op.join(bids_folder, f'derivatives/cogmodels/figures/{model_label}/{session}')
+    target_folder = op.join(bids_folder, f'derivatives/cogmodels/figures/{model_label}{roi_str}/{session}')
     if not op.exists(target_folder):
         os.makedirs(target_folder)
 
@@ -205,7 +206,8 @@ if __name__ == '__main__':
     parser.add_argument('--no_trace', dest='plot_traces', action='store_false')
     parser.add_argument('--only_ppc', dest='only_ppc', action='store_true')
     parser.add_argument('--group_only', dest='group_only', action='store_true')
+    parser.add_argument('--roi', default=None)
     args = parser.parse_args()
 
     main(args.model_label, args.session, bids_folder=args.bids_folder, plot_traces=args.plot_traces, group_only=args.group_only,
-    only_ppc=args.only_ppc)
+    only_ppc=args.only_ppc, roi=args.roi)
