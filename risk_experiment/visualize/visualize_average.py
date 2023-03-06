@@ -70,12 +70,12 @@ def main(sessions, bids_folder, thr=-np.inf, smoothed=False, show_pars=None):
 
     thresholds = {'3t1':0.065, '3t2':0.04, '7t1':0.065, '7t2':0.04}
     ds = {}
-    # for session in sessions:
-    #     ds.update(get_average_vertex(session, bids_folder, thresholds[session], smoothed, show_pars=show_pars))
+    for session in sessions:
+        ds.update(get_average_vertex(session, bids_folder, thresholds[session], smoothed, show_pars=show_pars))
 
-    # ds = cortex.Dataset(**ds)
+    ds = cortex.Dataset(**ds)
 
-    # cortex.webshow(ds)
+    cortex.webshow(ds)
 
     vmin, vmax = vranges['mu']
     x = np.linspace(0, 1, 101, True)
