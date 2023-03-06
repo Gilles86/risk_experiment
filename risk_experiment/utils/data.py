@@ -351,9 +351,7 @@ class Subject(object):
         return pd.concat(parameters, axis=1, keys=keys, names=['parameter'])
 
     def get_prf_parameters_surf(self, session, run=None, smoothed=False, cross_validated=False, hemi=None, mask=None, space='fsnative',
-    parameters=None):
-
-
+    parameters=None, key=None):
         mapper = session.endswith('1')
 
         if mask is not None:
@@ -371,34 +369,38 @@ class Subject(object):
         if hemi is None:
             prf_l = self.get_prf_parameters_surf(session, 
                     run, smoothed, cross_validated, hemi='L',
-                    mask=mask, space=space)
+                    mask=mask, space=space, key=key, parameters=parameters)
             prf_r = self.get_prf_parameters_surf(session, 
                     run, smoothed, cross_validated, hemi='R',
-                    mask=mask, space=space)
+                    mask=mask, space=space, key=key, parameters=parameters)
             
             return pd.concat((prf_l, prf_r), axis=0, 
                     keys=pd.Index(['L', 'R'], name='hemi'))
 
 
-        if mapper:
-            if cross_validated:
-                raise NotImplementedError
+        if key is None:
+            if mapper:
+                if cross_validated:
+                    raise NotImplementedError
+                else:
+                    dir = 'encoding_model'
+
+                if smoothed:
+                    dir += '.smoothed'
+
             else:
-                dir = 'encoding_model'
+                if cross_validated:
+                    dir = 'encoding_model.cv.denoise'
+                else:
+                    dir = 'encoding_model.denoise'
 
-            if smoothed:
-                dir += '.smoothed'
+                if smoothed:
+                    dir += '.smoothed'
 
+            dir += '.natural_space'
         else:
-            if cross_validated:
-                dir = 'encoding_model.cv.denoise'
-            else:
-                dir = 'encoding_model.denoise'
-
-            if smoothed:
-                dir += '.smoothed'
-
-        dir += '.natural_space'
+            dir = key
+            print(dir)
 
         parameters = []
 
@@ -748,7 +750,6 @@ class Subject(object):
         else:
             signal = signal.set_index(['subject', 'session', 'run', 'frame'])
         return signal
-
 
 
 def get_surf_file(subject, session, run, sourcedata,
