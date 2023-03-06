@@ -110,14 +110,12 @@ def main(model_label, session, bids_folder='/data/ds-risk', col_wrap=5, only_ppc
         elif model_label.startswith('probit_neural') or model_label.startswith('probit_pupil'):
             if model_label in ['probit_neural1', 'probit_neural2', 'probit_neural4']:
                 keys = ['sd', 'x:sd']
-            elif model_label in ['probit_neural3', 'probit_neural5', 'probit_neural6', 'probit_neural7']:
+            elif model_label in ['probit_neural3', 'probit_neural5', 'probit_neural6', 'probit_neural7', 'probit_neural8']:
                 keys = ['median_split_sd', 'x:median_split_sd']
-            elif model_label in ['probit_pupil1']:
-                keys = ['median_split_pupil_baseline', 'x:median_split_pupil_baseline']
-            elif model_label in ['probit_pupil2']:
-                keys = ['median_split_pupil_baseline', 'x:median_split_pupil_baseline', 'median_split_pupil_baseline:risky_first']
-            elif model_label in ['probit_pupil3']:
-                keys = ['pupil', 'x:pupil', 'risky_first:pupil', 'x:risky_first:pupil']
+            if model_label.startswith('probit_pupil_median_split'):
+                keys = ['median_split_pupil', 'x:median_split_pupil']
+            elif model_label.startswith('probit_pupil'):
+                keys = ['pupil', 'x:pupil']
 
             for key in keys:
                 trace = idata.posterior[key].to_dataframe()
@@ -137,12 +135,7 @@ def main(model_label, session, bids_folder='/data/ds-risk', col_wrap=5, only_ppc
                                             group_keys=False).apply(cluster_offers)
     ppc = format_bambi_ppc(idata, model, df)
 
-    plot_types = [1,2,3, 5]
-
-    plot_types = []
-
-    if model_label.startswith('probit_pupil'):
-        plot_types += [13, 14]
+    plot_types = [0, 1,2,3, 5]
 
     if model_label.startswith('probit_subcortical'):
         plot_types += [16]

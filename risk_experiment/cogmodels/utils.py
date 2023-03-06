@@ -25,7 +25,9 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
         ppc = ppc.reset_index('log(risky/safe)')
         ppc['log(risky/safe)'] = ppc.index.get_level_values('bin(risky/safe)')
 
-    if plot_type == 1:
+    if plot_type == 0:
+        groupby = ['log(risky/safe)']
+    elif plot_type == 1:
         groupby = ['risky_first', 'log(risky/safe)']
     elif plot_type in [2, 4]:
         groupby = ['risky_first', 'n_safe']
@@ -46,11 +48,11 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
     elif plot_type in [12]:
         groupby = ['risky_first', 'median_split(sd)', 'n_safe']
     elif plot_type in [13]:
-        groupby = ['median_split_pupil_baseline', 'log(risky/safe)']
+        groupby = ['median_split_pupil', 'log(risky/safe)']
     elif plot_type in [14]:
-        groupby = ['risky_first', 'median_split_pupil_baseline', 'n_safe']
+        groupby = ['risky_first', 'median_split', 'n_safe']
     elif plot_type in [15]:
-        groupby = ['risky_first', 'median_split_pupil_baseline', 'log(risky/safe)']
+        groupby = ['risky_first', 'median_split', 'log(risky/safe)']
     elif plot_type in [16]:
         groupby = ['risky_first', 'median_split(sd)', 'log(risky/safe)']
     else:
@@ -78,6 +80,9 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
     if 'n_safe' in groupby:
         ppc_summary['Safe offer'] = ppc_summary['n_safe'].astype(int)
 
+    if 'median_split(sd)' in groupby:
+        ppc_summary['Neural noise'] = ppc_summary['median_split(sd)'].map({False:'Less noisy', True:'More noisy'})
+
     ppc_summary['Prop. chosen risky'] = ppc_summary['chose_risky']
 
     if 'log(risky/safe)' in groupby:
@@ -93,8 +98,12 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
             x = 'Predicted acceptance'
         else:
             x = 'Log-ratio offer'
+    if plot_type == 0:
+        fac = sns.FacetGrid(ppc_summary,
+                            col='subject' if level == 'subject' else None,
+                            col_wrap=col_wrap if level == 'subject' else None)
 
-    if plot_type in [1, 2]:
+    elif plot_type in [1, 2]:
         fac = sns.FacetGrid(ppc_summary,
                             col='subject' if level == 'subject' else None,
                             hue='Order',
@@ -155,50 +164,50 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
 
     elif plot_type == 11:
         fac = sns.FacetGrid(ppc_summary,
-                            hue='median_split(sd)',
+                            hue='Neural noise',
                             col='subject' if level == 'subject' else None,
                             palette=sns.color_palette()[2:],
                             col_wrap=col_wrap if level == 'subject' else None)
     elif plot_type == 12:
         x = 'n_safe'
         fac = sns.FacetGrid(ppc_summary,
-                            hue='median_split(sd)',
+                            hue='Neural noise',
                             col='Order',
                             palette=sns.color_palette()[2:],
                             row='subject' if level == 'subject' else None,)
     elif plot_type == 13:
         fac = sns.FacetGrid(ppc_summary,
-                            hue='median_split_pupil_baseline',
+                            hue='median_split_pupil',
                             col='subject' if level == 'subject' else None,
                             palette=sns.color_palette()[4:],
                             col_wrap=col_wrap if level == 'subject' else None)
     elif plot_type == 14:
         x = 'n_safe'
         fac = sns.FacetGrid(ppc_summary,
-                            hue='median_split_pupil_baseline',
+                            hue='median_split_pupil',
                             col='Order',
                             palette=sns.color_palette()[4:],
                             row='subject' if level == 'subject' else None,)
     elif plot_type == 15:
         fac = sns.FacetGrid(ppc_summary,
-                            hue='median_split_pupil_baseline',
+                            hue='median_split_pupil',
                             col='Order',
                             palette=sns.color_palette()[4:],
                             row='subject' if level == 'subject' else None,)
     elif plot_type == 16:
         fac = sns.FacetGrid(ppc_summary,
-                            hue='median_split(sd)',
+                            hue='Neural noise',
                             col='Order',
                             palette=sns.color_palette()[2:],
                             row='subject' if level == 'subject' else None,)
 
     print("X", x)
-    if plot_type in [1,2,3, 5, 11, 12, 13, 14, 15, 16]:
+    if plot_type in [0, 1,2,3, 5, 11, 12, 13, 14, 15, 16]:
         fac.map_dataframe(plot_prediction, x=x)
         fac.map(plt.scatter, x, 'Prop. chosen risky')
         fac.map(lambda *args, **kwargs: plt.axhline(.5, c='k', ls='--'))
 
-    if plot_type in [1, 3, 5, 11, 13, 15, 16]:
+    if plot_type in [0, 1, 3, 5, 11, 13, 15, 16]:
         if level == 'subject':
             fac.map(lambda *args, **kwargs: plt.axvline(np.log(1./.55), c='k', ls='--'))
         else:
@@ -356,9 +365,17 @@ def get_fake_data(data, group=False):
         permutations += [data['median_split_pupil_baseline'].unique()]
         names += ['median_split_pupil_baseline']
 
+    if 'median_split_pupil' in data.columns:
+        permutations += [data['median_split_pupil'].unique()]
+        names += ['median_split_pupil']
+
     if 'pupil' in data.columns:
         permutations += [[data['pupil'].mean()]]
         names += ['pupil']
+
+    if 'risk_preference' in data.columns:
+        permutations += [['risk seeking', 'risk averse']]
+        names += ['risk_preference']
 
     print(names)
     fake_data = pd.MultiIndex.from_product(permutations, names=names).to_frame().reset_index(drop=True)

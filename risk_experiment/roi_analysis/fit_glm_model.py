@@ -100,7 +100,7 @@ def main(model_label, roi, session, bids_folder):
 
     tcs = grf.get_subjectwise_timecourses()
 
-    tcs.to_csv(op.join(target_dir, 'timeseries.tsv'), sep='\t')
+    tcs.to_csv(op.join(target_dir, f'ses-{session}_timeseries.tsv'), sep='\t')
 
 
 
