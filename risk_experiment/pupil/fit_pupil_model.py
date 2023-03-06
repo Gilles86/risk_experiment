@@ -37,6 +37,15 @@ def main(model_label, bids_folder):
 
         onsets = pd.concat((onsets, n1, n2))
 
+    if 'risk' in model_label:
+        prob1 = events[events.event == 'n1'].join(behavior[['prob1']])[['onset', 'prob1']]
+        prob1 = prob1[prob1.prob1 == .55]
+        prob1['event_type'] = 'risky_n1'
+        prob2 = events[events.event == 'n2'].join(behavior[['prob2']])[['onset', 'prob2']]
+        prob2 = prob2[prob2.prob2 == .55]
+        prob2['event_type'] = 'risky_n2'
+        onsets = pd.concat((onsets, prob1, prob2))
+
     if model_label == 'uncertainty_median_split':
         n1 = events[events.event == 'n1'].join(behavior[['n1', 'median_split_uncertainty']]).rename(columns={'n1':'n'})[['onset', 'n', 'median_split_uncertainty']]
         n1_certain = n1[n1['median_split_uncertainty'] == 'low uncertainty']
@@ -68,6 +77,11 @@ def main(model_label, bids_folder):
     elif model_label == 'n1_n2_n':
         grf.add_event('n1', interval=[-3.5, 6.5], basis_set='dct', n_regressors=12, covariates='n')
         grf.add_event('n2', interval=[-3.5, 6.5], basis_set='dct', n_regressors=12, covariates='n')
+    elif model_label == 'n1_n2_risk_n':
+        grf.add_event('n1', interval=[-3.5, 6.5], basis_set='dct', n_regressors=12, covariates='n')
+        grf.add_event('n2', interval=[-3.5, 6.5], basis_set='dct', n_regressors=12, covariates='n')
+        grf.add_event('risky_n1', interval=[-3.5, 6.5], basis_set='dct', n_regressors=12)
+        grf.add_event('risky_n2', interval=[-3.5, 6.5], basis_set='dct', n_regressors=12)
     elif model_label == 'uncertainty':
         grf.add_event('n1', interval=[-3., 6.5], basis_set='dct', n_regressors=20, covariates=['n', 'z_uncertainty'])
         grf.add_event('n2', interval=[-3., 6.5], basis_set='dct', n_regressors=20, covariates=['n', 'z_uncertainty'])
