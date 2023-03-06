@@ -56,3 +56,4 @@ experiment/settings/*
 *output.nipype
 .job
 .ipynb_checkpoints
+*test*.ipynb
