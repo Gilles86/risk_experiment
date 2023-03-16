@@ -34,7 +34,7 @@ def main(model_label, session, bids_folder='/data/ds-risk', col_wrap=5, plot_tra
         plot_trace(idata, target_folder)
 
     if not only_ppc: 
-        plot_parameters(model, idata,  target_folder, session, df)
+        plot_parameters(model, idata,  target_folder, session, df, model_label)
 
     if not (df.groupby(['subject', 'log(risky/safe)']).size().groupby('subject').size() < 7).all():
         df['log(risky/safe)'] = df.groupby(['subject'],
@@ -52,7 +52,7 @@ def plot_trace(idata, target_folder):
     plt.savefig(op.join(target_folder, 'traces.pdf'))
 
 
-def plot_parameters(model, idata, target_folder, session, df):
+def plot_parameters(model, idata, target_folder, session, df, model_label):
     def plot_parameter(par, regressor, trace, transform=False, **kwargs):
         t = trace.copy()
         print(regressor, t)
@@ -104,10 +104,16 @@ def plot_parameters(model, idata, target_folder, session, df):
 
         plt.close()
 
+    if model_label == '2':
+        pairs, names, palettes = [('n1_evidence_sd', 'n2_evidence_sd')], ['evidence_sd'], [sns.color_palette()]
+    elif model_label.startswith('rnp'):
+        pairs, names, palettes = [], [], []
+    else:
+        pairs, names, palettes = [('n1_evidence_sd', 'n2_evidence_sd'), ('risky_prior_mu', 'safe_prior_mu'), ('risky_prior_std', 'safe_prior_std')], ['evidence_sd', 'prior_mu', 'prior_std'], [sns.color_palette(), sns.color_palette("RdBu", 2), sns.color_palette("RdBu", 2)]
+
 
     # SUBJECTWISE
-    for pair, name, palette in zip([('n1_evidence_sd', 'n2_evidence_sd'), ('risky_prior_mu', 'safe_prior_mu'), ('risky_prior_std', 'safe_prior_std')], ['evidence_sd', 'prior_mu', 'prior_std'],
-    [sns.color_palette(), sns.color_palette("coolwarm", 2), sns.color_palette("coolwarm", 2)]):
+    for pair, name, palette in zip(pairs, names, palettes):
         plt.figure(figsize=(20, 4))
         if type(model) is RiskModel:
             d = pd.concat((idata.posterior[pair[0]].to_dataframe(), idata.posterior[pair[1]].to_dataframe()), keys=pair, names=['Variable']).stack().to_frame('Value')
@@ -122,8 +128,7 @@ def plot_parameters(model, idata, target_folder, session, df):
 
 
     # GROUPWISE
-    for pair, name, palette in zip([('n1_evidence_sd', 'n2_evidence_sd'), ('risky_prior_mu', 'safe_prior_mu'), ('risky_prior_std', 'safe_prior_std')], ['evidence_sd', 'prior_mu', 'prior_std'],
-    [sns.color_palette(), sns.color_palette("RdBu", 2), sns.color_palette("RdBu", 2)]):
+    for pair, name, palette in zip(pairs, names, palettes):
         plt.figure()
         if type(model) is RiskModel:
             d = pd.concat((idata.posterior[pair[0]+'_mu'].to_dataframe(), idata.posterior[pair[1]+'_mu'].to_dataframe()), keys=pair, names=['Variable']).stack().to_frame('Value')
@@ -169,19 +174,19 @@ def plot_ppcs(model_label, ppc, df, bids_folder, session, col_wrap, group_only):
     if not group_only:
         levels += ['subject']
 
-    plot_types = [1,2,3, 5]
+    plot_types = [0, 1,2,3, 5]
 
     if model_label.startswith('pupil'):
-        plot_types += [13, 14]
+        plot_types += [13, 14, 15]
 
     if model_label.startswith('subcortical'):
-        plot_types += [16]
+        plot_types += [17]
 
     if model_label.startswith('uncertainty'):
         plot_types += [6, 7, 8, 9, 10]
 
-    if model_label.startswith('neural'):
-        plot_types += [11, 12]
+    if model_label.startswith('neural') or model_label.startswith('rnp_neural'):
+        plot_types += [11, 12, 16]
 
     for plot_type in plot_types:
         for var_name in ['p', 'll_bernoulli']:

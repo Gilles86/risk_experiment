@@ -4,9 +4,9 @@ import seaborn as sns
 import os
 import os.path as op
 import argparse
-from fit_probit import build_model, get_data
+from risk_experiment.cogmodels.fit_probit import build_model, get_data
 import arviz as az
-from utils import extract_intercept_gamma, plot_ppc, format_bambi_ppc, cluster_offers
+from risk_experiment.cogmodels.utils import extract_intercept_gamma, plot_ppc, format_bambi_ppc, cluster_offers
 import pandas as pd
 
 

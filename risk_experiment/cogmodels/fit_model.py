@@ -7,7 +7,7 @@ from scipy.stats import zscore
 #                                                EvidenceModelDifferentEvidence,
 #                                                EvidenceModelDifferentEvidenceTwoPriors, WoodfordModel)
 
-from bauer.models import RiskModel, RiskRegressionModel, RiskLapseRegressionModel
+from bauer.models import RiskModel, RiskRegressionModel, RiskLapseRegressionModel, RNPRegressionModel
 from risk_experiment.utils.data import get_all_behavior, Subject
 import os
 import os.path as op
@@ -29,6 +29,9 @@ def main(model_label, session, burnin=1500, samples=1000, bids_folder='/data/ds-
     target_accept = 0.9
 
     if model_label == 'certainty_evidence':
+        target_accept = 0.925
+
+    if model_label == '2':
         target_accept = 0.925
 
     model = build_model(model_label, df, roi)
@@ -53,16 +56,30 @@ def get_data(model_label, session, bids_folder, roi):
         df = df.join(decoding_info)
         df['median_split(sd)'] = df.groupby(['subject', 'session'], group_keys=False)['sd'].apply(lambda d: d>d.quantile()).map({True:'High neural uncertainty', False:'Low neural uncertainty'})
         df['median_split(E)'] = df.groupby(['subject', 'session', 'n1'], group_keys=False)['E'].apply(lambda d: d>d.quantile()).map({True:'Higher decoded', False:'Lower decoded'})
+        df['median_split_sd'] = df['median_split(sd)']
 
-    if model_label.startswith('pupil_baseline'):
-        pupil_baseline = pd.read_csv(op.join(bids_folder, 'derivatives', 'pupil', 'model-n1_n2_n', 'pre_stim_baseline.tsv'), sep='\t')
-        pupil_baseline['subject'] = pupil_baseline['subject'].map(lambda d: f'{d:02d}')
-        pupil_baseline = pupil_baseline.set_index(['subject', 'run', 'trial_nr'])
-        print(df)
-        print(pupil_baseline)
-        df = df.join(pupil_baseline)
-        df['pupil'] = df.groupby(['subject'], group_keys=False)['pupil'].apply(zscore)
-        df['median_split_pupil_baseline'] = df.groupby(['subject'], group_keys=False)['pupil'].apply(lambda d: d>d.quantile()).map({True:'High pre-baseline pupil dilation', False:'Low pre-baseline dilation'})
+    elif model_label.startswith('rnp_neural'):
+        decoding_info = pd.concat([sub.get_decoding_info(session, mask='npcr', n_voxels=0.0) for sub in get_all_subjects(bids_folder)])
+        df = df.join(decoding_info)
+        df['median_split(sd)'] = df.groupby(['subject', 'session', 'n1', 'n2'], group_keys=False)['sd'].apply(lambda d: d>d.quantile()).map({True:'High neural uncertainty', False:'Low neural uncertainty'})
+        df['median_split(E)'] = df.groupby(['subject', 'session', 'n1', 'n2'], group_keys=False)['E'].apply(lambda d: d>d.quantile()).map({True:'Higher decoded', False:'Lower decoded'})
+        df['median_split_sd'] = df['median_split(sd)']
+
+    elif model_label.startswith('pupil'):
+        reg = re.compile('pupil.*_(?P<variable>n1_pre|n1_post|n1_postpre|n2_choice)$')
+        variable = reg.match(model_label).group(1)
+        pupil = pd.read_csv(op.join(bids_folder, 'derivatives', 'pupil', 'model-n1_n2_n', 'pupil_pre_post12.tsv'), sep='\t', index_col=[0,1,2,3], dtype={'subject':str})
+        pupil['q(pupil)'] = pupil.groupby(['subject', 'event type', 'prepost'], group_keys=False)['pupil'].apply(lambda x: pd.qcut(x, 5, labels=['q1', 'q2', 'q3', 'q4', 'q5']))
+        if variable == 'n1_pre':
+            pupil = pupil.xs('n1', 0, 'event type').xs('pre', 0, 'prepost')
+        elif variable == 'n1_post':
+            pupil = pupil.xs('n1', 0, 'event type').xs('post', 0, 'prepost')
+        elif variable == 'n1_postpre':
+            pupil = pupil.xs('n1', 0, 'event type').xs('post-pre', 0, 'prepost')
+        elif variable == 'n2_choice':
+            pupil = pupil.xs('n2', 0, 'event type')
+        df = df.join(pupil)
+        df['median_split_pupil'] = df.groupby(['subject', 'n1', 'n2'], group_keys=False)['pupil'].apply(lambda d: d>d.quantile()).map({True:'High pupil dilation', False:'Low pupil dilation'})
 
     if model_label.startswith('subcortical_prestim'):
         if roi is None:
@@ -90,8 +107,20 @@ def get_data(model_label, session, bids_folder, roi):
 def build_model(model_label, df, roi):
     if model_label == '1':
         model = RiskModel(df, 'full')
-    if model_label == '2':
+    elif model_label == '2':
         model = RiskRegressionModel(df, prior_estimate='shared', regressors={'n1_evidence_sd':'risky_first', 'n2_evidence_sd':'risky_first'})
+    elif model_label == 'rnp1':
+        model = RNPRegressionModel(df)
+    elif model_label == 'rnp2':
+        model = RNPRegressionModel(df, regressors={'gamma':'C(n_safe)*risky_first', 'rnp':'C(n_safe)*risky_first'})
+    elif model_label == 'rnp3':
+        model = RNPRegressionModel(df, regressors={'gamma':'0+risky_first', 'rnp':'0+risky_first'})
+    elif model_label == 'rnp_neural1':
+        model = RNPRegressionModel(df, regressors={'gamma':'C(n_safe)*risky_first*median_split_sd', 'rnp':'C(n_safe)*risky_first*median_split_sd'})
+    elif model_label == 'rnp_neural2':
+        model = RNPRegressionModel(df, regressors={'gamma':'median_split_sd', 'rnp':'median_split_sd'})
+    elif model_label == 'rnp_neural3':
+        model = RNPRegressionModel(df, regressors={'gamma':'risky_first*median_split_sd', 'rnp':'risky_first*median_split_sd'})
     elif model_label == 'certainty_full':
         model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'z_uncertainty', 'n2_evidence_sd':'z_uncertainty', 'risky_prior_mu':'z_uncertainty',
         'risky_prior_std':'z_uncertainty', 'safe_prior_mu':'z_uncertainty', 'safe_prior_std':'z_uncertainty'})
@@ -110,11 +139,6 @@ def build_model(model_label, df, roi):
         'risky_prior_std':'sd', 'safe_prior_mu':'sd', 'safe_prior_std':'sd'}) 
     elif model_label == 'neural4':
         model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_mu':'0+E', 'n1_evidence_sd':'sd', 'risky_prior_std':'sd', 'safe_prior_std':'sd'}) 
-    elif model_label == 'pupil_baseline1':
-        model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'pupil', 'n2_evidence_sd':'pupil', 'risky_prior_mu':'pupil',
-        'risky_prior_std':'pupil', 'safe_prior_mu':'pupil', 'safe_prior_std':'pupil'}) 
-    elif model_label == 'pupil_baseline2':
-        model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_mu':'0+pupil', 'n2_evidence_mu':'0+pupil'}) 
     elif model_label.startswith('subcortical_response1'):
         model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':roi, 'n2_evidence_sd':roi, 'risky_prior_mu':roi,
         'risky_prior_std':roi, 'safe_prior_mu':roi, 'safe_prior_std':roi}) 
@@ -123,6 +147,12 @@ def build_model(model_label, df, roi):
     elif model_label.startswith('subcortical_prestim'):
         model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':roi, 'n2_evidence_sd':roi, 'risky_prior_mu':roi,
         'risky_prior_std':roi, 'safe_prior_mu':roi, 'safe_prior_std':roi}) 
+    elif model_label.startswith('pupil'):
+        if model_label.startswith('pupil2'):
+            model = RiskRegressionModel(df, prior_estimate='full', regressors={'risky_prior_std':'pupil', 'safe_prior_std':'pupil'})
+        else:
+            model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'pupil', 'n2_evidence_sd':'pupil', 'risky_prior_mu':'pupil',
+            'risky_prior_std':'pupil', 'safe_prior_mu':'pupil', 'safe_prior_std':'pupil'}) 
     else:
         raise Exception(f'Do not know model label {model_label}')
 

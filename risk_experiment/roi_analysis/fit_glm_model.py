@@ -119,9 +119,8 @@ def get_data(model_label, roi, bids_folder, session='7t2'):
         behavior['sd'] = behavior.groupby('subject', group_keys=False)['sd'].apply(zscore)
         behavior['median_split(sd)'] = behavior.groupby(['subject', 'session'], group_keys=False)['sd'].apply(lambda d: d>d.quantile()).map({True:'High neural uncertainty', False:'Low neural uncertainty'})
     elif model_label.startswith('pupil_baseline'):
-        pupil_baseline = pd.read_csv(op.join(bids_folder, 'derivatives', 'pupil', 'model-n1_n2_n', 'pre_stim_baseline.tsv'), sep='\t')
-        pupil_baseline['subject'] = pupil_baseline['subject'].map(lambda d: f'{d:02d}')
-        pupil_baseline = pupil_baseline.set_index(['subject', 'trial_nr'])
+        pupil = pd.read_csv(op.join(bids_folder, 'derivatives', 'pupil', 'model-n1_n2_n', 'pupil_pre_post12.tsv'), sep='\t', index_col=[0,1,2,3], dtype={'subject':str})
+        pupil_baseline = pupil.xs('n1', 0, 'event type').xs('pre', 0, 'prepost')
         pupil_baseline['pupil'] = pupil_baseline.groupby('subject', group_keys=False)['pupil'].apply(zscore)
         behavior = behavior.join(pupil_baseline)
         print(behavior)

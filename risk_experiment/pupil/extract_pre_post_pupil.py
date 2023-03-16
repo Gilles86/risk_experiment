@@ -44,8 +44,8 @@ def main(model_label, bids_folder):
     grf = nideconv.GroupResponseFitter(pupil['pupil'], onsets=onsets, input_sample_rate=10)
     grf.add_event('saccade', interval=[-0.5, 4.5], basis_set='dct', n_regressors=12)
     grf.add_event('blink', interval=[-0.5, 4.5], basis_set='dct', n_regressors=12)
-    # grf.add_event('n1', interval=[-3.5, 6.5], basis_set='dct', n_regressors=12)
-    # grf.add_event('n2', interval=[-3.5, 6.5], basis_set='dct', n_regressors=12)
+    grf.add_event('n1', interval=[-3.5, 6.5], covariates='n', basis_set='dct', n_regressors=12)
+    grf.add_event('n2', interval=[-3.5, 6.5], covariates='n', basis_set='dct', n_regressors=12)
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")

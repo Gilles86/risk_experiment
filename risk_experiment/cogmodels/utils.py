@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats as ss
 from risk_experiment.utils import get_all_subjects
+from patsy import dmatrix
 
 
 def cluster_offers(d, n=6, key='log(risky/safe)'):
@@ -12,8 +13,9 @@ def cluster_offers(d, n=6, key='log(risky/safe)'):
 
 
 
-def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col_wrap=5):
+def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col_wrap=5, legend=True):
 
+    print(f'Plotting ppc type {plot_type}')
     assert (var_name in ['p', 'll_bernoulli'])
 
     ppc = ppc.xs(var_name, 0, 'variable').copy()
@@ -50,11 +52,13 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
     elif plot_type in [13]:
         groupby = ['median_split_pupil', 'log(risky/safe)']
     elif plot_type in [14]:
-        groupby = ['risky_first', 'median_split', 'n_safe']
+        groupby = ['risky_first', 'median_split_pupil', 'n_safe']
     elif plot_type in [15]:
-        groupby = ['risky_first', 'median_split', 'log(risky/safe)']
+        groupby = ['risky_first', 'median_split_pupil', 'log(risky/safe)']
     elif plot_type in [16]:
         groupby = ['risky_first', 'median_split(sd)', 'log(risky/safe)']
+    elif plot_type in [17]:
+        groupby = ['risky_first', 'median_split_subcortical_baseline', 'log(risky/safe)']
     else:
         raise NotImplementedError
 
@@ -64,15 +68,10 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
     if level == 'subject':
         groupby = ['subject'] + groupby
 
-    # print(ppc)
     ppc_summary = summarize_ppc(ppc, groupby=groupby)
-    print(ppc_summary)
     p = df.groupby(groupby).mean()[['chose_risky']]
-    print(p)
-    # ppc_summary = pd.concat((p, ppc_summary), axis=1).sort_index()
     ppc_summary = ppc_summary.join(p).reset_index()
 
-    print(ppc_summary)
 
     if 'risky_first' in groupby:
         ppc_summary['Order'] = ppc_summary['risky_first'].map({True:'Risky first', False:'Safe first'})
@@ -81,7 +80,7 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
         ppc_summary['Safe offer'] = ppc_summary['n_safe'].astype(int)
 
     if 'median_split(sd)' in groupby:
-        ppc_summary['Neural noise'] = ppc_summary['median_split(sd)'].map({False:'Less noisy', True:'More noisy'})
+        ppc_summary['Neural noise'] = ppc_summary['median_split(sd)']
 
     ppc_summary['Prop. chosen risky'] = ppc_summary['chose_risky']
 
@@ -91,6 +90,7 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
         else:
             ppc_summary['Log-ratio offer'] = ppc_summary['log(risky/safe)']
 
+    print(ppc_summary)
     if plot_type in [2, 7]:
             x = 'Safe offer'
     else:
@@ -123,16 +123,12 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
         else:
             rnp = df.groupby(groupby, group_keys=False).apply(get_rnp).to_frame('rnp')
 
-        print(ppc_summary)
-        print(rnp)
         ppc_summary = ppc_summary.join(rnp)
-        print(ppc_summary)
         fac = sns.FacetGrid(ppc_summary,
                             hue='Order',
                             col='subject' if level == 'subject' else None,
                             col_wrap=col_wrap if level == 'subject' else None)
 
-        print(ppc_summary)
         fac.map_dataframe(plot_prediction, x='Safe offer', y='p_predicted')
         fac.map(plt.scatter, 'Safe offer', 'rnp')
         fac.map(lambda *args, **kwargs: plt.axhline(.55, c='k', ls='--'))
@@ -165,6 +161,7 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
     elif plot_type == 11:
         fac = sns.FacetGrid(ppc_summary,
                             hue='Neural noise',
+                            hue_order=['Low neural uncertainty', 'High neural uncertainty'],
                             col='subject' if level == 'subject' else None,
                             palette=sns.color_palette()[2:],
                             col_wrap=col_wrap if level == 'subject' else None)
@@ -173,6 +170,7 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
         fac = sns.FacetGrid(ppc_summary,
                             hue='Neural noise',
                             col='Order',
+                            hue_order=['Low neural uncertainty', 'High neural uncertainty'],
                             palette=sns.color_palette()[2:],
                             row='subject' if level == 'subject' else None,)
     elif plot_type == 13:
@@ -197,11 +195,17 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
     elif plot_type == 16:
         fac = sns.FacetGrid(ppc_summary,
                             hue='Neural noise',
+                            hue_order=['Low neural uncertainty', 'High neural uncertainty'],
                             col='Order',
                             palette=sns.color_palette()[2:],
                             row='subject' if level == 'subject' else None,)
+    elif plot_type == 17:
+        fac = sns.FacetGrid(ppc_summary,
+                            hue='median_split_subcortical_baseline',
+                            col='Order',
+                            palette=sns.color_palette()[6:],
+                            row='subject' if level == 'subject' else None,)
 
-    print("X", x)
     if plot_type in [0, 1,2,3, 5, 11, 12, 13, 14, 15, 16]:
         fac.map_dataframe(plot_prediction, x=x)
         fac.map(plt.scatter, x, 'Prop. chosen risky')
@@ -215,7 +219,8 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
             plt.xticks([])
 
     
-    fac.add_legend()
+    if legend:
+        fac.add_legend()
 
     return fac
 
@@ -236,7 +241,6 @@ def summarize_ppc(ppc, groupby=None):
     hdi = pd.DataFrame(az.hdi(ppc.T.values), index=ppc.index,
                        columns=['hdi025', 'hdi975'])
 
-    print(hdi)
     return pd.concat((e, hdi), axis=1)
 
 def get_rnp(d):
@@ -265,10 +269,8 @@ def plot_subjectwise_posterior(trace, key, hue=None, ref_value=None, color=None,
 
     if ref_value is not None:
         if isinstance(ref_value, pd.DataFrame):
-            print('yooo')
             d = d.join(ref_value)
 
-    print(d)
 
     if (color is None) and (hue is None):
         color = palette[0]
@@ -277,7 +279,6 @@ def plot_subjectwise_posterior(trace, key, hue=None, ref_value=None, color=None,
     kind='violin', aspect=8, color=color, palette=palette if hue is not None else None)
 
     if ref_value is not None:
-        print('yoooo')
         fac.map(sns.pointplot, 'subject', 'ref_value', color='k')
 
     # if ref_value:
@@ -291,7 +292,6 @@ def plot_groupwise_posterior(trace, key, hue, ref_value, palette=sns.color_palet
 
     if ref_value is not None:
         if isinstance(ref_value, pd.DataFrame):
-            print('yooo')
             d = d.join(ref_value)
         else:
             d['ref_value'] = ref_value
@@ -307,7 +307,6 @@ def plot_groupwise_posterior(trace, key, hue, ref_value, palette=sns.color_palet
     # fac.map(sns.histplot, key+'_mu', stat='density')
 
     if ref_value is not None:
-        print(f'REF VALUE {ref_value}')
         fac.map(lambda *args, **kwargs: plt.axvline(ref_value.values, c='k', ls='--'))
 
     if hue is not None:
@@ -377,7 +376,64 @@ def get_fake_data(data, group=False):
         permutations += [['risk seeking', 'risk averse']]
         names += ['risk_preference']
 
-    print(names)
     fake_data = pd.MultiIndex.from_product(permutations, names=names).to_frame().reset_index(drop=True)
 
     return fake_data
+
+def rnp_get_fake_data(df, terms=['n_safe', 'risky_first', 'median_split_sd']):
+
+    names = terms
+    permutations = [df[term].unique() for term in terms]
+
+    fake_data = pd.MultiIndex.from_product(permutations, names=names).to_frame().reset_index(drop=True)
+
+    fake_data.index.name = 'permutation'
+
+    return fake_data
+
+def rnp_get_group_parameters(model, df, parameter_label, idata, terms=['n_safe', 'risky_first', 'median_split_sd']):
+
+    dm = model.design_matrices[parameter_label]
+    fake_data = rnp_get_fake_data(df, terms=terms)
+    dm_new = dmatrix(dm.design_info, fake_data)
+
+    # chains x samples x len(data)
+    post = idata.posterior[parameter_label+'_mu']
+    post_df = idata.posterior[parameter_label+'_mu'].to_dataframe()
+    pars_ = np.sum(np.asarray(post)[...,  np.newaxis, :] * dm_new[np.newaxis, np.newaxis, ...], -1)
+
+    pars = pd.DataFrame(pars_.ravel(), columns=[parameter_label], index=pd.MultiIndex.from_product([post_df.index.unique('chain'), post_df.index.unique('draw'), fake_data.index.unique()]))
+    pars = pars.join(fake_data)
+    for column in fake_data.columns:
+        pars = pars.set_index(column, append=True)
+
+    return pars
+
+def _rnp_get_subject_parameters(subject, model, df, parameter_label, idata, terms=['n_safe', 'risky_first', 'median_split_sd']):
+
+    dm = model.design_matrices[parameter_label]
+    fake_data = rnp_get_fake_data(df, terms=terms)
+    dm_new = dmatrix(dm.design_info, fake_data)
+
+    subject_ix = model.unique_subjects.get_loc(subject)
+
+    # chains x samples x len(data)
+    post = idata.posterior[parameter_label]
+    post_df = idata.posterior[parameter_label].to_dataframe()
+    pars_ = np.sum(np.asarray(post)[..., subject_ix, np.newaxis, :] * dm_new[np.newaxis, np.newaxis, ...], -1)
+
+    pars = pd.DataFrame(pars_.ravel(), columns=[parameter_label], index=pd.MultiIndex.from_product([post_df.index.unique('chain'), post_df.index.unique('draw'), fake_data.index.unique()]))
+    pars = pars.join(fake_data)
+    for column in fake_data.columns:
+        pars = pars.set_index(column, append=True)
+
+    return pars
+
+def rnp_get_subjectwise_parameters(model, df, parameter_label, idata, terms=['n_safe', 'risky_first', 'median_split_sd']):
+
+    subjects = df.index.unique('subject')
+
+    pars = pd.concat([_rnp_get_subject_parameters(subject, model, df, parameter_label, idata, terms) for subject in subjects],
+                     keys=subjects, names=['subject'])
+
+    return pars

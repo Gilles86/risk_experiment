@@ -728,7 +728,7 @@ class Subject(object):
         if pdf is not None:
             pdf.columns = pdf.columns.astype(float)
 
-            E = (pdf*pdf.columns.values[np.newaxis, :] / pdf.sum(1).values[:, np.newaxis]).sum(1)
+            # E = (pdf*pdf.columns.values[np.newaxis, :] / pdf.sum(1).values[:, np.newaxis]).sum(1)
             E = pd.Series(np.trapz(pdf*pdf.columns.values[np.newaxis,:], pdf.columns, axis=1), index=pdf.index)
 
             E = pd.concat((E,), keys=[(self.subject, session, mask, n_voxels)],
