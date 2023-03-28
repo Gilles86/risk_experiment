@@ -17,7 +17,7 @@ from risk_experiment.utils import get_all_subjects, get_all_subject_ids
 from scipy.stats import zscore
 
 
-def main(model_label, session, burnin=1500, samples=1000, bids_folder='/data/ds-risk', roi=None):
+def main(model_label, session, burnin=1500, samples=1500, bids_folder='/data/ds-risk', roi=None):
 
     df = get_data(model_label, session, bids_folder, roi)
 
@@ -34,9 +34,16 @@ def main(model_label, session, burnin=1500, samples=1000, bids_folder='/data/ds-
     if model_label == '2':
         target_accept = 0.925
 
+    if model_label.startswith('neural3'):
+        target_accept = 0.925
+
+    if model_label.startswith('neural4'):
+        target_accept = 0.925
+
+
     model = build_model(model_label, df, roi)
 
-    trace = model.sample(burnin, samples, target_accept=target_accept)
+    trace = model.sample(draws=samples, tune=burnin, target_accept=target_accept)
 
     roi_str = f'_{roi}' if roi is not None else ''    
 
@@ -44,22 +51,31 @@ def main(model_label, session, burnin=1500, samples=1000, bids_folder='/data/ds-
                  op.join(target_folder, f'ses-{session}_model-{model_label}{roi_str}_trace.netcdf'))
 
 def get_data(model_label, session, bids_folder, roi):
-    df = get_all_behavior(bids_folder=bids_folder)
-    df = df.xs(session, 0, 'session')
+    df = get_all_behavior(sessions=session, bids_folder=bids_folder)
+
     df['choice'] = df['choice'] == 2.0
 
     if model_label.startswith('certainty'):
         df = df[~df.z_uncertainty.isnull()]
 
     if model_label.startswith('neural'):
-        decoding_info = pd.concat([sub.get_decoding_info(session, mask='npcr', n_voxels=0.0) for sub in get_all_subjects(bids_folder)])
+        if session is None:
+            decoding_info_3t = pd.concat([sub.get_decoding_info('3t2', mask='npcr', n_voxels=0.0) for sub in get_all_subjects(bids_folder)])
+            decoding_info_7t = pd.concat([sub.get_decoding_info('7t2', mask='npcr', n_voxels=0.0) for sub in get_all_subjects(bids_folder)])
+            decoding_info = pd.concat((decoding_info_3t, decoding_info_7t))
+        else:
+            decoding_info = pd.concat([sub.get_decoding_info(session, mask='npcr', n_voxels=0.0) for sub in get_all_subjects(bids_folder)])
+
         df = df.join(decoding_info)
+        decoding_info['sd'] = decoding_info.groupby(['subject', 'session'], group_keys=False)['sd'].apply(zscore)
         df['median_split(sd)'] = df.groupby(['subject', 'session'], group_keys=False)['sd'].apply(lambda d: d>d.quantile()).map({True:'High neural uncertainty', False:'Low neural uncertainty'})
         df['median_split(E)'] = df.groupby(['subject', 'session', 'n1'], group_keys=False)['E'].apply(lambda d: d>d.quantile()).map({True:'Higher decoded', False:'Lower decoded'})
         df['median_split_sd'] = df['median_split(sd)']
 
     elif model_label.startswith('rnp_neural'):
         decoding_info = pd.concat([sub.get_decoding_info(session, mask='npcr', n_voxels=0.0) for sub in get_all_subjects(bids_folder)])
+        decoding_info['sd'] = decoding_info.groupby('subject')['sd'].apply(zscore)
+
         df = df.join(decoding_info)
         df['median_split(sd)'] = df.groupby(['subject', 'session', 'n1', 'n2'], group_keys=False)['sd'].apply(lambda d: d>d.quantile()).map({True:'High neural uncertainty', False:'Low neural uncertainty'})
         df['median_split(E)'] = df.groupby(['subject', 'session', 'n1', 'n2'], group_keys=False)['E'].apply(lambda d: d>d.quantile()).map({True:'Higher decoded', False:'Lower decoded'})
@@ -98,8 +114,12 @@ def get_data(model_label, session, bids_folder, roi):
         subjects = get_all_subjects(bids_folder)
         roi_responses = pd.concat([sub.get_roi_timeseries(session, roi, single_trial=True) for sub in subjects])
         df = df.join(roi_responses)
+        df[roi] = df[roi].groupby(['subject', 'session']).apply(zscore)
         print(df)
         df['median_split_subcortical_baseline'] = df.groupby(['subject'], group_keys=False)[roi].apply(lambda d: d>d.quantile()).map({True:'High pre-baseline subcortical activation', False:'Low pre-baseline subcortical activation'})
+
+    if model_label.startswith('neural32') or model_label.startswith('neural33') or model_label.startswith('12') or model_label.startswith('43'):
+        df['session'] = df.index.get_level_values('session')
 
 
     return df
@@ -109,6 +129,9 @@ def build_model(model_label, df, roi):
         model = RiskModel(df, 'full')
     elif model_label == '2':
         model = RiskRegressionModel(df, prior_estimate='shared', regressors={'n1_evidence_sd':'risky_first', 'n2_evidence_sd':'risky_first'})
+    elif model_label == '12':
+        model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'session', 'n2_evidence_sd':'session', 'risky_prior_mu':'session',
+        'risky_prior_std':'session', 'safe_prior_mu':'session', 'safe_prior_std':'session'})
     elif model_label == 'rnp1':
         model = RNPRegressionModel(df)
     elif model_label == 'rnp2':
@@ -138,7 +161,20 @@ def build_model(model_label, df, roi):
         model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'sd', 'n2_evidence_sd':'sd', 'risky_prior_mu':'sd',
         'risky_prior_std':'sd', 'safe_prior_mu':'sd', 'safe_prior_std':'sd'}) 
     elif model_label == 'neural4':
-        model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_mu':'0+E', 'n1_evidence_sd':'sd', 'risky_prior_std':'sd', 'safe_prior_std':'sd'}) 
+        model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'sd', 'n2_evidence_sd':'sd', 'risky_prior_mu':'sd',
+        'risky_prior_std':'sd+sd:risky_first', 'safe_prior_mu':'sd', 'safe_prior_std':'sd+sd:risky_first'}) 
+    elif model_label == 'neural32':
+        model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'sd*session', 'n2_evidence_sd':'sd*session', 'risky_prior_mu':'sd*session',
+        'risky_prior_std':'sd*session', 'safe_prior_mu':'sd*session', 'safe_prior_std':'sd*session'}) 
+    elif model_label == 'neural33':
+        model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'sd+session', 'n2_evidence_sd':'sd+session', 'risky_prior_mu':'sd+session',
+        'risky_prior_std':'sd+session', 'safe_prior_mu':'sd+session', 'safe_prior_std':'sd+session'}) 
+    elif model_label == 'neural33_null':
+        model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'session', 'n2_evidence_sd':'session', 'risky_prior_mu':'session',
+        'risky_prior_std':'session', 'safe_prior_mu':'session', 'safe_prior_std':'session'}) 
+    elif model_label == 'neural43':
+        model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'sd+session', 'n2_evidence_sd':'sd+session', 'risky_prior_mu':'sd+session',
+        'risky_prior_std':'sd+session', 'safe_prior_mu':'sd+sd:risky_first+session', 'safe_prior_std':'sd+sd:risky_first+session'}) 
     elif model_label.startswith('subcortical_response1'):
         model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':roi, 'n2_evidence_sd':roi, 'risky_prior_mu':roi,
         'risky_prior_std':roi, 'safe_prior_mu':roi, 'safe_prior_std':roi}) 
@@ -163,7 +199,7 @@ def build_model(model_label, df, roi):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('model_label', default=None)
-    parser.add_argument('session', default=None)
+    parser.add_argument('session', nargs='?', default=None)
     parser.add_argument('--roi', default=None)
     parser.add_argument('--bids_folder', default='/data/ds-risk')
     args = parser.parse_args()

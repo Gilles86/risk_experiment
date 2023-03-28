@@ -24,9 +24,14 @@ def main(model_label, session, bids_folder='/data/ds-risk', col_wrap=5, plot_tra
     print(issubclass(type(model), RiskRegressionModel))
 
     roi_str = f'_{roi}' if roi is not None else ''    
-    idata = az.from_netcdf(op.join(bids_folder, 'derivatives', 'cogmodels', f'ses-{session}_model-{model_label}{roi_str}_trace.netcdf'))
+    session_str = f'/ses-{session}' if roi is not None else ''
 
-    target_folder = op.join(bids_folder, f'derivatives/cogmodels/figures/{model_label}{roi_str}/{session}')
+    if session is None:
+        idata = az.from_netcdf(op.join(bids_folder, 'derivatives', 'cogmodels', f'model-{model_label}{roi_str}_trace.netcdf'))
+    else:
+        idata = az.from_netcdf(op.join(bids_folder, 'derivatives', 'cogmodels', f'ses-{session}_model-{model_label}{roi_str}_trace.netcdf'))
+
+    target_folder = op.join(bids_folder, f'derivatives/cogmodels/figures/{model_label}{roi_str}{session_str}')
     if not op.exists(target_folder):
         os.makedirs(target_folder)
 
@@ -40,6 +45,10 @@ def main(model_label, session, bids_folder='/data/ds-risk', col_wrap=5, plot_tra
         df['log(risky/safe)'] = df.groupby(['subject'],
                                         group_keys=False).apply(cluster_offers)
 
+    if 'session' in df.columns:
+        df = df.droplevel('session', axis=0)
+
+    print(df)
     ppc = model.ppc(trace=idata.sel(draw=slice(None, None, 10)), data=df)
 
     # "Chose risky" vs "chose 2nd option coding"
@@ -191,7 +200,10 @@ def plot_ppcs(model_label, ppc, df, bids_folder, session, col_wrap, group_only):
     for plot_type in plot_types:
         for var_name in ['p', 'll_bernoulli']:
             for level in ['subject', 'group']:
-                target_folder = op.join(bids_folder, 'derivatives', 'cogmodels', 'figures', model_label, session, level, var_name)
+                if session:
+                    target_folder = op.join(bids_folder, 'derivatives', 'cogmodels', 'figures', model_label, session, level, var_name)
+                else:
+                    target_folder = op.join(bids_folder, 'derivatives', 'cogmodels', 'figures', model_label, level, var_name)
 
                 if not op.exists(target_folder):
                     os.makedirs(target_folder)
@@ -206,7 +218,7 @@ def plot_ppcs(model_label, ppc, df, bids_folder, session, col_wrap, group_only):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('model_label', default=None)
-    parser.add_argument('session', default=None)
+    parser.add_argument('session', nargs='?', default=None)
     parser.add_argument('--bids_folder', default='/data/ds-risk')
     parser.add_argument('--no_trace', dest='plot_traces', action='store_false')
     parser.add_argument('--only_ppc', dest='only_ppc', action='store_true')

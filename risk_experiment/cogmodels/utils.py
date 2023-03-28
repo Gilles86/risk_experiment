@@ -372,9 +372,16 @@ def get_fake_data(data, group=False):
         permutations += [[data['pupil'].mean()]]
         names += ['pupil']
 
+    if 'median_split_subcortical_response' in data.columns:
+        permutations += [data['median_split_subcortical_response'].unique()]
+        names += ['median_split_subcortical_response']
+
     if 'risk_preference' in data.columns:
         permutations += [['risk seeking', 'risk averse']]
         names += ['risk_preference']
+
+    permutations += [data['session'].unique()]
+    names += ['session']
 
     fake_data = pd.MultiIndex.from_product(permutations, names=names).to_frame().reset_index(drop=True)
 

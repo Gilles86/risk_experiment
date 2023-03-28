@@ -16,9 +16,13 @@ def main(model_label, session, bids_folder='/data/ds-risk', col_wrap=5, only_ppc
     df = get_data(model_label, session)
     model = build_model(model_label, df)
 
-    idata = az.from_netcdf(op.join(bids_folder, f'derivatives/cogmodels/model-{model_label}_ses-{session}_trace.netcdf'))
+    if session is None:
+        idata = az.from_netcdf(op.join(bids_folder, f'derivatives/cogmodels/model-{model_label}_trace.netcdf'))
+        target_folder = op.join(bids_folder, f'derivatives/cogmodels/figures/{model_label}')
+    else:
+        idata = az.from_netcdf(op.join(bids_folder, f'derivatives/cogmodels/model-{model_label}_ses-{session}_trace.netcdf'))
+        target_folder = op.join(bids_folder, f'derivatives/cogmodels/figures/{model_label}/ses-{session}')
 
-    target_folder = op.join(bids_folder, f'derivatives/cogmodels/figures/{model_label}/ses-{session}')
     if not op.exists(target_folder):
         os.makedirs(target_folder)
 
@@ -149,17 +153,28 @@ def main(model_label, session, bids_folder='/data/ds-risk', col_wrap=5, only_ppc
     for plot_type in plot_types:
         for var_name in ['p', 'll_bernoulli']:
             for level in ['group', 'subject']:
-                target_folder = op.join(bids_folder, 'derivatives', 'cogmodels', 'figures', model_label, f'ses-{session}', level, var_name)
+                if session is None:
+                    target_folder = op.join(bids_folder, 'derivatives', 'cogmodels', 'figures', model_label, level, var_name)
+                else:
+                    target_folder = op.join(bids_folder, 'derivatives', 'cogmodels', 'figures', model_label, f'ses-{session}', level, var_name)
 
                 if not op.exists(target_folder):
                     os.makedirs(target_folder)
 
                 fig = plot_ppc(df, ppc, level=level, plot_type=plot_type, var_name=var_name, col_wrap=col_wrap)
 
-                fn = f'{level}_ses-{session}_plot-{plot_type}_model-{model_label}_pred.pdf'
+                if session is None:
+                    fn = f'{level}_plot-{plot_type}_model-{model_label}_pred.pdf'
+                else:
+                    fn = f'{level}_ses-{session}_plot-{plot_type}_model-{model_label}_pred.pdf'
+
                 fig.savefig(op.join(target_folder, fn))
 
-                fn = f'{level}_ses-{session}_plot-{plot_type}_model-{model_label}_pred.png'
+                if session is None:
+                    fn = f'{level}_plot-{plot_type}_model-{model_label}_pred.pdf'
+                else:
+                    fn = f'{level}_ses-{session}_plot-{plot_type}_model-{model_label}_pred.pdf'
+
                 fig.savefig(op.join(target_folder, fn))
 
 def get_rnp(intercept, gamma):
@@ -172,7 +187,7 @@ def get_rnp(intercept, gamma):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('model_label', default=None)
-    parser.add_argument('session')
+    parser.add_argument('session', nargs='?', default=None)
     parser.add_argument('--bids_folder', default='/data/ds-risk')
     parser.add_argument('--only_ppc', action='store_true')
     args = parser.parse_args()
