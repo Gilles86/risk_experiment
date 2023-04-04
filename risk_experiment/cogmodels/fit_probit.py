@@ -42,7 +42,9 @@ def build_model(model_label, df, session=None, bids_folder='/data/ds-risk', roi=
     elif model_label == 'probit_order':
         model = bambi.Model('chose_risky ~ x*risky_first  + (x*risky_first|subject)', df.reset_index(), link='probit', family='bernoulli')
     elif model_label == 'probit_full':
-        model = bambi.Model('chose_risky ~ x*risky_first*n_safe  + (x*risky_first*n_safe|subject)', df.reset_index(), link='probit', family='bernoulli')
+        model = bambi.Model('chose_risky ~ x*risky_first*C(n_safe)  + (x*risky_first*C(n_safe)|subject)', df.reset_index(), link='probit', family='bernoulli')
+    elif model_label == 'probit_full_session':
+        model = bambi.Model('chose_risky ~ x*risky_first*C(n_safe) + x*session  + (x*risky_first*C(n_safe) + x*session|subject)', df.reset_index(), link='probit', family='bernoulli')
     elif model_label == 'probit_neural1':
         model = bambi.Model('chose_risky ~ x*risky_first*C(n_safe)*sd + (x*risky_first*C(n_safe)*sd|subject)', df.reset_index(), link='probit', family='bernoulli')
     elif model_label.startswith('probit_neural2'):
