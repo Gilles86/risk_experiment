@@ -34,6 +34,9 @@ def main(model_label, session, burnin=1500, samples=1500, bids_folder='/data/ds-
     if model_label == '2':
         target_accept = 0.925
 
+    if model_label == '222':
+        target_accept = 0.925
+
     if model_label.startswith('neural3'):
         target_accept = 0.925
 
@@ -47,8 +50,12 @@ def main(model_label, session, burnin=1500, samples=1500, bids_folder='/data/ds-
 
     roi_str = f'_{roi}' if roi is not None else ''    
 
-    az.to_netcdf(trace,
-                 op.join(target_folder, f'ses-{session}_model-{model_label}{roi_str}_trace.netcdf'))
+    if session is None:
+        az.to_netcdf(trace,
+                        op.join(target_folder, f'model-{model_label}{roi_str}_trace.netcdf'))
+    else:
+        az.to_netcdf(trace,
+                        op.join(target_folder, f'ses-{session}_model-{model_label}{roi_str}_trace.netcdf'))
 
 def get_data(model_label, session, bids_folder, roi):
     df = get_all_behavior(sessions=session, bids_folder=bids_folder)
@@ -118,7 +125,7 @@ def get_data(model_label, session, bids_folder, roi):
         print(df)
         df['median_split_subcortical_baseline'] = df.groupby(['subject'], group_keys=False)[roi].apply(lambda d: d>d.quantile()).map({True:'High pre-baseline subcortical activation', False:'Low pre-baseline subcortical activation'})
 
-    if model_label.startswith('neural32') or model_label.startswith('neural33') or model_label.startswith('12') or model_label.startswith('43'):
+    if model_label.startswith('neural32') or model_label.startswith('neural33') or model_label.startswith('12') or model_label.startswith('42') or model_label.startswith('222') or model_label.startswith('neural55'):
         df['session'] = df.index.get_level_values('session')
 
 
@@ -129,6 +136,18 @@ def build_model(model_label, df, roi):
         model = RiskModel(df, 'full')
     elif model_label == '2':
         model = RiskRegressionModel(df, prior_estimate='shared', regressors={'n1_evidence_sd':'risky_first', 'n2_evidence_sd':'risky_first'})
+    elif model_label == '22':
+        model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'risky_first', 'n2_evidence_sd':'risky_first'})
+    elif model_label == '222':
+        model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'risky_first*session', 'n2_evidence_sd':'risky_first*session',
+        'risky_prior_std':'session', 'safe_prior_mu':'session', 'safe_prior_std':'session'})
+    elif model_label == '3':
+        model = RiskModel(df, 'full', incorporate_probability='before_inference')
+    elif model_label == '4':
+        model = RiskModel(df, prior_estimate='shared')
+    elif model_label == '42':
+        model = RiskRegressionModel(df, prior_estimate='shared', regressors={'n1_evidence_sd':'session', 'n2_evidence_sd':'session', 'prior_mu':'session',
+        'prior_std':'session',})
     elif model_label == '12':
         model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'session', 'n2_evidence_sd':'session', 'risky_prior_mu':'session',
         'risky_prior_std':'session', 'safe_prior_mu':'session', 'safe_prior_std':'session'})
@@ -178,6 +197,9 @@ def build_model(model_label, df, roi):
     elif model_label.startswith('subcortical_response1'):
         model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':roi, 'n2_evidence_sd':roi, 'risky_prior_mu':roi,
         'risky_prior_std':roi, 'safe_prior_mu':roi, 'safe_prior_std':roi}) 
+    elif model_label == 'neural55':
+        model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'sd+risky_first*session', 'n2_evidence_sd':'sd+risky_first*session',
+        'risky_prior_std':'sd+session', 'safe_prior_mu':'sd+session', 'safe_prior_std':'sd+session'})
     elif model_label.startswith('subcortical_response2'):
         model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':roi, 'n2_evidence_sd':roi})
     elif model_label.startswith('subcortical_prestim'):

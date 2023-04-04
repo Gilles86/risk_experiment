@@ -113,7 +113,7 @@ def plot_parameters(model, idata, target_folder, session, df, model_label):
 
         plt.close()
 
-    if model_label == '2':
+    if (model_label == '2') or (model_label.startswith('4')):
         pairs, names, palettes = [('n1_evidence_sd', 'n2_evidence_sd')], ['evidence_sd'], [sns.color_palette()]
     elif model_label.startswith('rnp'):
         pairs, names, palettes = [], [], []
