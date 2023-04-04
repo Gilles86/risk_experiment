@@ -24,7 +24,7 @@ def main(model_label, session, bids_folder='/data/ds-risk', col_wrap=5, plot_tra
     print(issubclass(type(model), RiskRegressionModel))
 
     roi_str = f'_{roi}' if roi is not None else ''    
-    session_str = f'/ses-{session}' if roi is not None else ''
+    session_str = f'/ses-{session}' if session is not None else ''
 
     if session is None:
         idata = az.from_netcdf(op.join(bids_folder, 'derivatives', 'cogmodels', f'model-{model_label}{roi_str}_trace.netcdf'))
