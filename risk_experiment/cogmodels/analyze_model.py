@@ -11,7 +11,7 @@ import numpy as np
 import seaborn as sns
 from bauer.utils.bayes import softplus, logistic
 from utils import plot_ppc, cluster_offers
-from bauer.models import RiskModel, RiskRegressionModel, RiskLapseModel, RiskLapseRegressionModel, RegressionModel
+from bauer.models import RiskModel, RiskRegressionModel, RiskLapseModel, RiskLapseRegressionModel, RegressionModel, ExpectedUtilityRiskModel, ExpectedUtilityRiskRegressionModel
 
 
 
@@ -96,13 +96,13 @@ def plot_parameters(model, idata, target_folder, session, df, model_label):
 
         trace = idata.posterior[par+'_mu'].to_dataframe()
 
-        if type(model) in [RiskModel, RiskLapseModel]:
+        if type(model) in [RiskModel, RiskLapseModel, ExpectedUtilityRiskModel]:
             plt.figure()
             plot_parameter(par, 'Intercept', trace, transform=False)
             plt.savefig(op.join(target_folder, f'group_par-{par}.Intercept.pdf'))
             plt.savefig(op.join(target_folder, f'group_par-{par}.Intercept.png'))
             plt.close()
-        elif type(model) in [RiskRegressionModel, RiskLapseRegressionModel]:
+        elif type(model) in [RiskRegressionModel, RiskLapseRegressionModel, ExpectedUtilityRiskRegressionModel]:
             for regressor, t in trace.groupby(par+'_regressors'):
                 plt.figure()
                 plot_parameter(par, regressor, t, transform=True)
@@ -151,8 +151,7 @@ def plot_parameters(model, idata, target_folder, session, df, model_label):
             plt.savefig(op.join(target_folder, f'group_par-{name}.Intercept.png'))
             plt.close()
 
-        elif issubclass(type(model), RegressionModel):
-
+        elif type(model) in [RiskRegressionModel, RiskLapseRegressionModel]:
             print('YOOOO')
 
             p1, p2 = idata.posterior[pair[0]+'_mu'].to_dataframe(), idata.posterior[pair[1]+'_mu'].to_dataframe()

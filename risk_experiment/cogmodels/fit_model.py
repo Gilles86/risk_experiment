@@ -1,13 +1,7 @@
 import re
 import argparse
 from scipy.stats import zscore
-# from risk_experiment.cogmodels.evidence_model import (EvidenceModel,
-#                                                EvidenceModelTwoPriors, EvidenceModelGauss, EvidenceModelDiminishingUtility,
-#                                                EvidenceModelTwoPriorsDiminishingUtility,
-#                                                EvidenceModelDifferentEvidence,
-#                                                EvidenceModelDifferentEvidenceTwoPriors, WoodfordModel)
-
-from bauer.models import RiskModel, RiskRegressionModel, RiskLapseRegressionModel, RNPRegressionModel
+from bauer.models import RiskModel, RiskRegressionModel, RiskLapseRegressionModel, RNPRegressionModel, ExpectedUtilityRiskRegressionModel, ExpectedUtilityRiskModel
 from risk_experiment.utils.data import get_all_behavior, Subject
 import os
 import os.path as op
@@ -93,6 +87,7 @@ def get_data(model_label, session, bids_folder, roi):
         variable = reg.match(model_label).group(1)
         pupil = pd.read_csv(op.join(bids_folder, 'derivatives', 'pupil', 'model-n1_n2_n', 'pupil_pre_post12.tsv'), sep='\t', index_col=[0,1,2,3], dtype={'subject':str})
         pupil['q(pupil)'] = pupil.groupby(['subject', 'event type', 'prepost'], group_keys=False)['pupil'].apply(lambda x: pd.qcut(x, 5, labels=['q1', 'q2', 'q3', 'q4', 'q5']))
+        pupil['pupil2'] = pupil['pupil']**2
         if variable == 'n1_pre':
             pupil = pupil.xs('n1', 0, 'event type').xs('pre', 0, 'prepost')
         elif variable == 'n1_post':
@@ -105,27 +100,48 @@ def get_data(model_label, session, bids_folder, roi):
         df['median_split_pupil'] = df.groupby(['subject', 'n1', 'n2'], group_keys=False)['pupil'].apply(lambda d: d>d.quantile()).map({True:'High pupil dilation', False:'Low pupil dilation'})
 
     if model_label.startswith('subcortical_prestim'):
+
+        if model_label.endswith('pca'):
+            pca = True
+            print('RUNNING PCA single trials')
+        else:
+            pca = False
+
         if roi is None:
             raise Exception('Need to define ROI!')
-        roi_baseline = pd.read_csv(op.join(bids_folder, 'derivatives', 'roi_analysis', 'model-n1_n2_n', roi, f'ses-{session}_pre_stim_baseline.tsv'), sep='\t')
+
+        if pca:
+            roi_baseline = pd.read_csv(op.join(bids_folder, 'derivatives', 'roi_analysis', 'model-n1_n2_n', roi, f'ses-{session}_pre_stim_baseline.tsv'), sep='\t')
+        else:
+            roi_baseline = pd.read_csv(op.join(bids_folder, 'derivatives', 'roi_analysis', 'model-n1_n2_n', roi, f'ses-{session}_pre_stim_baseline.tsv'), sep='\t')
+
         roi_baseline['subject'] = roi_baseline['subject'].map(lambda d: f'{d:02d}')
         roi_baseline = roi_baseline.set_index(['subject', 'run', 'trial_nr'])
         print(df)
         print(roi_baseline)
         df = df.join(roi_baseline)
+        df[roi] = df[roi].groupby(['subject', 'session']).apply(zscore)
         df['median_split_subcortical_baseline'] = df.groupby(['subject'], group_keys=False)[roi].apply(lambda d: d>d.quantile()).map({True:'High subcortical activation', False:'Low subcortical activation'})
 
     if model_label.startswith('subcortical_response'):
+
+        if model_label.endswith('pca'):
+            pca = True
+            print('RUNNING PCA single trials')
+        else:
+            pca = False
+
         if roi is None:
             raise Exception('Need to define ROI!')
+
         subjects = get_all_subjects(bids_folder)
-        roi_responses = pd.concat([sub.get_roi_timeseries(session, roi, single_trial=True) for sub in subjects])
+        roi_responses = pd.concat([sub.get_roi_timeseries(session, roi, single_trial=True, pca=pca) for sub in subjects])
         df = df.join(roi_responses)
         df[roi] = df[roi].groupby(['subject', 'session']).apply(zscore)
         print(df)
-        df['median_split_subcortical_baseline'] = df.groupby(['subject'], group_keys=False)[roi].apply(lambda d: d>d.quantile()).map({True:'High pre-baseline subcortical activation', False:'Low pre-baseline subcortical activation'})
+        df['median_split_subcortical_baseline'] = df.groupby(['subject', 'n1'], group_keys=False)[roi].apply(lambda d: d>d.quantile()).map({True:'High pre-baseline subcortical activation', False:'Low pre-baseline subcortical activation'})
 
-    if model_label.startswith('neural32') or model_label.startswith('neural33') or model_label.startswith('12') or model_label.startswith('42') or model_label.startswith('222') or model_label.startswith('neural55'):
+    if model_label.startswith('neural32') or model_label.startswith('neural33') or model_label.startswith('12') or model_label.startswith('42') or model_label.startswith('222') or model_label.startswith('neural55') or model_label.startswith('eu'):
         df['session'] = df.index.get_level_values('session')
 
 
@@ -151,6 +167,10 @@ def build_model(model_label, df, roi):
     elif model_label == '12':
         model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'session', 'n2_evidence_sd':'session', 'risky_prior_mu':'session',
         'risky_prior_std':'session', 'safe_prior_mu':'session', 'safe_prior_std':'session'})
+    elif model_label == 'eu_session':
+        model = ExpectedUtilityRiskModel(df, probability_distortion=False, save_trialwise_eu=False)
+    elif model_label == 'eu':
+        model = ExpectedUtilityRiskRegressionModel(df, probability_distortion=False, save_trialwise_eu=False, regressors={'alpha':'session', 'sigma':'session',})
     elif model_label == 'rnp1':
         model = RNPRegressionModel(df)
     elif model_label == 'rnp2':
@@ -208,6 +228,9 @@ def build_model(model_label, df, roi):
     elif model_label.startswith('pupil'):
         if model_label.startswith('pupil2'):
             model = RiskRegressionModel(df, prior_estimate='full', regressors={'risky_prior_std':'pupil', 'safe_prior_std':'pupil'})
+        elif model_label.startswith('pupil_quadratic'):
+            model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'pupil+pupil2', 'n2_evidence_sd':'pupil+pupil2', 'risky_prior_mu':'pupil+pupil2',
+            'risky_prior_std':'pupil+pupil2', 'safe_prior_mu':'pupil+pupil2', 'safe_prior_std':'pupil+pupil2'}) 
         else:
             model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'pupil', 'n2_evidence_sd':'pupil', 'risky_prior_mu':'pupil',
             'risky_prior_std':'pupil', 'safe_prior_mu':'pupil', 'safe_prior_std':'pupil'}) 

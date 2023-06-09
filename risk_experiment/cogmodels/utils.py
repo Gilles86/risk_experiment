@@ -376,6 +376,10 @@ def get_fake_data(data, group=False):
         permutations += [data['median_split_subcortical_response'].unique()]
         names += ['median_split_subcortical_response']
 
+    if 'median_split_subcortical_baseline' in data.columns:
+        permutations += [data['median_split_subcortical_baseline'].unique()]
+        names += ['median_split_subcortical_baseline']
+
     if 'risk_preference' in data.columns:
         permutations += [['risk seeking', 'risk averse']]
         names += ['risk_preference']

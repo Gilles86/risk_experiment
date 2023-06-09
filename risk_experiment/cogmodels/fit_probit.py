@@ -79,6 +79,12 @@ def build_model(model_label, df, session=None, bids_folder='/data/ds-risk', roi=
         model = bambi.Model('chose_risky ~ x*risky_first*median_split_subcortical_response  + (x*risky_first*median_split_subcortical_response|subject)', df.reset_index(), link='probit', family='bernoulli')
     elif model_label.startswith('probit_subcortical_response3'):
         model = bambi.Model('chose_risky ~ x*risky_first*median_split_subcortical_response*C(n_safe)  + (x*risky_first*median_split_subcortical_response*C(n_safe)|subject)', df.reset_index(), link='probit', family='bernoulli')
+    elif model_label.startswith('probit_subcortical_prestim_simple'):
+        model = bambi.Model('chose_risky ~ x*median_split_subcortical_baseline + (x*median_split_subcortical_baseline|subject)', df.reset_index(), link='probit', family='bernoulli')
+    elif model_label.startswith('probit_subcortical_prestim_complex'):
+        model = bambi.Model('chose_risky ~ x*risky_first*median_split_subcortical_baseline*C(n_safe) + (x*risky_first*median_split_subcortical_baseline+C(n_safe)|subject) ', df.reset_index(), link='probit', family='bernoulli')
+    elif model_label.startswith('probit_subcortical_prestim'):
+        model = bambi.Model('chose_risky ~ x*risky_first*median_split_subcortical_baseline + (x*risky_first*median_split_subcortical_baseline|subject)', df.reset_index(), link='probit', family='bernoulli')
 
     return model
 
@@ -127,11 +133,40 @@ def get_data(model_label, session, bids_folder='/data/ds-risk', drop_outliers=Fa
     if model_label.startswith('probit_subcortical_response'):
         if roi is None:
             raise Exception('Need to define ROI!')
+
+        if model_label.endswith('pca'):
+            pca = True
+            print('Running with PCA!')
+        else:
+            pca = False
+
         subjects = get_all_subjects(bids_folder)
-        roi_responses = pd.concat([sub.get_roi_timeseries(session, roi, single_trial=True) for sub in subjects])
+        roi_responses = pd.concat([sub.get_roi_timeseries(session, roi, single_trial=True, pca=pca) for sub in subjects])
         df = df.join(roi_responses)
         df['median_split_subcortical_response'] = df.groupby(['subject', 'n1'], group_keys=False)[roi].apply(lambda d: d>d.quantile()).map({True:'High activation', False:'Low activation'})
         # print(df)
+
+    if model_label.startswith('probit_subcortical_prestim'):
+        if model_label.endswith('pca'):
+            pca = True
+            print('Running with PCA!')
+        else:
+            pca = False
+
+        if roi is None:
+            raise Exception('Need to define ROI!')
+
+        if pca:
+            roi_baseline = pd.read_csv(op.join(bids_folder, 'derivatives', 'roi_analysis.pca', 'model-n1_n2_n', roi, f'ses-{session}_pre_stim_baseline.tsv'), sep='\t')
+        else:
+            roi_baseline = pd.read_csv(op.join(bids_folder, 'derivatives', 'roi_analysis', 'model-n1_n2_n', roi, f'ses-{session}_pre_stim_baseline.tsv'), sep='\t')
+
+        roi_baseline['subject'] = roi_baseline['subject'].map(lambda d: f'{d:02d}')
+        roi_baseline = roi_baseline.set_index(['subject', 'run', 'trial_nr'])
+        print(df)
+        print(roi_baseline)
+        df = df.join(roi_baseline)
+        df['median_split_subcortical_baseline'] = df.groupby(['subject'], group_keys=False)[roi].apply(lambda d: d>d.quantile()).map({True:'High subcortical activation', False:'Low subcortical activation'})
 
     return df
 
@@ -145,6 +180,3 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     main(args.model_label, args.session, bids_folder=args.bids_folder, n_cores=args.n_cores, roi=args.roi)
-
-
-

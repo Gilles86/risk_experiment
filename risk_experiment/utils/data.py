@@ -11,6 +11,7 @@ from tqdm.contrib.itertools import product
 from sklearn.decomposition import PCA
 from risk_experiment.utils.math import resample_run
 from scipy.stats import zscore as do_zscore
+from scipy.stats import pearsonr
 
 import os
 import sys
@@ -147,7 +148,7 @@ class Subject(object):
         return get_runs(self.subject, session)
 
     @staticmethod
-    def _cleanup_behavior(df_, drop_no_responses=True):
+    def _cleanup_behavior(df_, drop_no_responses=True, n_risk_bins=6):
         df = df_[[]].copy()
         df['rt'] = df_.loc[:, ('onset', 'choice')] - df_.loc[:, ('onset', 'stimulus 2')]
         df['uncertainty'] = df_.loc[:, ('choice', 'certainty')]
@@ -183,10 +184,10 @@ class Subject(object):
 
         def get_risk_bin(d):
             try: 
-                return pd.qcut(d, 6, range(1, 7))
+                return pd.qcut(d, n_risk_bins, range(1, n_risk_bins+1))
             except Exception as e:
                 n = len(d)
-                ix = np.linspace(1, 7, n, False)
+                ix = np.linspace(1, n_risk_bins+1, n, False)
 
                 d[d.sort_values().index] = np.floor(ix)
                 
@@ -740,7 +741,10 @@ class Subject(object):
         else:
             return pd.DataFrame(np.zeros((0, 0)))
             
-    def get_roi_timeseries(self, session, roi, single_trial=False):
+    def get_roi_timeseries(self, session, roi, single_trial=False, pca=False):
+
+        if pca:
+            return self._get_pca_roi_timeseries(session, roi, single_trial)
 
         fn = op.join(self.bids_folder, 'derivatives', 'extracted_signal', f'sub-{self.subject}', f'ses-{session}', 'func', f'sub-{self.subject}_ses-{session}_desc-{roi}{".singletrial" if single_trial else ""}_timeseries.tsv')
         signal = pd.read_csv(fn, sep='\t').rename(columns={'Unnamed: 3':'frame'})
@@ -750,6 +754,29 @@ class Subject(object):
         else:
             signal = signal.set_index(['subject', 'session', 'run', 'frame'])
         return signal
+
+    def _get_pca_roi_timeseries(self, session, roi, single_trial):
+
+        non_pca_signal = self.get_roi_timeseries(session, roi, single_trial)
+
+        fn = op.join(self.bids_folder, 'derivatives', 'extracted_signal.pca', f'sub-{self.subject}', f'ses-{session}', 'func', f'sub-{self.subject}_ses-{session}_desc-{roi}{".singletrial" if single_trial else ""}_timeseries.tsv')
+
+        signal = pd.read_csv(fn, sep='\t').rename(columns={'Unnamed: 3':'frame'})
+        signal['subject'] = signal['subject'].map(lambda x: f'{x:02d}')
+
+
+        if single_trial:
+            signal = signal.set_index(['subject', 'session', 'trial_nr'])
+        else:
+            signal = signal.set_index(['subject', 'session', 'run', 'frame'])
+
+        r = pearsonr(signal[roi], non_pca_signal[roi])[0]
+
+        signal[roi] *= r
+
+        return signal
+
+
 
 
 def get_surf_file(subject, session, run, sourcedata,

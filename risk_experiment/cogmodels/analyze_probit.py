@@ -111,7 +111,7 @@ def main(model_label, session, bids_folder='/data/ds-risk', col_wrap=5, only_ppc
             rnp_fig.map(lambda *arsg, **kwargs: plt.axhline(0.55, c='k', ls='--'))
 
             plt.axhline(0.55, c='k', ls='--')
-        elif model_label.startswith('probit_neural') or model_label.startswith('probit_pupil'):
+        elif model_label.startswith('probit_neural') or model_label.startswith('probit_pupil') or model_label.startswith('probit_subcortical_prestim'):
             if model_label in ['probit_neural1', 'probit_neural2', 'probit_neural4']:
                 keys = ['sd', 'x:sd']
             elif model_label in ['probit_neural3', 'probit_neural5', 'probit_neural6', 'probit_neural7', 'probit_neural8']:
@@ -120,6 +120,8 @@ def main(model_label, session, bids_folder='/data/ds-risk', col_wrap=5, only_ppc
                 keys = ['median_split_pupil', 'x:median_split_pupil']
             elif model_label.startswith('probit_pupil'):
                 keys = ['pupil', 'x:pupil']
+            elif model_label.startswith('probit_subcortical_prestim'):
+                keys = ['median_split_subcortical_baseline', 'x:median_split_subcortical_baseline']
 
             for key in keys:
                 trace = idata.posterior[key].to_dataframe()

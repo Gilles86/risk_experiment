@@ -104,10 +104,10 @@ def main(model_label, roi, session, bids_folder):
 
 
 
-def get_data(model_label, roi, bids_folder, session='7t2'):
+def get_data(model_label, roi, bids_folder, session='7t2', pca=False):
     subjects = get_all_subjects(bids_folder)
 
-    ts = pd.concat([sub.get_roi_timeseries(session, roi) for sub in subjects]).droplevel('session').droplevel('frame')
+    ts = pd.concat([sub.get_roi_timeseries(session, roi, pca=pca) for sub in subjects]).droplevel('session').droplevel('frame')
     events = pd.concat([sub.get_fmri_events(session) for sub in subjects], keys=[sub.subject for sub in subjects], names=['subject']).set_index('trial_nr', append=True).reset_index('session', drop=True)
     behavior = pd.concat([sub.get_behavior(sessions=session) for sub in subjects]).reset_index('session', drop=True)
 
@@ -123,7 +123,6 @@ def get_data(model_label, roi, bids_folder, session='7t2'):
         pupil_baseline = pupil.xs('n1', 0, 'event type').xs('pre', 0, 'prepost')
         pupil_baseline['pupil'] = pupil_baseline.groupby('subject', group_keys=False)['pupil'].apply(zscore)
         behavior = behavior.join(pupil_baseline)
-        print(behavior)
 
     return ts, events, behavior, confounds
 

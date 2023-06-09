@@ -7,17 +7,20 @@ from fit_glm_model import get_data
 import pandas as pd
 import nideconv
 
-def main(model_label, roi, bids_folder, session='7t2'):
+def main(model_label, roi, bids_folder, session='7t2', pca=False):
 
     if not model_label == 'n1_n2_n':
         raise NotImplementedError
 
-    target_dir = op.join(bids_folder, 'derivatives', 'roi_analysis', f'model-{model_label}', roi)
+    if pca:
+        target_dir = op.join(bids_folder, 'derivatives', 'roi_analysis.pca', f'model-{model_label}', roi)
+    else:
+        target_dir = op.join(bids_folder, 'derivatives', 'roi_analysis', f'model-{model_label}', roi)
 
     if not op.exists(target_dir):
         os.makedirs(target_dir)
 
-    ts, events, behavior, confounds  = get_data(model_label, roi, bids_folder, session)
+    ts, events, behavior, confounds  = get_data(model_label, roi, bids_folder, session, pca=pca)
 
     n1 = events[events.event == 'n1'].join(behavior[['n1']]).rename(columns={'n1':'n'})[['onset', 'n']]
     n1['event_type'] = 'n1'
@@ -37,7 +40,7 @@ def main(model_label, roi, bids_folder, session='7t2'):
     grf.add_event('n2', interval=[0.0, 2.3*8], basis_set='dct', n_regressors=8, covariates='n')
 
     for trial in tqdm(trial_regressors['event_type'].unique()):
-        grf.add_event(trial, interval=[-2.3*3, 0.0], basis_set='fir', n_regressors=1)
+        grf.add_event(trial, interval=[-2.3*2, 0.0], basis_set='fir', n_regressors=1)
 
 
     grf.fit()
@@ -65,6 +68,7 @@ if __name__ == '__main__':
     parser.add_argument('model_label', default=None)
     parser.add_argument('roi', default=None)
     parser.add_argument('--bids_folder', default='/data/ds-risk')
+    parser.add_argument('--pca', action='store_true')
     args = parser.parse_args()
 
-    main(args.model_label, args.roi, bids_folder=args.bids_folder)
+    main(args.model_label, args.roi, bids_folder=args.bids_folder, pca=args.pca)
