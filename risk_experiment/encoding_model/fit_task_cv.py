@@ -15,9 +15,8 @@ import seaborn as sns
 
 
 def main(subject, session, bids_folder='/data/ds-risk', smoothed=False, pca_confounds=False, denoise=False,
-retroicor=False, natural_space=False):
+retroicor=False, natural_space=False, n_runs=8):
          
-    runs = range(1,9)
 
     key = 'glm_stim1'
     target_dir = 'encoding_model.cv'
@@ -43,6 +42,11 @@ retroicor=False, natural_space=False):
 
     if natural_space:
         target_dir += '.natural_space'
+
+    if n_runs != 8:
+        target_dir += f'.{n_runs}runs'
+
+    runs = range(1,n_runs+1)
 
     target_dir = get_target_dir(subject, session, bids_folder, target_dir)
 
@@ -79,10 +83,8 @@ retroicor=False, natural_space=False):
     data = op.join(bids_folder, 'derivatives', key,
                    f'sub-{subject}', f'ses-{session}', 'func', f'sub-{subject}_ses-{session}_task-task_space-T1w_desc-stims1_pe.nii.gz')
 
-    data = pd.DataFrame(masker.fit_transform(data), index=paradigm.index)
+    data = pd.DataFrame(masker.fit_transform(data)[:len(paradigm)], index=paradigm.index)
     print(data)
-
-    data = pd.DataFrame(data, index=paradigm.index)
 
     cv_r2s = []
 
@@ -143,8 +145,9 @@ if __name__ == '__main__':
     parser.add_argument('--denoise', action='store_true')
     parser.add_argument('--retroicor', action='store_true')
     parser.add_argument('--natural_space', action='store_true')
+    parser.add_argument('--n_runs', default=8, type=int)
     args = parser.parse_args()
 
     main(args.subject, args.session, bids_folder=args.bids_folder, smoothed=args.smoothed,
     pca_confounds=args.pca_confounds, denoise=args.denoise, retroicor=args.retroicor,
-    natural_space=args.natural_space)
+    natural_space=args.natural_space, n_runs=args.n_runs)

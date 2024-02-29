@@ -17,6 +17,7 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
         retroicor=False,
         denoise=False, 
         expected_value=False,
+        n_runs=8,
         natural_space=False):
 
     key = 'glm_stim1'
@@ -49,13 +50,16 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
 
     if natural_space:
         target_dir += '.natural_space'
+    
+    if n_runs != 8:
+        target_dir += f'.{n_runs}runs'
 
     target_dir = get_target_dir(subject, session, bids_folder, target_dir)
 
     paradigm = [pd.read_csv(op.join(bids_folder, f'sub-{subject}', f'ses-{session}',
                                'func', f'sub-{subject}_ses-{session}_task-task_run-{run}_events.tsv'), sep='\t')
-                for run in range(1, 9)]
-    paradigm = pd.concat(paradigm, keys=range(1,9), names=['run'])
+                for run in range(1, n_runs+1)]
+    paradigm = pd.concat(paradigm, keys=range(1,n_runs+1), names=['run'])
     paradigm['log(n1)'] = np.log(paradigm['n1'])
     paradigm['log(n2)'] = np.log(paradigm['n2'])
 
@@ -95,7 +99,7 @@ def main(subject, session, bids_folder='/data/ds-risk', smoothed=False,
     data_folder = op.join(bids_folder, 'derivatives', key,
                                               f'sub-{subject}', f'ses-{session}', 'func')
     data = op.join(data_folder, f'sub-{subject}_ses-{session}_task-task_space-T1w_desc-stims1_pe.nii.gz')
-    data = pd.DataFrame(masker.fit_transform(data), index=paradigm.index)
+    data = pd.DataFrame(masker.fit_transform(data)[:len(paradigm)], index=paradigm.index)
 
     optimizer = ParameterFitter(model, data, paradigm)
 
@@ -130,9 +134,11 @@ if __name__ == '__main__':
     parser.add_argument('--stimulus', default='1')
     parser.add_argument('--natural_space', action='store_true')
     parser.add_argument('--expected_value', action='store_true')
+    parser.add_argument('--n_runs', default=8, type=int)
     args = parser.parse_args()
 
     main(args.subject, args.session, bids_folder=args.bids_folder, smoothed=args.smoothed,
             pca_confounds=args.pca_confounds,
             stimulus=args.stimulus, denoise=args.denoise, retroicor=args.retroicor,
+            n_runs=args.n_runs,
             natural_space=args.natural_space, expected_value=args.expected_value)
