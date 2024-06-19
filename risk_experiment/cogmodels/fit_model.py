@@ -37,6 +37,9 @@ def main(model_label, session, burnin=1500, samples=1500, bids_folder='/data/ds-
     if model_label.startswith('neural4'):
         target_accept = 0.925
 
+    if model_label.startswith('7'):
+        target_accept = 0.925
+
 
     model = build_model(model_label, df, roi)
 
@@ -141,7 +144,7 @@ def get_data(model_label, session, bids_folder, roi):
         print(df)
         df['median_split_subcortical_baseline'] = df.groupby(['subject', 'n1'], group_keys=False)[roi].apply(lambda d: d>d.quantile()).map({True:'High pre-baseline subcortical activation', False:'Low pre-baseline subcortical activation'})
 
-    if model_label.startswith('neural32') or model_label.startswith('neural33') or model_label.startswith('12') or model_label.startswith('42') or model_label.startswith('222') or model_label.startswith('neural55') or model_label.startswith('eu'):
+    if model_label.startswith('neural32') or model_label.startswith('neural33') or model_label.startswith('12') or model_label.startswith('42') or model_label.startswith('222') or model_label.startswith('neural55') or model_label.startswith('eu') or model_label.startswith('52') or model_label.startswith('62') or model_label.startswith('72') or model_label.startswith('neural34') or model_label.startswith('neural35') or model_label.startswith('klw'):
         df['session'] = df.index.get_level_values('session')
 
 
@@ -150,6 +153,8 @@ def get_data(model_label, session, bids_folder, roi):
 def build_model(model_label, df, roi):
     if model_label == '1':
         model = RiskModel(df, 'full')
+    elif model_label == 'klw':
+        model = RiskRegressionModel(df, prior_estimate='klw', fit_seperate_evidence_sd=False, regressors={'evidence_sd':'session', 'prior_sd':'session'})
     elif model_label == '2':
         model = RiskRegressionModel(df, prior_estimate='shared', regressors={'n1_evidence_sd':'risky_first', 'n2_evidence_sd':'risky_first'})
     elif model_label == '22':
@@ -164,8 +169,23 @@ def build_model(model_label, df, roi):
     elif model_label == '42':
         model = RiskRegressionModel(df, prior_estimate='shared', regressors={'n1_evidence_sd':'session', 'n2_evidence_sd':'session', 'prior_mu':'session',
         'prior_std':'session',})
+    elif model_label == '5':
+        model = RiskModel(df, prior_estimate='full', fit_seperate_evidence_sd=False)
+    elif model_label == '6':
+        model = RiskModel(df, prior_estimate='full_normed')
+    elif model_label == '62':
+        model = RiskRegressionModel(df, prior_estimate='full_normed', fit_seperate_evidence_sd=True,
+                                    regressors={'n1_evidence_sd':'session', 'n2_evidence_sd':'session', 'risky_prior_mu':'session',
+                                                'risky_prior_std':'session', 'safe_prior_mu':'session'})
+    elif model_label == '52':
+        model = RiskRegressionModel(df, prior_estimate='full', fit_seperate_evidence_sd=False,
+                                    regressors={'evidence_sd':'session', 'risky_prior_mu':'session',
+                                                'risky_prior_std':'session', 'safe_prior_mu':'session', 'safe_prior_std':'session'})
     elif model_label == '12':
         model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'session', 'n2_evidence_sd':'session', 'risky_prior_mu':'session',
+        'risky_prior_std':'session', 'safe_prior_mu':'session', 'safe_prior_std':'session'})
+    elif model_label == '72':
+        model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'session*risky_first', 'n2_evidence_sd':'session*risky_first', 'risky_prior_mu':'session',
         'risky_prior_std':'session', 'safe_prior_mu':'session', 'safe_prior_std':'session'})
     elif model_label == 'eu_session':
         model = ExpectedUtilityRiskModel(df, probability_distortion=False, save_trialwise_eu=False)
@@ -208,6 +228,12 @@ def build_model(model_label, df, roi):
     elif model_label == 'neural33':
         model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'sd+session', 'n2_evidence_sd':'sd+session', 'risky_prior_mu':'sd+session',
         'risky_prior_std':'sd+session', 'safe_prior_mu':'sd+session', 'safe_prior_std':'sd+session'}) 
+    elif model_label == 'neural34':
+        model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'sd+session', 'n2_evidence_sd':'sd+session', 'risky_prior_mu':'session',
+        'risky_prior_sd':'session', 'safe_prior_mu':'session', 'safe_prior_sd':'sd+session'}) 
+    elif model_label == 'neural35':
+        model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'sd+session', 'n2_evidence_sd':'session', 'risky_prior_mu':'session',
+        'risky_prior_std':'session', 'safe_prior_mu':'session', 'safe_prior_std':'sd+session'}) 
     elif model_label == 'neural33_null':
         model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'session', 'n2_evidence_sd':'session', 'risky_prior_mu':'session',
         'risky_prior_std':'session', 'safe_prior_mu':'session', 'safe_prior_std':'session'}) 
@@ -231,6 +257,10 @@ def build_model(model_label, df, roi):
         elif model_label.startswith('pupil_quadratic'):
             model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'pupil+pupil2', 'n2_evidence_sd':'pupil+pupil2', 'risky_prior_mu':'pupil+pupil2',
             'risky_prior_std':'pupil+pupil2', 'safe_prior_mu':'pupil+pupil2', 'safe_prior_std':'pupil+pupil2'}) 
+        elif model_label.startswith('pupil3'):
+            model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'pupil',}) 
+        elif model_label.startswith('pupil4'):
+            model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'pupil', 'n2_evidence_sd':'pupil',}) 
         else:
             model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'pupil', 'n2_evidence_sd':'pupil', 'risky_prior_mu':'pupil',
             'risky_prior_std':'pupil', 'safe_prior_mu':'pupil', 'safe_prior_std':'pupil'}) 
