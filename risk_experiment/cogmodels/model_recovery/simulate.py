@@ -10,11 +10,15 @@ import os.path as op
 
 def main(model_label, n_simulations=10, bids_folder='/data/ds-risk'):
 
-    assert model_label in ['eu', 'klw', 'pmrc'], 'Model not implemented'
+    assert model_label in ['eu', 'klw', 'pmrc', 'static_noise', 'static_priors'], 'Model not implemented'
 
     if model_label == 'pmrc':
         print('yo')
         model_label = '12'
+    elif model_label == 'static_priors':
+        model_label = '42'
+    elif model_label == 'static_noise':
+        model_label = '52'
 
     target_dir = op.join(bids_folder, 'derivatives', 'cogmodels', 'model_recovery')
     os.makedirs(target_dir, exist_ok=True)

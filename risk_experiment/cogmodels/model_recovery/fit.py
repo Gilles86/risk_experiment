@@ -9,14 +9,17 @@ def load_simulated_data(model_label, simulation_index, bids_folder='/data/ds-ris
     df = pd.read_csv(fn, sep='\t', index_col=[0, 1, 2])
 
     df['choice'] = df['simulated_choice']
+    df['risky_first'] = df['p1'] != 1.0
+    df['n_safe'] = df['n1'].where(~df['risky_first'], df['n2'])
+    df['Order'] = df['risky_first'].map({True: 'Risky first', False: 'Safe first'})
     df['chose_risky'] = df['choice'].where(~df['risky_first'], ~df['choice'])
 
     return df
 
 def main(generating_model, recovering_model, simulation_index, bids_folder='/data/ds-risk'):
 
-    assert generating_model in ['eu', 'klw', 'pmrc'], 'Model not implemented'
-    assert recovering_model in ['eu', 'klw', 'pmrc'], 'Model not implemented'
+    assert generating_model in ['eu', 'klw', 'pmrc', 'static_priors', 'static_noise'], 'Model not implemented'
+    assert recovering_model in ['eu', 'klw', 'pmrc', 'static_priors', 'static_noise'], 'Model not implemented'
 
     target_dir = op.join(bids_folder, 'derivatives', 'cogmodels', 'model_recovery', 'traces')
 
@@ -37,6 +40,10 @@ def build_model(df, recovering_model):
         model = RiskModel(df, fit_seperate_evidence_sd=False, prior_estimate='klw')
     elif recovering_model == 'pmrc':
         model = RiskModel(df, fit_seperate_evidence_sd=True, prior_estimate='full')
+    elif recovering_model == 'static_priors':
+        model = RiskModel(df, fit_seperate_evidence_sd=True, prior_estimate='shared')
+    elif recovering_model == 'static_noise':
+        model = RiskModel(df, fit_seperate_evidence_sd=False, prior_estimate='full')
 
     model.build_estimation_model()
 
