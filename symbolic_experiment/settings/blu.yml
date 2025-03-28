@@ -4,10 +4,10 @@ preferences:
     units: deg
 
 window:
-  size: [1280, 1024]
+  size: [1920, 1080]
   pos: [0, 0]
   color: [0, 0, 0]
-  fullscr: False
+  fullscr: True
   winType: pyglet
   viewPos: [0, 0]
   screen: 0
@@ -33,8 +33,8 @@ task:
 
 various:
   piechart_width: 1 
-  text_width: 14
-  text_height: .5
+  text_width: 20
+  text_height: .75
   buttons: ['j', 'k',]
   button_size: 2
   fixation_size: 0.1

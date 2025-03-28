@@ -1,10 +1,13 @@
 from exptools2.core import Session
 from exptools2.core import Trial
 from psychopy.visual import Pie, TextStim
+from psychopy import event
 from stimuli import _create_stimulus_array, ProbabilityPieChart
 import numpy as np
 import os.path as op
 import pandas as pd
+import textwrap
+
 
 class IntroBlockTrial(Trial):
 
@@ -236,69 +239,119 @@ class InstructionTrial(Trial):
                     if key in self.keys:
                         self.stop_phase()
 
-class DummyWaiterTrial(InstructionTrial):
-    """ Simple trial with text (trial x) and fixation. """
-
-    def __init__(self, session, trial_nr, phase_durations=None, n_triggers=1,
-                 txt="Waiting for scanner triggers.", **kwargs):
-        phase_durations = [np.inf] * n_triggers
-
-        super().__init__(session, trial_nr, phase_durations, txt, **kwargs)
-
-        self.last_trigger = 0.0
-
-    def get_events(self):
-        events = Trial.get_events(self)
-
-        if events:
-            for key, t in events:
-                if key == self.session.mri_trigger:
-                    if t - self.last_trigger > .5:
-                        self.stop_phase()
-                        self.last_trigger = t
-
-class OutroTrial(InstructionTrial):
-    """ Simple trial with only fixation cross.  """
-
-    def __init__(self, session, trial_nr, phase_durations, **kwargs):
-
-        txt = '''Please lie still for a few moments.'''
-        super().__init__(session, trial_nr, phase_durations, txt=txt, **kwargs)
-
-    def draw(self):
-        self.session.fixation_dot.draw()
-        super().draw()
-
-    def get_events(self):
-        events = Trial.get_events(self)
-
-        if events:
-            for key, t in events:
-                if key == 'space':
-                    self.stop_phase()
-
 class TaskInstructionTrial(InstructionTrial):
     
     def __init__(self, session, trial_nr, run, txt=None, n_runs=3, phase_durations=[np.inf],
                  **kwargs):
 
-        txt = f"""
-        This is run {run} of {n_runs}.
+        if txt is None:
+            txt = textwrap.dedent(f"""
+                This is run {run} of {n_runs}.
 
-        In this task, you will be presented with two options, one after the other.
-        One option is a safe option — a guaranteed amount of money.
-        The other option is a risky gamble with a 55% chance of winning.
+                In this task, you will be presented with two options, one after the other.
+                One option is a safe option — a guaranteed amount of money.
+                The other option is a risky gamble with a 55% chance of winning.
 
-        You will have to choose between these two options using the keyboard:
-        - Press **j** to select the first option presented.
-        - Press **k** to select the second option presented.
+                You will have to choose between these two options using the keyboard:
+                - Press **j** to select the first option presented.
+                - Press **k** to select the second option presented.
 
-        **Note:** If you respond too late or do not respond at all, you will not receive any money for that trial.
+                **Note:** If you respond too late or do not respond at all, you will not receive any money for that trial.
 
-        Feel free to take a short break now if you'd like.
+                Feel free to take a short break now if you'd like.
 
-        Press either button (j or k) to continue.
-        """
-
+                Press either button (j or k) to continue.
+            """)
 
         super().__init__(session=session, trial_nr=trial_nr, phase_durations=phase_durations, txt=txt, **kwargs)
+
+
+class OutComeTrial(InstructionTrial):
+    """
+    This class overrides normal Trial, because then, when you press 'q',
+    the program will not only close the session but also `quit`, which precludes
+    wrapper code that can copy files to network drive."""
+    def get_events(self):
+        events = event.getKeys(timeStamped=self.session.clock)
+
+        if events:
+            for key, t in events:
+                if key == 'q':
+                    print('quitting 1')
+                    self.stop_trial()
+                    self.session.close()
+                    print('quitting 2')
+
+
+class QuestionTrial(Trial):
+    """ Trial that presents a multiple-choice question and gives feedback.
+        Subject must answer correctly before continuing. """
+
+    def __init__(self, session, trial_nr, question_text, options,
+                 correct_answer=None, phase_durations=[np.inf, 1.0], **kwargs):
+
+        super().__init__(session, trial_nr, phase_durations=phase_durations,
+                         phase_names=['question', 'feedback', 'continue'], **kwargs)
+
+        self.question_text = question_text
+        self.options = options
+        self.correct_answer = correct_answer
+
+        self.response = None
+        self.correct = False
+
+        txt_height = self.session.settings['various'].get('text_height', 0.05)
+        txt_width = self.session.settings['various'].get('text_width', 1.4)
+
+        question_text = question_text + '\n\n'
+        for i, opt in enumerate(options, 1):
+            question_text += f"{i}) {opt}\n"
+        question_text += "\nPress 1, 2, or 3 to answer."
+
+        self.question_stim = TextStim(
+            self.session.win,
+            text=question_text,
+            height=txt_height,
+            wrapWidth=txt_width,
+            alignText='left',
+            anchorHoriz='left',
+            pos=(-txt_width / 2, 0),
+            colorSpace='rgb',
+            **kwargs
+        )
+
+        self.feedback_stim = TextStim(
+            self.session.win,
+            text='',
+            height=txt_height,
+            wrapWidth=txt_width,
+            alignText='center',
+            anchorHoriz='center',
+            pos=(0, 0),
+            colorSpace='rgb',
+            **kwargs
+        )
+
+    def draw(self):
+        if self.phase == 0:
+            if (self.response is not None) and (self.session.clock.getTime() - self.response_time < 1.0):
+                self.feedback_stim.draw()
+            else:
+                self.question_stim.draw()
+        elif self.phase == 1:
+            self.feedback_stim.draw()
+
+    def get_events(self):
+        events = super().get_events()
+
+        if self.phase == 0:
+            for key, t in events:
+                if key in ['1', '2', '3']:
+                    self.response = int(key)
+                    self.correct = (self.response == self.correct_answer)
+                    self.response_time = self.session.clock.getTime()
+
+                    self.feedback_stim.text = "Correct! 🎉" if self.correct else "Incorrect. Please try again."
+                    
+                    if self.correct:
+                        self.stop_phase()

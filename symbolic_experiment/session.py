@@ -3,7 +3,7 @@ from exptools2.core import Session
 from psychopy import visual, logging
 import pandas as pd
 import os.path as op
-from trial import InstructionTrial, OutroTrial, TaskInstructionTrial, IntroBlockTrial, GambleTrial
+from trial import InstructionTrial, TaskInstructionTrial, IntroBlockTrial, GambleTrial, OutComeTrial, QuestionTrial
 import numpy as np
 
 
@@ -23,8 +23,9 @@ class NumeralRiskSession(Session):
             lineColor=None,
             colorSpace='rgb')
         
-
         logging.warn(self.settings['run'])
+        self.win.mouseVisible = False
+
 
     def _create_logfile(self):
         """Creates a logfile."""
@@ -85,10 +86,12 @@ class NumeralRiskSession(Session):
                 )
 
         txt = get_text_for_sampled_trial(trial)
+
+        txt += "\n\nPlease wait for the experimenter to come by your booth and sign your form."
         print(txt)
         logging.warning(txt)
 
-        outcome_trial = InstructionTrial(self, trial_nr=-10000, txt=txt, phase_durations=[np.inf],
+        outcome_trial = OutComeTrial(self, trial_nr=-10000, txt=txt, phase_durations=[np.inf],
                                          allow_keypresses=False)
         outcome_trial.run()
 
@@ -98,6 +101,8 @@ class NumeralRiskSession(Session):
 
         if n_runs is None:
             n_runs = self.settings['task'].get('n_runs', 4)
+            
+        if n_trials_per_run is None:
             n_trials_per_run = self.settings['task'].get('n_trials_per_run', 32)
 
         def create_run_settings(n_trials, order):
@@ -157,6 +162,54 @@ class NumeralRiskSession(Session):
 
         self.trials = []
 
+
+        txt = "Welcome to the experiment. Please carefully read the instructions. When you're ready, you can press a button (j/k) and proceed to a short quiz to make sure you understand the task."
+        instruction_trial1 = InstructionTrial(self, trial_nr=-1000, txt=txt)
+        self.trials.append(instruction_trial1)
+
+
+        q_trial1 = QuestionTrial(
+            session=self,
+            trial_nr=-100,
+            question_text="You chose the risky option with 55% chance of 12 CHF. The computer draws 78. What do you win?",
+            options=["12 CHF", "5 CHF", "0 CHF"],
+            correct_answer=3  # "0 CHF"
+        )
+
+        q_trial2 = QuestionTrial(
+            session=self,
+            trial_nr=-101,
+            question_text="You chose the risky option with 55% chance of 12 CHF. The computer draws 42. What do you win?",
+            options=["5 CHF", "12 CHF", "0 CHF"],
+            correct_answer=2  # "12 CHF"
+        )
+
+        q_trial3 = QuestionTrial(
+            session=self,
+            trial_nr=-102,
+            question_text="You chose the safe option of 5 CHF, and that trial is selected for payment. What do you receive?",
+            options=["12 CHF", "5 CHF", "0 CHF"],
+            correct_answer=2  # "5 CHF"
+        )
+
+        q_trial4 = QuestionTrial(
+            session=self,
+            trial_nr=-103,
+            question_text="You didn’t respond on a trial, and it gets selected for payment. What do you receive?",
+            options=["5 CHF", "12 CHF", "0 CHF"],
+            correct_answer=3  # "0 CHF"
+        )
+        self.trials.append(q_trial1)
+        self.trials.append(q_trial2)
+        self.trials.append(q_trial3)
+        self.trials.append(q_trial4)
+
+        txt = "You have completed the quiz. Now you will see a few more instructions before we start the task."
+
+        instruction_trial2 = InstructionTrial(self, trial_nr=-104, txt=txt)
+        self.trials.append(instruction_trial2)
+
+
         for run, d in settings.groupby('run', sort=False):
             self.trials.append(TaskInstructionTrial(self, trial_nr=-run,
                                                     n_runs=n_runs,
@@ -175,8 +228,9 @@ class NumeralRiskSession(Session):
                                                    jitter1=row.jitter1,
                                                    jitter2=row.jitter2))
 
-        txt = "You have completed the task. Now press a button to finish the experiment" \
+        txt = "You have completed the task. Now press a button (j/k) to finish the experiment" \
                 "and see whether  you got a bonus!"
 
         outro_trial = InstructionTrial(self, trial_nr=-1000, txt=txt, phase_durations=[np.inf])
         self.trials.append(outro_trial)
+
