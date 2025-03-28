@@ -1,0 +1,52 @@
+preferences:
+  general:
+    audioLib: sounddevice
+    units: deg
+
+window:
+  size: [1280, 1024]
+  pos: [0, 0]
+  color: [0, 0, 0]
+  fullscr: False
+  winType: pyglet
+  viewPos: [0, 0]
+  screen: 0
+  viewPos: [0, 0]
+
+monitor:
+  name: default
+  width: 42  # in cm
+  distance: 75  # in cm
+  gamma: 1
+
+mouse:
+  visible: False
+  
+mri:
+  use_mri: False
+
+task:
+  jitter1: [4, 5, 6]
+  jitter2: [3]
+  n_runs: 8
+  n_trial_pers_run: 32
+
+various:
+  piechart_width: 1 
+  text_width: 14
+  text_height: .5
+  buttons: ['j', 'k',]
+  button_size: 2
+  fixation_size: 0.1
+  feedback_duration: 1.0
+  max_response_time: 2.5
+
+payoffs:
+  min_safe_payoff: 5
+  max_safe_payoff: 28
+  min_risky_frac: 1
+  max_risky_frac: 4
+  text_height: 1.5
+
+output:
+  payout_folder: 'N:\\client_write\\Gilles\\payout'
