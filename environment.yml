@@ -1,0 +1,26 @@
+name: risk7t
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - tensorflow=2.14
+  - tensorflow-probability
+  - pandas
+  - numpy
+  - seaborn
+  - matplotlib
+  - scipy
+  - scikit-learn
+  - jupyter
+  - pip
+  - pingouin
+  - nipype
+  - bambi
+  - pip:
+      - tensorflow-addons
+      - tqdm
+      - nilearn
+      - git+https://github.com/Gilles86/braincoder.git@main#egg=braincoder
+      - -e .
+      - -e git+https://github.com/ruffgroup/bauer.git@refactor#egg=bauer
