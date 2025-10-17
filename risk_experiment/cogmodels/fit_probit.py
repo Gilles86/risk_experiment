@@ -34,13 +34,23 @@ def main(model_label, session, burnin=1000, samples=1000, bids_folder='/data/ds-
                         op.join(target_folder, f'model-{model_label}_ses-{session}_roi-{roi}_trace.netcdf'))
 
 
-def build_model(model_label, df, session=None, bids_folder='/data/ds-risk', roi=None):
+def build_model(model_label, df=None, session=None, bids_folder='/data/ds-risk', roi=None):
+
+    if df is None:
+        df = get_data(model_label, session, bids_folder, roi=roi)
+
     if model_label == 'probit_simple':
         model = bambi.Model('chose_risky ~ x  + (x|subject)', df.reset_index(), link='probit', family='bernoulli')
-    if model_label == 'probit_session':
+    elif model_label == 'probit_n_safe':
+        model = bambi.Model('chose_risky ~ x*C(n_safe)  + (x*C(n_safe)|subject)', df.reset_index(), link='probit', family='bernoulli')
+    elif model_label == 'probit_n_safe_session':
+        model = bambi.Model('chose_risky ~ x*C(n_safe) + x*session + (x*C(n_safe) + x*session|subject)', df.reset_index(), link='probit', family='bernoulli')
+    elif model_label == 'probit_session':
         model = bambi.Model('chose_risky ~ x*session  + (x*session|subject)', df.reset_index(), link='probit', family='bernoulli')
     elif model_label == 'probit_order':
         model = bambi.Model('chose_risky ~ x*risky_first  + (x*risky_first|subject)', df.reset_index(), link='probit', family='bernoulli')
+    elif model_label == 'probit_order_session':
+        model = bambi.Model('chose_risky ~ x*risky_first + x*session  + (x*risky_first + x*session|subject)', df.reset_index(), link='probit', family='bernoulli')
     elif model_label == 'probit_full':
         model = bambi.Model('chose_risky ~ x*risky_first*C(n_safe)  + (x*risky_first*C(n_safe)|subject)', df.reset_index(), link='probit', family='bernoulli')
     elif model_label == 'probit_full_session':
@@ -73,6 +83,8 @@ def build_model(model_label, df, session=None, bids_folder='/data/ds-risk', roi=
         model = bambi.Model('chose_risky ~ x*risky_first*median_split_pupil  + (x*risky_first*median_split_pupil|subject)', df.reset_index(), link='probit', family='bernoulli')
     elif model_label.startswith('probit_pupil'):
         model = bambi.Model('chose_risky ~ x*pupil  + (x*pupil|subject)', df.reset_index(), link='probit', family='bernoulli')
+    elif model_label.startswith('probit_pupil2'):
+        model = bambi.Model('chose_risky ~ x*pupil + x*{pupil**2} + (x*pupil + x*{pupil**2}|subject)', df.reset_index(), link='probit', family='bernoulli')
     elif model_label.startswith('probit_subcortical_response1'):
         model = bambi.Model('chose_risky ~ x*median_split_subcortical_response  + (x*median_split_subcortical_response|subject)', df.reset_index(), link='probit', family='bernoulli')
     elif model_label.startswith('probit_subcortical_response2'):

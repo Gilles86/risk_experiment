@@ -19,7 +19,7 @@ def main(model_label, session, bids_folder='/data/ds-risk', col_wrap=5, plot_tra
 
     df = get_data(model_label, session, bids_folder, roi=roi)
     model = build_model(model_label, df, roi=roi)
-    model.build_estimation_model()
+    model.build_estimation_model(save_p_choice=True)
 
     print(issubclass(type(model), RiskRegressionModel))
 
@@ -49,7 +49,7 @@ def main(model_label, session, bids_folder='/data/ds-risk', col_wrap=5, plot_tra
         df = df.droplevel('session', axis=0)
 
     print(df)
-    ppc = model.ppc(trace=idata.sel(draw=slice(None, None, 10)), data=df)
+    ppc = model.ppc(idata=idata.sel(draw=slice(None, None, 10)), paradigm=df, var_names=['ll_bernoulli', 'p'])
 
     # "Chose risky" vs "chose 2nd option coding"
     ppc.loc[ppc.index.get_level_values('risky_first')] = 1 - ppc.loc[ppc.index.get_level_values('risky_first')]
@@ -66,7 +66,7 @@ def plot_parameters(model, idata, target_folder, session, df, model_label):
         t = trace.copy()
         print(regressor, t)
 
-        if (par in ['prior_std', 'risky_prior_std', 'safe_prior_std', 'n1_evidence_sd', 'n2_evidence_sd', 'evidence_sd']) & (regressor == 'Intercept') & transform:
+        if (par in ['prior_sd', 'risky_prior_sd', 'safe_prior_sd', 'n1_evidence_sd', 'n2_evidence_sd', 'evidence_sd']) & (regressor == 'Intercept') & transform:
             t = softplus(t)
 
         if (par in ['p_lapse']) & (regressor == 'Intercept') & transform:
@@ -81,14 +81,14 @@ def plot_parameters(model, idata, target_folder, session, df, model_label):
         else:
             if par == 'risky_prior_mu':
                 plt.axvline(np.log(df['n_risky']).mean(), c='k', ls='--')
-            elif par == 'risky_prior_std':
+            elif par == 'risky_prior_sd':
                 plt.axvline(np.log(df['n_risky']).std(), c='k', ls='--')
             elif par == 'safe_prior_mu':
                 for n_safe in np.log([7., 10., 14., 20., 28.]):
                     plt.axvline(n_safe, c='k', ls='--')
 
                 plt.axvline(np.log(df['n_safe']).mean(), c='k', ls='--', lw=2)
-            elif par == 'safe_prior_std':
+            elif par == 'safe_prior_sd':
                 plt.axvline(np.log(df['n_safe']).std(), c='k', ls='--')
 
 
@@ -116,9 +116,13 @@ def plot_parameters(model, idata, target_folder, session, df, model_label):
     if (model_label == '2') or (model_label.startswith('4')):
         pairs, names, palettes = [('n1_evidence_sd', 'n2_evidence_sd')], ['evidence_sd'], [sns.color_palette()]
     elif model_label.startswith('rnp'):
+        pairs, names, palettes = [('risky_prior_mu', 'safe_prior_mu'), ('risky_prior_sd', 'safe_prior_sd')], ['prior_mu', 'prior_sd'], [sns.color_palette("RdBu", 2), sns.color_palette("RdBu", 2)]
+    elif model_label.startswith('5'):
         pairs, names, palettes = [], [], []
+    elif model_label.startswith('6'):
+        pairs, names, palettes = [('n1_evidence_sd', 'n2_evidence_sd'), ('risky_prior_mu', 'safe_prior_mu'), ], ['evidence_sd', 'prior_mu'], [sns.color_palette(), sns.color_palette("RdBu", 2)]
     else:
-        pairs, names, palettes = [('n1_evidence_sd', 'n2_evidence_sd'), ('risky_prior_mu', 'safe_prior_mu'), ('risky_prior_std', 'safe_prior_std')], ['evidence_sd', 'prior_mu', 'prior_std'], [sns.color_palette(), sns.color_palette("RdBu", 2), sns.color_palette("RdBu", 2)]
+        pairs, names, palettes = [('n1_evidence_sd', 'n2_evidence_sd'), ('risky_prior_mu', 'safe_prior_mu'), ('risky_prior_sd', 'safe_prior_sd')], ['evidence_sd', 'prior_mu', 'prior_sd'], [sns.color_palette(), sns.color_palette("RdBu", 2), sns.color_palette("RdBu", 2)]
 
 
     # SUBJECTWISE
@@ -126,7 +130,7 @@ def plot_parameters(model, idata, target_folder, session, df, model_label):
         plt.figure(figsize=(20, 4))
         if type(model) is RiskModel:
             d = pd.concat((idata.posterior[pair[0]].to_dataframe(), idata.posterior[pair[1]].to_dataframe()), keys=pair, names=['Variable']).stack().to_frame('Value')
-            g = sns.violinplot(d.reset_index(), x='subject', y='Value', hue='Variable', aspect=4, palette=palette)
+            g = sns.violinplot(d.reset_index(), x='subject', y='Value', hue='Variable', palette=palette)
             # g.add_legend()
             plt.suptitle(session)
             plt.savefig(op.join(target_folder, f'subject_par-{name}.Intercept.pdf'))
@@ -161,7 +165,7 @@ def plot_parameters(model, idata, target_folder, session, df, model_label):
 
                     d = pd.concat((p1.xs(regressor, 0, -1), p2.xs(regressor, 0, -1)), keys=pair, names=['Variable']).stack().to_frame('Value')
 
-                    if (name in ['prior_std', 'risky_prior_std', 'safe_prior_std', 'n1_evidence_sd', 'n2_evidence_sd', 'evidence_sd']) & (regressor == 'Intercept'):
+                    if (name in ['prior_sd', 'risky_prior_sd', 'safe_prior_sd', 'n1_evidence_sd', 'n2_evidence_sd', 'evidence_sd']) & (regressor == 'Intercept'):
                         d = softplus(d)
 
                     if (name in ['p_lapse']) & (regressor == 'Intercept'):

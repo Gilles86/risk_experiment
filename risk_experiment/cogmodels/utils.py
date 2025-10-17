@@ -8,12 +8,12 @@ from risk_experiment.utils import get_all_subjects
 from patsy import dmatrix
 
 
-def cluster_offers(d, n=6, key='log(risky/safe)'):
+def cluster_offers(d, n=8, key='log(risky/safe)'):
     return pd.qcut(d[key], n, duplicates='drop').apply(lambda x: x.mid)
 
 
 
-def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col_wrap=5, legend=True):
+def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col_wrap=5, legend=True, height=10.):
 
     print(f'Plotting ppc type {plot_type}')
     assert (var_name in ['p', 'll_bernoulli'])
@@ -62,6 +62,7 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
     else:
         raise NotImplementedError
 
+
     if level == 'group':
         ppc = ppc.groupby(['subject']+groupby).mean()
 
@@ -69,7 +70,7 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
         groupby = ['subject'] + groupby
 
     ppc_summary = summarize_ppc(ppc, groupby=groupby)
-    p = df.groupby(groupby).mean()[['chose_risky']]
+    p = df.groupby(groupby)[['chose_risky']].mean()
     ppc_summary = ppc_summary.join(p).reset_index()
 
 
@@ -82,7 +83,7 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
     if 'median_split(sd)' in groupby:
         ppc_summary['Neural noise'] = ppc_summary['median_split(sd)']
 
-    ppc_summary['Prop. chosen risky'] = ppc_summary['chose_risky']
+    ppc_summary['Prop. chose risky'] = ppc_summary['chose_risky']
 
     if 'log(risky/safe)' in groupby:
         if level == 'group':
@@ -90,7 +91,7 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
         else:
             ppc_summary['Log-ratio offer'] = ppc_summary['log(risky/safe)']
 
-    print(ppc_summary)
+    # print(ppc_summary)
     if plot_type in [2, 7]:
             x = 'Safe offer'
     else:
@@ -101,19 +102,22 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
     if plot_type == 0:
         fac = sns.FacetGrid(ppc_summary,
                             col='subject' if level == 'subject' else None,
-                            col_wrap=col_wrap if level == 'subject' else None)
+                            col_wrap=col_wrap if level == 'subject' else None,
+                            height=height)
 
     elif plot_type in [1, 2]:
         fac = sns.FacetGrid(ppc_summary,
                             col='subject' if level == 'subject' else None,
                             hue='Order',
-                            col_wrap=col_wrap if level == 'subject' else None)
+                            col_wrap=col_wrap if level == 'subject' else None,
+                            height=height)
 
     elif plot_type == 3:
         fac = sns.FacetGrid(ppc_summary,
                             col='Safe offer',
                             hue='Order',
-                            row='subject' if level == 'subject' else None)
+                            row='subject' if level == 'subject' else None,
+                            height=height)
     elif plot_type == 4:
 
 
@@ -127,7 +131,8 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
         fac = sns.FacetGrid(ppc_summary,
                             hue='Order',
                             col='subject' if level == 'subject' else None,
-                            col_wrap=col_wrap if level == 'subject' else None)
+                            col_wrap=col_wrap if level == 'subject' else None,
+                            height=height)
 
         fac.map_dataframe(plot_prediction, x='Safe offer', y='p_predicted')
         fac.map(plt.scatter, 'Safe offer', 'rnp')
@@ -138,25 +143,29 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
                             col='Order',
                             hue='Safe offer',
                             row='subject' if level == 'subject' else None,
-                            palette='coolwarm')
+                            palette='coolwarm',
+                            height=height)
     elif plot_type == 6:
         fac = sns.FacetGrid(ppc_summary,
                             hue='uncertainty',
                             row='subject' if level == 'subject' else None,
                             aspect=2.,
-                            palette=sns.color_palette('viridis', n_colors=4))
+                            palette=sns.color_palette('viridis', n_colors=4),
+                            height=height)
     elif plot_type in [7, 8]:
         fac = sns.FacetGrid(ppc_summary,
                             col='Order',
                             hue='uncertainty',
                             row='subject' if level == 'subject' else None,
-                            palette=sns.color_palette('viridis', n_colors=4))
+                            palette=sns.color_palette('viridis', n_colors=4),
+                            height=height)
     elif plot_type in [9, 10]:
         fac = sns.FacetGrid(ppc_summary,
                             col='Order',
                             hue='median_split_uncertainty',
                             row='subject' if level == 'subject' else None,
-                            palette=sns.color_palette('viridis', n_colors=2))
+                            palette=sns.color_palette('viridis', n_colors=2),
+                            height=height)
 
     elif plot_type == 11:
         fac = sns.FacetGrid(ppc_summary,
@@ -164,7 +173,8 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
                             hue_order=['Low neural uncertainty', 'High neural uncertainty'],
                             col='subject' if level == 'subject' else None,
                             palette=sns.color_palette()[2:],
-                            col_wrap=col_wrap if level == 'subject' else None)
+                            col_wrap=col_wrap if level == 'subject' else None,
+                            height=height)
     elif plot_type == 12:
         x = 'n_safe'
         fac = sns.FacetGrid(ppc_summary,
@@ -172,50 +182,56 @@ def plot_ppc(df, ppc, plot_type=1, var_name='ll_bernoulli', level='subject', col
                             col='Order',
                             hue_order=['Low neural uncertainty', 'High neural uncertainty'],
                             palette=sns.color_palette()[2:],
-                            row='subject' if level == 'subject' else None,)
+                            row='subject' if level == 'subject' else None,
+                            height=height)
     elif plot_type == 13:
         fac = sns.FacetGrid(ppc_summary,
                             hue='median_split_pupil',
                             col='subject' if level == 'subject' else None,
                             palette=sns.color_palette()[4:],
-                            col_wrap=col_wrap if level == 'subject' else None)
+                            col_wrap=col_wrap if level == 'subject' else None,
+                            height=height)
     elif plot_type == 14:
         x = 'n_safe'
         fac = sns.FacetGrid(ppc_summary,
                             hue='median_split_pupil',
                             col='Order',
                             palette=sns.color_palette()[4:],
-                            row='subject' if level == 'subject' else None,)
+                            row='subject' if level == 'subject' else None,
+                            height=height)
     elif plot_type == 15:
         fac = sns.FacetGrid(ppc_summary,
                             hue='median_split_pupil',
                             col='Order',
                             palette=sns.color_palette()[4:],
-                            row='subject' if level == 'subject' else None,)
+                            row='subject' if level == 'subject' else None,
+                            height=height)
     elif plot_type == 16:
         fac = sns.FacetGrid(ppc_summary,
                             hue='Neural noise',
                             hue_order=['Low neural uncertainty', 'High neural uncertainty'],
                             col='Order',
                             palette=sns.color_palette()[2:],
-                            row='subject' if level == 'subject' else None,)
+                            row='subject' if level == 'subject' else None,
+                            height=height)
     elif plot_type == 17:
         fac = sns.FacetGrid(ppc_summary,
                             hue='median_split_subcortical_baseline',
                             col='Order',
                             palette=sns.color_palette()[6:],
-                            row='subject' if level == 'subject' else None,)
+                            row='subject' if level == 'subject' else None,
+                            height=height)
 
     if plot_type in [0, 1,2,3, 5, 11, 12, 13, 14, 15, 16]:
         fac.map_dataframe(plot_prediction, x=x)
-        fac.map(plt.scatter, x, 'Prop. chosen risky')
+        fac.map(plt.scatter, x, 'Prop. chose risky')
         fac.map(lambda *args, **kwargs: plt.axhline(.5, c='k', ls='--'))
 
     if plot_type in [0, 1, 3, 5, 11, 13, 15, 16]:
         if level == 'subject':
             fac.map(lambda *args, **kwargs: plt.axvline(np.log(1./.55), c='k', ls='--'))
         else:
-            fac.map(lambda *args, **kwargs: plt.axvline(3.5, c='k', ls='--'))
+            fac.map(lambda *args, **kwargs: plt.axvline(4.5, c='k', ls='--'))
             plt.xticks([])
 
     
@@ -255,7 +271,7 @@ def format_bambi_ppc(trace, model, df):
         if kind == 'pps':
             pred = pred['posterior_predictive']['chose_risky'].to_dataframe().unstack(['chain', 'draw'])['chose_risky']
         else:
-            pred = pred['posterior']['chose_risky_mean'].to_dataframe().unstack(['chain', 'draw'])['chose_risky_mean']
+            pred = pred['posterior']['chose_risky_mean'].to_dataframe().unstack(['chain', 'draw'])['p']
         pred.index = df.index
         pred = pred.set_index(pd.MultiIndex.from_frame(df), append=True)
         preds.append(pred)
@@ -323,7 +339,7 @@ def extract_intercept_gamma(trace, model, data, group=False):
 
     fake_data = get_fake_data(data, group)
 
-    pred = model.predict(trace, 'mean', fake_data, inplace=False, include_group_specific=not group)['posterior']['chose_risky_mean']
+    pred = model.predict(trace, 'mean', fake_data, inplace=False, include_group_specific=not group)['posterior']['p']
 
     pred = pred.to_dataframe().unstack([0, 1])
     pred = pred.set_index(pd.MultiIndex.from_frame(fake_data))

@@ -31,7 +31,7 @@ def main(model_label, session, burnin=1500, samples=1500, bids_folder='/data/ds-
     if model_label == '222':
         target_accept = 0.925
 
-    if model_label.startswith('neural3'):
+    if model_label.startswith('neural3') or model_label.startswith('neural6'):
         target_accept = 0.925
 
     if model_label.startswith('neural4'):
@@ -71,7 +71,16 @@ def get_data(model_label, session, bids_folder, roi):
             decoding_info = pd.concat([sub.get_decoding_info(session, mask='npcr', n_voxels=0.0) for sub in get_all_subjects(bids_folder)])
 
         df = df.join(decoding_info)
-        decoding_info['sd'] = decoding_info.groupby(['subject', 'session'], group_keys=False)['sd'].apply(zscore)
+        
+        if model_label.startswith('neural3'):
+            decoding_info['sd'] = decoding_info.groupby(['subject', 'session'], group_keys=False)['sd'].apply(zscore)
+        elif model_label.startswith('neural6'):
+            decoding_info = decoding_info.join(df[['n1']])
+            decoding_info['sd'] = decoding_info.groupby(['subject', 'session', 'n1'], group_keys=False)['sd'].apply(zscore)
+        elif model_label.startswith('neural7'):
+            decoding_info = decoding_info.join(df[['n1', 'risky_first']])
+            decoding_info['sd'] = decoding_info.groupby(['subject', 'session', 'n1', 'risky_first'], group_keys=False)['sd'].apply(zscore)
+
         df['median_split(sd)'] = df.groupby(['subject', 'session'], group_keys=False)['sd'].apply(lambda d: d>d.quantile()).map({True:'High neural uncertainty', False:'Low neural uncertainty'})
         df['median_split(E)'] = df.groupby(['subject', 'session', 'n1'], group_keys=False)['E'].apply(lambda d: d>d.quantile()).map({True:'Higher decoded', False:'Lower decoded'})
         df['median_split_sd'] = df['median_split(sd)']
@@ -144,9 +153,8 @@ def get_data(model_label, session, bids_folder, roi):
         print(df)
         df['median_split_subcortical_baseline'] = df.groupby(['subject', 'n1'], group_keys=False)[roi].apply(lambda d: d>d.quantile()).map({True:'High pre-baseline subcortical activation', False:'Low pre-baseline subcortical activation'})
 
-    if model_label.startswith('neural32') or model_label.startswith('neural33') or model_label.startswith('12') or model_label.startswith('42') or model_label.startswith('222') or model_label.startswith('neural55') or model_label.startswith('eu') or model_label.startswith('52') or model_label.startswith('62') or model_label.startswith('72') or model_label.startswith('neural34') or model_label.startswith('neural35') or model_label.startswith('klw'):
+    if model_label.startswith('neural6') or model_label.startswith('neural3') or model_label.startswith('neural33') or model_label.startswith('neural36') or model_label.startswith('12') or model_label.startswith('42') or model_label.startswith('222') or model_label.startswith('neural55') or model_label.startswith('eu') or model_label.startswith('52') or model_label.startswith('62') or model_label.startswith('72') or model_label.startswith('neural34') or model_label.startswith('neural35') or model_label.startswith('klw'):
         df['session'] = df.index.get_level_values('session')
-
 
     return df
 
@@ -168,7 +176,7 @@ def build_model(model_label, df, roi):
         model = RiskModel(df, prior_estimate='shared')
     elif model_label == '42':
         model = RiskRegressionModel(df, prior_estimate='shared', regressors={'n1_evidence_sd':'session', 'n2_evidence_sd':'session', 'prior_mu':'session',
-        'prior_std':'session',})
+        'prior_sd':'session',})
     elif model_label == '5':
         model = RiskModel(df, prior_estimate='full', fit_seperate_evidence_sd=False)
     elif model_label == '6':
@@ -180,10 +188,10 @@ def build_model(model_label, df, roi):
     elif model_label == '52':
         model = RiskRegressionModel(df, prior_estimate='full', fit_seperate_evidence_sd=False,
                                     regressors={'evidence_sd':'session', 'risky_prior_mu':'session',
-                                                'risky_prior_std':'session', 'safe_prior_mu':'session', 'safe_prior_std':'session'})
+                                                'risky_prior_sd':'session', 'safe_prior_mu':'session', 'safe_prior_sd':'session'})
     elif model_label == '12':
         model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'session', 'n2_evidence_sd':'session', 'risky_prior_mu':'session',
-        'risky_prior_std':'session', 'safe_prior_mu':'session', 'safe_prior_std':'session'})
+        'risky_prior_sd':'session', 'safe_prior_mu':'session', 'safe_prior_sd':'session'})
     elif model_label == '72':
         model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'session*risky_first', 'n2_evidence_sd':'session*risky_first', 'risky_prior_mu':'session',
         'risky_prior_std':'session', 'safe_prior_mu':'session', 'safe_prior_std':'session'})
@@ -222,18 +230,24 @@ def build_model(model_label, df, roi):
     elif model_label == 'neural4':
         model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'sd', 'n2_evidence_sd':'sd', 'risky_prior_mu':'sd',
         'risky_prior_std':'sd+sd:risky_first', 'safe_prior_mu':'sd', 'safe_prior_std':'sd+sd:risky_first'}) 
-    elif model_label == 'neural32':
+    elif model_label in ['neural32', 'neural62']:
         model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'sd*session', 'n2_evidence_sd':'sd*session', 'risky_prior_mu':'sd*session',
-        'risky_prior_std':'sd*session', 'safe_prior_mu':'sd*session', 'safe_prior_std':'sd*session'}) 
+        'risky_prior_sd':'sd*session', 'safe_prior_mu':'sd*session', 'safe_prior_sd':'sd*session'}) 
     elif model_label == 'neural33':
         model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'sd+session', 'n2_evidence_sd':'sd+session', 'risky_prior_mu':'sd+session',
         'risky_prior_std':'sd+session', 'safe_prior_mu':'sd+session', 'safe_prior_std':'sd+session'}) 
-    elif model_label == 'neural34':
+    elif model_label in ['neural34', 'neural64']:
         model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'sd+session', 'n2_evidence_sd':'sd+session', 'risky_prior_mu':'session',
         'risky_prior_sd':'session', 'safe_prior_mu':'session', 'safe_prior_sd':'sd+session'}) 
     elif model_label == 'neural35':
         model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'sd+session', 'n2_evidence_sd':'session', 'risky_prior_mu':'session',
         'risky_prior_std':'session', 'safe_prior_mu':'session', 'safe_prior_std':'sd+session'}) 
+    elif model_label in ['neural36', 'neural66']:
+        model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'sd+session', 'n2_evidence_sd':'session', 'risky_prior_mu':'session',
+        'risky_prior_sd':'session', 'safe_prior_mu':'session', 'safe_prior_sd':'session'}) 
+    elif model_label in ['neural37', 'neural67']:
+        model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'sd+session', 'n2_evidence_sd':'session', 'risky_prior_mu':'session',
+        'risky_prior_sd':'session', 'safe_prior_mu':'session', 'safe_prior_sd':'sd+session'}) 
     elif model_label == 'neural33_null':
         model = RiskRegressionModel(df, prior_estimate='full', regressors={'n1_evidence_sd':'session', 'n2_evidence_sd':'session', 'risky_prior_mu':'session',
         'risky_prior_std':'session', 'safe_prior_mu':'session', 'safe_prior_std':'session'}) 
