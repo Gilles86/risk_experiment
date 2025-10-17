@@ -148,7 +148,7 @@ class Subject(object):
         return get_runs(self.subject, session)
 
     @staticmethod
-    def _cleanup_behavior(df_, drop_no_responses=True, n_risk_bins=6):
+    def _cleanup_behavior(df_, drop_no_responses=True, n_risk_bins=8):
         df = df_[[]].copy()
         df['rt'] = df_.loc[:, ('onset', 'choice')] - df_.loc[:, ('onset', 'stimulus 2')]
         df['uncertainty'] = df_.loc[:, ('choice', 'certainty')]
@@ -172,7 +172,7 @@ class Subject(object):
 
         df['choice'] = df_[('choice', 'choice')]
         df['risky_first'] = df['prob1'] == 0.55
-        df['chose_risky'] = (df['risky_first'] & (df['choice'] == 1.0)) | (~df['risky_first'] & (df['choice'] == 2.0))
+        df['chose_risky'] = ((df['risky_first'] & (df['choice'] == 1.0)) | (~df['risky_first'] & (df['choice'] == 2.0))).astype(float)
         df.loc[df.choice.isnull(), 'chose_risky'] = np.nan
 
         df['Order'] = df['risky_first'].map({True:'Risky first', False:'Safe first'})
@@ -285,7 +285,8 @@ class Subject(object):
             include_cvr2=False,
             natural_space=True,
             epi_space=True,
-            roi=None):
+            roi=None,
+            return_nifti=False):
 
         dir = 'encoding_model'
         cv_dir = dir + '.cv'
@@ -348,6 +349,9 @@ class Subject(object):
             
             pars = pd.Series(masker.fit_transform(fn).ravel())
             parameters.append(pars)
+
+        if return_nifti:
+            return masker.inverse_transform(parameters)
 
         return pd.concat(parameters, axis=1, keys=keys, names=['parameter'])
 
