@@ -9,7 +9,7 @@ from risk_experiment.utils import get_all_subjects
 from utils import get_alpha_vertex
 from scipy import stats as ss
 
-vranges = {'mu':(5, 80), 'cvr2':(0.0, 0.025), 'r2':(0.0, 0.2), 'mu_natural':(5, 80), 'sd':(2, 12)}
+vranges = {'mu':(5, 28), 'cvr2':(0.0, 0.025), 'r2':(0.0, 0.2), 'mu_natural':(5, 80), 'sd':(2, 12)}
 cmaps = {'mu':'nipy_spectral', 'cvr2':'afmhot', 'r2':'afmhot', 'mu_natural':'nipy_spectral', 
 'sd':'hot'}
 

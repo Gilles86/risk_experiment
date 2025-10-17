@@ -7,10 +7,10 @@ from risk_experiment.utils import Subject, get_all_subject_ids
 from utils import get_alpha_vertex
 from scipy import stats as ss
 
-vranges = {'mu':(5, 80), 'cvr2':(0.0, 0.2), 'r2':(0.0, 0.2)}
+vranges = {'mu':(5, 28), 'cvr2':(0.0, 0.2), 'r2':(0.0, 0.2)}
 cmaps = {'mu':'nipy_spectral', 'cvr2':'afmhot', 'r2':'afmhot'}
 
-def get_subject_vertices(subject, session, bids_folder, standard_space, thr, smoothed, show_unthresholded_map=False, show_pars=None):
+def get_subject_vertices(subject, session, bids_folder, standard_space, thr, smoothed, natural_space=False, show_unthresholded_map=False, show_pars=None):
     sub = Subject(subject, bids_folder)
 
     if standard_space:
