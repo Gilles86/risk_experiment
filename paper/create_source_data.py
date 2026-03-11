@@ -280,7 +280,25 @@ for sub, grp in diff_prsd:
         'p_positive': float((grp.values > 0).mean()),
     })
 
-sheets['Figure 2C'] = pd.DataFrame(fig2c_rows)
+# Add behavioural risk preference category per subject
+# (based on mean proportion of risky choices across all conditions)
+overall_risk = (
+    df.groupby('subject')['chose_risky']
+    .mean()
+    .rename('prop_risky_overall')
+)
+risk_cat = pd.cut(
+    overall_risk,
+    bins=[0, 0.45, 0.55, 1],
+    labels=['Risk-averse', 'Risk-neutral', 'Risk-seeking']
+).rename('risk_preference')
+
+fig2c_df = pd.DataFrame(fig2c_rows)
+fig2c_df = fig2c_df.merge(
+    risk_cat.reset_index().rename(columns={'index': 'subject'}),
+    on='subject', how='left'
+)
+sheets['Figure 2C'] = fig2c_df
 
 # ---------------------------------------------------------------------------
 # FIGURE 3A-D
@@ -371,7 +389,9 @@ try:
         idatas_comparison[model_name] = idata_m
 
     comparison = az.compare(idatas_comparison)
-    sheets['Figure 3E'] = comparison.reset_index().rename(columns={'index': 'model'})
+    comp_df = comparison.reset_index().rename(columns={'index': 'model'})
+    comp_df = comp_df.drop(columns=['warning'], errors='ignore')
+    sheets['Figure 3E'] = comp_df
 
 except Exception as e:
     print(f"  Warning: could not compute ELPD comparison: {e}")
