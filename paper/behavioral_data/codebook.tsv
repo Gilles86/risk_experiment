@@ -1,0 +1,16 @@
+column	description
+session	3t2 = 3T MRI session, 7t2 = 7T MRI session
+run	Run number within session (1-8)
+trial_nr	Trial number within run
+n1	Number of dots in option 1 (stimulus shown first)
+n2	Number of dots in option 2 (stimulus shown second)
+prob1	Win probability for option 1 (0.55 = risky, 1.0 = safe)
+prob2	Win probability for option 2 (0.55 = risky, 1.0 = safe)
+risky_first	True if the risky option (prob=0.55) was option 1
+n_risky	Number of dots of the risky option
+n_safe	Number of dots of the safe option
+log_risky_safe	log(n_risky / n_safe), the key decision variable
+choice	Raw response: 1 = chose option 1, 2 = chose option 2
+chose_risky	True if participant chose the risky option
+rt	Reaction time in seconds (from onset of option 2 to response)
+certainty	"Post-decision certainty rating (1 = very uncertain, 4 = very certain); stored as ""uncertainty"" internally"

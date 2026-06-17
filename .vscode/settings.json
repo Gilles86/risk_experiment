@@ -1,0 +1,24 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^python3 risk_experiment/revision/fix_bids_files\\.py /data/ds-risk_bids2 --dry-run --clean-mac-files$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cat /data/ds-risk_bids2/sub-02/ses-7t2/func/sub-02_ses-7t2_task-task_run-1_bold\\.json \\| python3 -m json\\.tool$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^python3 -c \"import nibabel as nib; img = nib\\.load\\('/data/ds-risk_bids2/sub-02/ses-3t2/func/sub-02_ses-3t2_task-task_run-1_bold\\.nii\\.gz'\\); print\\(f'TR from NIfTI header: \\{img\\.header\\.get_zooms\\(\\)\\[3\\]\\} seconds'\\)\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^python3 -c \"import nibabel as nib; img = nib\\.load\\('/data/ds-risk_bids2/sub-02/ses-7t2/func/sub-02_ses-7t2_task-task_run-1_bold\\.nii\\.gz'\\); print\\(f'TR from NIfTI header: \\{img\\.header\\.get_zooms\\(\\)\\[3\\]\\} seconds'\\)\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^python3 -c \"import nibabel as nib; img = nib\\.load\\('/data/ds-risk_bids2/sub-02/ses-3t2/func/sub-02_ses-3t2_task-task_run-1_bold\\.nii\\.gz'\\); print\\(img\\.header\\.get_zooms\\(\\)\\[3\\]\\)\" 2>&1 \\| head -1$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}
