@@ -7,6 +7,26 @@ Preprint: https://www.biorxiv.org/content/10.1101/2024.08.23.609296v1.full
 
 This repository contains all analysis code for the above paper, which investigates how the brain's representations of numerical magnitude in parietal cortex shape moment-to-moment risk preferences.
 
+> **Reproducing the paper?** This README explains the *models and ideas*. For the
+> step-by-step operational recipe — where to download the data, how to set up the
+> environment (incl. the pinned `bauer 0.1.0`), and how to regenerate every figure
+> and statistic from cold — see **[`REPRODUCE.md`](REPRODUCE.md)**. Code not needed
+> to reproduce the paper lives in **[`archive/`](archive/)**.
+>
+> Figure numbers in this README use the **pre-revision** scheme; the published
+> paper has six figures. See the old→new map in [`REPRODUCE.md`](REPRODUCE.md#oldnew-figure-mapping).
+
+---
+
+## Data & software availability
+
+- **Main 7T/3T experiment** — OpenNeuro **`ds007508`**: https://openneuro.org/datasets/ds007508 (DOI [10.18112/openneuro.ds007508.v1.0.0](https://doi.org/10.18112/openneuro.ds007508.v1.0.0)).
+- **Symbolic (Arabic-numeral) experiment** — figshare DOI [10.6084/m9.figshare.31400430](https://doi.org/10.6084/m9.figshare.31400430).
+- **Preprocessing**: **fMRIPrep 20.2.2** (based on Nipype 1.6.1).
+- **Environment**: conda env `risk7t` (Python 3.10) from [`environment.yml`](environment.yml); in-house libraries [`braincoder`](https://braincoder-devs.github.io/) (encoding/decoding) and [`bauer`](https://github.com/ruffgroup/bauer) **0.1.0, pinned at commit `e246d78`** (see [`REPRODUCE.md`](REPRODUCE.md) §1).
+
+Operational download/setup steps: [`REPRODUCE.md`](REPRODUCE.md) §1–2.
+
 ---
 
 ## The Core Idea
@@ -79,7 +99,7 @@ Key model trace files in `derivatives/cogmodels/`:
 
 ### Step 1 — fMRI Preprocessing
 
-Standard preprocessing via **fMRIPrep**: head motion correction, slice timing correction, spatial normalisation (MNI + subject T1w), surface reconstruction via FreeSurfer. Batch scripts are in `risk_experiment/cluster_preprocess/`.
+Standard preprocessing via **fMRIPrep 20.2.2** (based on Nipype 1.6.1): head motion correction, slice timing correction, spatial normalisation (MNI + subject T1w), surface reconstruction via FreeSurfer. Batch scripts are in `risk_experiment/cluster_preprocess/`.
 
 ### Step 2 — Numerical pRF Encoding Model (Figures 4A, 4B)
 
@@ -195,124 +215,92 @@ combined = softplus_np(Intercept + 0.5 * session[T.7t2])
 
 ## Repository Structure
 
+The reproduction-critical layout (see [`REPRODUCE.md`](REPRODUCE.md) for the full
+recipe; exploratory/dead code lives in [`archive/`](archive/)):
+
 ```
 risk_experiment/
+├── figures/                    # ★ the six published figures
+│   ├── figure_01_behavior.py        figure_01D_model_schematic.py
+│   ├── figure_02_pmcm.py            figure_03_alt_models.py
+│   ├── figure_04_model_comparison.py figure_05_neural.py figure_06_symbolic.py
+│   ├── style.py                # house style + shim_pymc_for_bauer()
+│   └── verify.py               # Nature artwork checks (size/font/embedding)
 ├── cogmodels/
-│   ├── fit_model.py           # PMC model fitting (RiskModel / RiskRegressionModel)
-│   ├── fit_probit.py          # Probit model fitting (Bambi)
-│   ├── utils.py               # extract_intercept_gamma(), softplus helpers
-│   ├── model_recovery/        # Parameter & model recovery simulations
-│   └── notebooks/
-│       ├── figure2.ipynb      # Figs 2A–C (PMC model results)
-│       ├── model_comparison.ipynb
-│       ├── neural_model_comparison.ipynb
-│       ├── parameter_recovery.ipynb
-│       ├── analyze_neural_probit.ipynb
-│       └── supplfigure1.ipynb
-├── encoding_model/
-│   └── notebooks/
-│       ├── analyze_decoding_natural_space.ipynb   # Fig 4B
-│       └── analyze_encoding_cvr2.ipynb            # Fig 4A
-├── figures/
-│   └── likelihood_prior_revision.ipynb  # Fig 2D schematic
-├── notebooks/
-│   └── revision1/
-│       ├── ppcs.ipynb          # PPCs (Figs 2A, 3A–D)
-│       ├── ppcs_symbolic.ipynb
-│       └── stake_plots.ipynb   # Fig 1B
-├── symbolic_experiment/
-│   ├── figure1.ipynb
-│   └── notebooks/
-│       ├── analyze_probit_models.ipynb
-│       └── model_comparison_probit.ipynb
-├── registration/
-│   └── make_figures.ipynb      # Fig 4A brain maps (pycortex)
-├── prepare/                    # BIDS preparation, event file creation
-├── preproc/                    # fMRI surface smoothing
-└── surface/                    # IPS mask creation, pRF centre of mass
+│   ├── fit_model.py            # PMC model fitting (RiskModel / RiskRegressionModel)
+│   ├── fit_probit.py           # Probit model fitting (Bambi)
+│   ├── utils.py                # extract_intercept_gamma(), softplus helpers
+│   └── notebooks/figure2.ipynb # Fig 2 panels; parameter_recovery.ipynb; analyze_neural_probit.ipynb
+├── symbolic_experiment/        # fit_probit.py + notebooks/analyze_probit_models.ipynb (Fig 6)
+├── encoding_model/             # nPRF fit + decode (Fig 5); notebooks/analyze_decoding_natural_space.ipynb
+├── utils/data.py               # ★ Subject class — the single data-access point
+├── revision/
+│   ├── report_statistics.py    # ★ recompute every reported p-value / CI (→ notes/reported_statistics.md)
+│   ├── refit_per_session.py    # regenerate per-session PMCM traces
+│   └── notes/                  # STATISTICS_AUDIT.md, AFFINITY_FIGURE_SIZES.md, …
+├── prepare/  preproc/  cluster_preprocess/  glms/  registration/  surface/   # raw→derivatives pipeline
+└── run_batch.py                # cluster batch helper for the NUTS model fits
 
-paper/
-├── deHollanderetal2024v3.pdf   # manuscript (latest version)
-├── Source_Data.xlsx            # source data for all figures (Nature Comms)
-├── create_source_data.py       # generates Source_Data.xlsx
-└── plot_source_data.py         # verification plots → source_data_figures.pdf
+REPRODUCE.md     # operational reproduction recipe (start here to reproduce)
+environment.yml  # conda env "risk7t"
+archive/         # code NOT needed to reproduce the paper (see archive/CLEANUP_NOTES.md)
 ```
+
+> Figure source data are the per-panel `revision/figures/source_data/*.tsv` files
+> emitted by the figure scripts (the old `paper/Source_Data.xlsx` is superseded).
 
 ---
 
 ## Installation
 
+Create the `risk7t` conda env and install the package (see [`REPRODUCE.md`](REPRODUCE.md) §1 for the full recipe):
+
 ```bash
-git clone https://github.com/Gilles86/risk_experiment.git
+git clone https://github.com/ruffgroup/risk_experiment.git
 cd risk_experiment
+conda env create -f environment.yml      # env "risk7t" (Python 3.10)
+conda activate risk7t
 pip install -e .
 ```
 
-Also install the two core libraries:
-
-```bash
-pip install git+https://github.com/Gilles86/bauer.git
-pip install git+https://github.com/Gilles86/braincoder.git
-```
+The two in-house libraries: [`braincoder`](https://github.com/Gilles86/braincoder)
+(encoding/decoding) and [`bauer`](https://github.com/ruffgroup/bauer). **bauer must
+be the analysis-era 0.1.0, pinned at commit `e246d78`** — install it as a git
+worktree exactly as described in [`REPRODUCE.md`](REPRODUCE.md) §1 (the published
+traces and figure scripts depend on that version).
 
 Key dependencies: PyMC, ArviZ, Bambi, nilearn, nibabel, pandas, numpy, matplotlib.
-
-A Docker environment is available:
-
-```bash
-pip install docker-compose
-docker-compose build
-```
 
 ---
 
 ## Reproducing Figures
 
-### Source Data Excel file
-
-```bash
-python paper/create_source_data.py   # requires /data/ds-risk/ access
-python paper/plot_source_data.py     # → paper/source_data_figures.pdf
-```
+The six published figures are regenerated by the `figure_0N_*.py` scripts in
+`risk_experiment/figures/`, and every reported *p*-value / statistic by
+`risk_experiment/revision/report_statistics.py`. See **[`REPRODUCE.md`](REPRODUCE.md)
+§4–6** for the full figure-by-figure recipe and the figures-only quick path. Each
+figure script emits per-panel vector PDFs plus a per-panel **source-data TSV** into
+`risk_experiment/revision/figures/source_data/` (these TSVs are the figure source
+data deposited with the paper).
 
 ### Fitting models from scratch
 
+`model_label` is a **positional** argument:
+
 ```bash
 # Main PMC model (combined sessions)
-python risk_experiment/cogmodels/fit_model.py --model_label 12
+python risk_experiment/cogmodels/fit_model.py 12
 
 # Neural PMC model
-python risk_experiment/cogmodels/fit_model.py --model_label neural32
+python risk_experiment/cogmodels/fit_model.py neural32
 
 # Psychophysical probit model
-python risk_experiment/cogmodels/fit_probit.py --model_label probit_full_session
+python risk_experiment/cogmodels/fit_probit.py probit_full_session
 
-# Neural probit model (Fig 4C)
-python risk_experiment/cogmodels/fit_probit.py --model_label probit_neural9
+# Neural probit model
+python risk_experiment/cogmodels/fit_probit.py probit_neural9
 ```
 
-Models are computationally intensive (NUTS sampling). On a cluster, use the batch scripts in `risk_experiment/run_batch.py`.
-
----
-
-## Source Data (`paper/Source_Data.xlsx`)
-
-| Sheet | Content |
-|---|---|
-| Figure 1B | Mean prop. risky by safe payoff and presentation order |
-| Figure 1B (per subject) | Per-subject |
-| Figure 1C | Psychophysical curves (prop. risky vs log risky/safe ratio) by stake and order |
-| Figure 1C (per subject) | Per-subject |
-| Figure 1C RNP insets | Group-level RNP posteriors (mean + 95% HDI) from `probit_full_session` |
-| Figure 2A | PMC model PPC (model 95% HDI + empirical mean ± SEM) |
-| Figure 2B | Group-level PMC parameter posteriors (combined 3T+7T sessions) |
-| Figure 2C | Subject-level parameter differences + behavioural risk preference category |
-| Figure 3A-D | Alternative model PPCs |
-| Figure 3E | ELPD-LOO model comparison |
-| Figure 4B | Decoding accuracy per subject/session |
-| Figure 4C | Distance to risk neutrality by neural uncertainty level (`probit_neural9`) |
-| Figure 4D | Neural uncertainty slopes per PMC parameter (`model-neural32`) |
-| Figure 5B | Symbolic experiment psychophysical curves |
-| Figure 5B (per subject) | Per-subject |
-
-**Note**: Figure 4A (nPRF brain map) is not included in Source Data — the underlying maps are NIfTI files stored in `derivatives/encoding_model.cv.denoise.natural_space/`.
+Models are computationally intensive (NUTS sampling). On a cluster, use the batch
+helper `risk_experiment/run_batch.py`. You do **not** need to refit to regenerate
+figures — the published `derivatives/cogmodels/*.netcdf` traces are loaded directly.
