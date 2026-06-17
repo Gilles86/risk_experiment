@@ -59,3 +59,5 @@ experiment/settings/*
 .job
 .ipynb_checkpoints
 *test*.ipynb
+# pip editable source checkouts (e.g. bauer 0.1.0 for analysis reproduction)
+/src/

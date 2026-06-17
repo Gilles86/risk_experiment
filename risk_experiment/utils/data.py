@@ -46,6 +46,8 @@ def get_runs(subject, session):
 
 def get_all_subject_ids(drop_outliers=False):
     subjects = ['%02d' % i for i in range(2, 33)]
+    # sub-24 got claustrophobia in the scanner and never completed more than
+    # one session, so they are excluded from all analyses.
     subjects.pop(subjects.index('24'))
 
     if drop_outliers:
