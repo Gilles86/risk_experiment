@@ -257,7 +257,7 @@ def plot_composite(summaries, bids_folder='/data/ds-risk'):
     # Rows 0 and 3 carry extra furniture (stake titles / xlabel); give them a
     # touch more height so every square panel ends up the same size.
     subfigs = fig.subfigures(nrow + 1, 1,
-                             height_ratios=[1.12, 1.0, 1.0, 1.08, 0.16])
+                             height_ratios=[1.12, 1.0, 1.0, 1.08, 0.30])
 
     for i, (model_label, _title, gray) in enumerate(MODELS):
         sf = subfigs[i]
@@ -304,10 +304,13 @@ def plot_composite(summaries, bids_folder='/data/ds-risk'):
             sns.despine(ax=ax, offset=2, trim=False)
 
     # Bottom legend strip (its own subfigure band).
-    handles = [Line2D([0], [0], marker='o', ls='', ms=4,
+    handles = [Line2D([0], [0], marker='o', ls='', ms=5,
                       color=ORDER_COLORS[lbl]) for lbl in ['Safe first', 'Risky first']]
-    subfigs[-1].legend(handles, ['Safe first', 'Risky first'], loc='center',
-                       ncol=2, frameon=False, fontsize=8, columnspacing=1.8)
+    # Boxed, stacked key (matching the other figures' order legends).
+    leg = subfigs[-1].legend(handles, ['Safe first', 'Risky first'], loc='center',
+                             ncol=1, frameon=True, fontsize=8, edgecolor='0.6',
+                             facecolor='white', framealpha=1.0, handletextpad=0.4)
+    leg.get_frame().set_linewidth(0.6)
 
     pdf = style.save_panel(fig, 'figure_03_composite', bids_folder)
     print(f'Wrote figure: {pdf}')

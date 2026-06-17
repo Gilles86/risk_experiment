@@ -220,37 +220,36 @@ def compute_rnp_difference(rnp):
 
 
 def plot_B(curves, rnp, bids_folder='/data/ds-risk'):
-    """Panel 6B, mirroring Figure 1C exactly.
+    """Panel 6B: three stacked rows per stake bin.
 
-    Two stacked rows per stake bin on a *shared* log(risky/safe) x-axis:
-      * top (shorter than before): the psychophysical curve -- observed
-        group-mean points + the probit posterior-predictive mean line and 95%
-        HDI band, per Order.
-      * bottom: the raw risk-neutral point (RNP) per Order, drawn as in 1C at
-        ``-log(RNP)`` (where the probit crosses p = 0.5), with the risk-neutral
-        reference (RNP = 0.55) marked. Risk-seeking left of it, risk-averse
-        right. (The old single Δ-RNP marker is replaced by the two raw RNPs.)
+      * curve   -- psychophysical curve: observed group-mean points + the probit
+                   posterior-predictive mean line and 95% HDI, per Order.
+      * raw RNP -- the risk-neutral point per Order at ``-log(RNP)`` (as in 1C),
+                   risk-seeking left of the RNP = 0.55 reference, averse right.
+      * Δ RNP   -- the order effect: Safe-first − Risky-first RNP, mean + 95% HDI
+                   against a "no difference" line at 0.
     """
     import matplotlib.pyplot as plt
 
     style.set_style()
+    diff = compute_rnp_difference(rnp)
 
     n = len(STAKE_ORDER)
-    mid = n // 2  # centre column -> carries the single small axis labels
-    # Curves shorter (height_ratios as in 1C); RNP strip below.
-    fig, axes = plt.subplots(2, n, figsize=(style.WIDTH_DOUBLE, 2.5),
+    # Condensed in height: shorter curves + compact RNP / Δ RNP strips.
+    fig, axes = plt.subplots(3, n, figsize=(style.WIDTH_DOUBLE, 2.5),
                              sharey='row',
-                             gridspec_kw={'height_ratios': [2.6, 1.0]},
+                             gridspec_kw={'height_ratios': [2.3, 1.0, 0.85]},
                              constrained_layout=True)
 
     NEUTRAL = -np.log(RNP_REFERENCE)   # risk-neutral point in the shared log axis
     # Cover both the curve log-ratios (~0.08-1.31) and the -log(RNP) markers.
     XLIM = (0.05, 1.38)
     ratio_ticks = [1.5, 2, 3]          # natural-space ratios for the top axis
-    rnp_ticks = [0.7, 0.55, 0.4]       # RNP values for the bottom axis
+    rnp_ticks = [0.7, 0.55, 0.4]       # RNP values for the middle axis
+    DIFF_COLOR = '#2D2D2D'             # neutral dark: the contrast collapses Order
 
     for j, stake in enumerate(STAKE_ORDER):
-        ax, rax = axes[0, j], axes[1, j]
+        ax, rax, dax = axes[0, j], axes[1, j], axes[2, j]
         sub = curves[curves['n_safe_bin'] == stake]
 
         # --- top: psychophysical curve + probit PPC overlay ---
@@ -271,7 +270,7 @@ def plot_B(curves, rnp, bids_folder='/data/ds-risk'):
             ax.plot(obs.index.values, obs.values, 'o', ms=3.0, color=color,
                     mec='none', zorder=3)
 
-        ax.set_title(f'Safe {stake}', pad=6, **style.BOLD)
+        ax.set_title(f'Safe {stake}', pad=6)
         ax.set_xlim(*XLIM)
         ax.set_xticks([np.log(t) for t in ratio_ticks])
         ax.set_xticklabels([f'{t:g}' for t in ratio_ticks])
@@ -281,7 +280,7 @@ def plot_B(curves, rnp, bids_folder='/data/ds-risk'):
         ax.set_ylabel('P(risky choice)' if j == 0 else '')
         sns.despine(ax=ax, offset=3, trim=False)
 
-        # --- bottom: raw RNP per Order at -log(RNP) (same x-axis as the curve) ---
+        # --- middle: raw RNP per Order at -log(RNP) (same x-axis as the curve) ---
         rsub = rnp[rnp['n_safe_bin'] == stake]
         rax.axvline(NEUTRAL, ls='--', c='k', lw=0.6, zorder=0)
         for k, order in enumerate(HUE_ORDER):
@@ -294,15 +293,33 @@ def plot_B(curves, rnp, bids_folder='/data/ds-risk'):
         rax.set_xlim(*XLIM)
         rax.set_xticks([-np.log(t) for t in rnp_ticks])
         rax.set_xticklabels([f'{t:g}'.lstrip('0') for t in rnp_ticks])
-        rax.set_ylim(-1.9, 0.9)
+        rax.set_ylim(-1.9, 1.15)
         rax.set_yticks([])
         rax.set_xlabel('RNP', fontsize=7)
-        rax.text(XLIM[0] + 0.05, 0.8, 'Risk-seeking', fontsize=6, ha='left',
-                 va='bottom', color='0.45')
-        rax.text(XLIM[1] - 0.05, 0.8, 'Risk-averse', fontsize=6, ha='right',
-                 va='bottom', color='0.45')
+        # Two-line edge labels: fit the narrow panels and clear the centre.
+        rax.text(XLIM[0], 1.1, 'Risk-\nseeking', fontsize=6.5, ha='left',
+                 va='top', color='0.45', linespacing=0.9)
+        rax.text(XLIM[1], 1.1, 'Risk-\naverse', fontsize=6.5, ha='right',
+                 va='top', color='0.45', linespacing=0.9)
         sns.despine(ax=rax, left=True, offset=3, trim=False)
         rax.tick_params(axis='y', length=0)
+
+        # --- bottom: Δ RNP (Safe first − Risky first) -- the order effect ---
+        dvals = diff[diff['n_safe_bin'] == stake]['difference'].values
+        dm = dvals.mean()
+        dlo, dhi = az.hdi(dvals)
+        dax.axvline(0.0, ls='--', c='k', lw=0.6, zorder=0)
+        dax.errorbar(dm, 0, xerr=[[dm - dlo], [dhi - dm]], fmt='o', ms=4.5,
+                     color=DIFF_COLOR, mec='white', mew=0.5, elinewidth=1.8,
+                     capsize=0)
+        dax.set_xlim(-0.045, 0.105)
+        dax.set_xticks([0.0, 0.05, 0.1])
+        dax.set_xticklabels(['0', '.05', '.1'])
+        dax.set_ylim(-0.6, 0.6)
+        dax.set_yticks([])
+        dax.set_xlabel('RNP difference', fontsize=7)  # ASCII; Δ added in Affinity
+        sns.despine(ax=dax, left=True, offset=3, trim=False)
+        dax.tick_params(axis='y', length=0)
 
     # No in-panel key -- the Order legend is a separate ingredient placed by hand
     # in Affinity so it never overlaps the small panels (matches Figure 1C).

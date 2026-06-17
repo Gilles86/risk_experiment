@@ -285,15 +285,16 @@ def plot_C(df, rnp, bids_folder='/data/ds-risk'):
         rax.set_xlim(*XLIM)
         rax.set_xticks([-np.log(t) for t in rnp_ticks])   # position = -log(RNP)
         rax.set_xticklabels([f'{t:g}'.lstrip('0') for t in rnp_ticks])  # = RNP
-        rax.set_ylim(-1.9, 0.9)
+        rax.set_ylim(-1.9, 1.15)
         rax.set_yticks([])
         # One small centred 'RNP' label under all three (middle panel only).
         rax.set_xlabel('RNP', fontsize=7)
-        # RNP > .55 (left of neutral) = risk-seeking; < .55 (right) = risk-averse.
-        rax.text(XLIM[0] + 0.05, 0.8, 'Risk-seeking', fontsize=6, ha='left',
-                 va='bottom', color='0.45')
-        rax.text(XLIM[1] - 0.05, 0.8, 'Risk-averse', fontsize=6, ha='right',
-                 va='bottom', color='0.45')
+        # Two-line edge labels (matching Figure 6): RNP > .55 (left of neutral) =
+        # risk-seeking; < .55 (right) = risk-averse.
+        rax.text(XLIM[0], 1.1, 'Risk-\nseeking', fontsize=6.5, ha='left',
+                 va='top', color='0.45', linespacing=0.9)
+        rax.text(XLIM[1], 1.1, 'Risk-\naverse', fontsize=6.5, ha='right',
+                 va='top', color='0.45', linespacing=0.9)
         sns.despine(ax=rax, left=True, offset=3, trim=False)
         rax.tick_params(axis='y', length=0)
 

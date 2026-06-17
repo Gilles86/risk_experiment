@@ -104,7 +104,10 @@ def plot_group(group, bids_folder=BIDS):
         ax.set_xlabel('')
         ax.set_ylabel('Posterior density' if ax is axes[0] else '')
         ax.set_yticks([])
-        ax.legend(frameon=False, fontsize=8, handlelength=1.0, handletextpad=0.4)
+        leg = ax.legend(frameon=True, fontsize=8, handlelength=1.0,
+                        handletextpad=0.4, edgecolor='0.6', facecolor='white',
+                        framealpha=1.0)
+        leg.get_frame().set_linewidth(0.6)
     # Keep the y-axis spine to anchor the densities (no numeric ticks -- KDE
     # height is arbitrary).
     sns.despine(fig=fig, offset=3, trim=False)
@@ -187,10 +190,12 @@ def make_risk_legend(bids_folder=BIDS):
     keys = ['risk-seeking', 'risk-averse', 'risk-neutral']
     handles = [Line2D([0], [0], marker='o', linestyle='none', markersize=5,
                       color=RISK_COLORS[k], label=RISK_LABELS[k]) for k in keys]
-    ax.legend(handles=handles, loc='center', frameon=False, fontsize=7,
-              handletextpad=0.3, labelspacing=0.4, borderpad=0)
+    leg = ax.legend(handles=handles, loc='center', frameon=True, fontsize=7,
+                    handletextpad=0.3, labelspacing=0.4, borderpad=0.6,
+                    edgecolor='0.6', facecolor='white', framealpha=1.0)
+    leg.get_frame().set_linewidth(0.6)
     pdf = style.save_panel(fig, 'figure_02C_risk_legend', bids_folder,
-                           tight=True, transparent=True, pad=0.0)
+                           tight=True, transparent=True, pad=0.05)
     print(f'Wrote figure: {pdf}')
 
 
@@ -229,12 +234,17 @@ def plot_ppc(summary, bids_folder=BIDS):
         ax.set_yticks([0, .25, .5, .75, 1.])
         ax.set_ylim(-0.03, 1.03)
     axes[0].set_ylabel('P(risky choice)')
-    handles = [Line2D([0], [0], marker='o', linestyle='none', markersize=4,
+    handles = [Line2D([0], [0], marker='o', linestyle='none', markersize=5,
                       color=style.ORDER_COLORS[ORDER_LABELS[k]])
                for k in [False, True]]
-    axes[0].legend(handles, [ORDER_LABELS[False], ORDER_LABELS[True]],
-                   loc='upper left', frameon=False, fontsize=8,
-                   handletextpad=0.3, borderaxespad=0.2)
+    # Boxed key, harmonised with the Fig 1 order legend / Fig 4. Placed lower-
+    # right, where the rising curves leave space and it clears the risk-neutral
+    # axvline (which sits in the left half of the panel).
+    leg = axes[0].legend(handles, [ORDER_LABELS[False], ORDER_LABELS[True]],
+                         loc='lower right', frameon=True, fontsize=8,
+                         handletextpad=0.3, borderaxespad=0.4,
+                         edgecolor='0.6', facecolor='white', framealpha=1.0)
+    leg.get_frame().set_linewidth(0.6)
     sns.despine(fig=fig, offset=3, trim=False)
     pdf = style.save_panel(fig, 'figure_02A_ppc', bids_folder, tight=False)
     print(f'Wrote figure: {pdf}')

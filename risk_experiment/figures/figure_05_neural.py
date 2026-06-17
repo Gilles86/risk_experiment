@@ -242,12 +242,17 @@ def plot_decoding(dec, bids_folder=BIDS_DEFAULT):
 
     style.set_style()
 
-    fig, axes = plt.subplots(1, 2, figsize=(style.WIDTH_DOUBLE * 0.55, 2.0),
+    # Width: decoding (2 subpanels) + neural_gamma (3 subpanels) share the
+    # 180 mm bottom row, so size them to ~equal subpanel width and sum < 180.
+    # Wider left panel; height matched to neural_gamma (5D) so the row aligns.
+    fig, axes = plt.subplots(1, 2, figsize=(style.WIDTH_DOUBLE * 0.50, 1.7),
                              constrained_layout=True)
 
+    # Short one-line titles; the y-axis ("Correlation (r)") already says these
+    # are correlations, so the title only needs to name the two quantities.
     specs = [
-        ('r_E_n1', 'Correlation mean posterior\nand objective numerosity'),
-        ('r_sd_error', 'Correlation sd posterior\nand decoding error'),
+        ('r_E_n1', 'Decoded mean vs numerosity'),
+        ('r_sd_error', 'Decoded SD vs error'),
     ]
     order = ['3T', '7T']
     for ax, (col, title) in zip(axes, specs):
@@ -265,8 +270,9 @@ def plot_decoding(dec, bids_folder=BIDS_DEFAULT):
             ax.errorbar(k, m, yerr=se, fmt='D', color='k', mfc='white',
                         ms=6, mew=1.5, elinewidth=1.8, capsize=4, capthick=1.5,
                         zorder=10)
-        ax.set_title(title)
-        ax.set_ylabel('Correlation (r)')
+        ax.set_title(title, fontsize=7)
+        # y-label once (left panel); both panels are "Correlation (r)".
+        ax.set_ylabel('Correlation (r)' if ax is axes[0] else '')
         ax.set_xlabel('Scanner')
         # Pull the two categories toward the panel centre (wider x-limits),
         # leaving room on the right of each cloud for the mean +/- SEM marker.
@@ -284,7 +290,8 @@ def plot_rnp_distance(dist, bids_folder=BIDS_DEFAULT):
 
     style.set_style()
 
-    fig, ax = plt.subplots(figsize=(style.WIDTH_DOUBLE * 0.42, 1.7),
+    # Width matched to neural_gamma (5D) so the right column (5C over 5D) aligns.
+    fig, ax = plt.subplots(figsize=(style.WIDTH_DOUBLE * 0.46, 1.7),
                            constrained_layout=True)
 
     for label in NEURAL_UNCERTAINTY_ORDER:
@@ -307,8 +314,10 @@ def plot_rnp_distance(dist, bids_folder=BIDS_DEFAULT):
     ax.set_yticks([])
     # Headroom so the legend + p-value clear the distributions.
     ax.set_ylim(0, ax.get_ylim()[1] * 1.5)
-    ax.legend(loc='upper right', frameon=False, fontsize=8, handlelength=1.0,
-              handletextpad=0.4)
+    leg = ax.legend(loc='upper right', frameon=True, fontsize=8, handlelength=1.0,
+                    handletextpad=0.4, edgecolor='0.6', facecolor='white',
+                    framealpha=1.0)
+    leg.get_frame().set_linewidth(0.6)
     sns.despine(ax=ax, offset=4, trim=False, left=True)
     ax.tick_params(axis='y', length=0)
 
@@ -328,8 +337,9 @@ def plot_neural_gamma(gam, bids_folder=BIDS_DEFAULT):
     style.set_style()
 
     params = ['Evidence sd', 'Prior mean', 'Prior std']
+    # Right column ~20% narrower than before, so the left panels read wider.
     fig, axes = plt.subplots(1, len(params),
-                             figsize=(style.WIDTH_DOUBLE * 0.7, 1.6),
+                             figsize=(style.WIDTH_DOUBLE * 0.46, 1.7),
                              constrained_layout=True)
 
     for ax, param in zip(axes, params):
@@ -341,7 +351,10 @@ def plot_neural_gamma(gam, bids_folder=BIDS_DEFAULT):
                 continue
             sns.kdeplot(data=s, x='value', fill=True,
                         color=colors[option], label=option, ax=ax, lw=1.0)
-        ax.axvline(0.0, c='k', ls='--', lw=0.8, zorder=0)
+        # Stop the zero line below the top annotation band so it never crosses
+        # the p-value / legend (in Prior std the data sit right of 0, putting the
+        # line under the top-left p-value otherwise).
+        ax.axvline(0.0, ymax=0.72, c='k', ls='--', lw=0.8, zorder=0)
 
         # Annotate the manuscript-reported neural effect for this parameter:
         # p(slope < 0) for the significant coefficient -- Evidence sd carries the
@@ -353,21 +366,35 @@ def plot_neural_gamma(gam, bids_folder=BIDS_DEFAULT):
             vals = sub[sub['Option'] == opt]['value'].values
             p = float((vals < 0).mean())
             ann = 'p < 0.001' if p < 0.001 else f'p = {p:.3f}'
-            # Top-left corner, clear of the peaks and the upper-right legend.
-            ax.annotate(ann, xy=(0.03, 0.96), xycoords='axes fraction',
-                        ha='left', va='top', fontsize=8, color=colors[opt])
+            # Sit the p-value just above the distribution it describes (its
+            # median x), colour-matched -- the legends now hold the top corners.
+            ax.text(float(np.median(vals)), 0.50, ann,
+                    transform=ax.get_xaxis_transform(), ha='left', va='bottom',
+                    fontsize=8, color=colors[opt])
 
-        ax.set_title(param)
+        ax.set_title(param, fontsize=7)   # match 5B decoding titles (7 pt)
         ax.set_xlabel(None)
         ax.set_ylabel(None)
         ax.set_yticks([])
-        # Headroom at the top so the p-value (top-left) and legend (top-right)
-        # clear the KDE peaks.
-        ax.set_ylim(0, ax.get_ylim()[1] * 1.9)
-        # Each panel carries its own 2-entry key (evidence: Option 1/2;
-        # priors: Safe/Risky) -- the two schemes are deliberately different.
-        ax.legend(loc='upper right', frameon=False, fontsize=8,
-                  handlelength=1.0, handletextpad=0.4)
+        # Sparse, compact x-ticks: the narrow panels can't fit 3 long labels
+        # (Prior mean's symmetric ±0.025 collide). Few ticks + stripped zeros.
+        from matplotlib.ticker import MaxNLocator
+        ax.xaxis.set_major_locator(MaxNLocator(nbins=3))
+        ax.xaxis.set_major_formatter(plt.FuncFormatter(
+            lambda x, _: '0' if abs(x) < 1e-9
+            else f'{x:.3f}'.rstrip('0').replace('-0.', '-.').replace('0.', '.')))
+        # Headroom so the top-right legend and the on-distribution p-value both
+        # clear the KDE peaks in the narrow panels.
+        ax.set_ylim(0, ax.get_ylim()[1] * 2.3)
+        # Boxed key at the top-right (nudged to the edge) on both Evidence sd
+        # (Option 1/2) and Prior mean (the single Safe/Risky key); Prior std
+        # reuses the Prior-mean key. The p-values now live on the distributions,
+        # so the top-right corner is free for the legend.
+        if param in ('Evidence sd', 'Prior mean'):
+            leg = ax.legend(loc='upper right', frameon=True, fontsize=8,
+                            handlelength=1.0, handletextpad=0.4, borderaxespad=0.2,
+                            edgecolor='0.6', facecolor='white', framealpha=1.0)
+            leg.get_frame().set_linewidth(0.6)
         sns.despine(ax=ax, offset=4, trim=False, left=True)
         ax.tick_params(axis='y', length=0)
 

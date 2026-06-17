@@ -67,7 +67,7 @@ ROW_GAP = 2.2
 def _inference_schematic(first='risky'):
     """The PMCM intuition cartoon for one presentation order (illustration)."""
     style.set_style()
-    plt.rcParams['font.size'] = 6.0  # tiny labels so the drawing dominates
+    plt.rcParams['font.size'] = 6.5  # tiny labels (>=6pt floor) so the drawing dominates
     palette = sns.color_palette('coolwarm', 4)[::-1]
     c_risky, c_safe = palette[0], palette[3]
     G = ROW_GAP
@@ -111,7 +111,7 @@ def _inference_schematic(first='risky'):
     ax.plot([mu_prior, mu_prior], [y[2] - 0.35, G * 0.95], ls=':', c='0.55',
             lw=0.8, zorder=0)
     ax.annotate('Prior\nmean', (mu_prior, G * 0.95), ha='center', va='bottom',
-                color='0.5', fontsize=5.5, linespacing=0.9)
+                color='0.5', linespacing=0.9)
 
     # Likelihoods (rows 0, 1); prior + posteriors (row 2).
     pk_f = plot_dist(ax, f_mu, f_sd, y[0], xs[0], color=f_c)
