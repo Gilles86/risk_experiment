@@ -20,8 +20,8 @@ This repository contains all analysis code for the above paper, which investigat
 
 ## Data & software availability
 
-- **Main 7T/3T experiment** — OpenNeuro **`ds007508`**: https://openneuro.org/datasets/ds007508 (DOI [10.18112/openneuro.ds007508.v1.0.0](https://doi.org/10.18112/openneuro.ds007508.v1.0.0)).
-- **Symbolic (Arabic-numeral) experiment** — figshare DOI [10.6084/m9.figshare.31400430](https://doi.org/10.6084/m9.figshare.31400430).
+- **Main 7T/3T experiment — fMRI + behaviour** (raw BIDS + derivatives): OpenNeuro **`ds007508`**, https://openneuro.org/datasets/ds007508 (DOI [10.18112/openneuro.ds007508.v1.0.0](https://doi.org/10.18112/openneuro.ds007508.v1.0.0)).
+- **Symbolic (Arabic-numeral) experiment — behavioural data only** (no fMRI): figshare DOI [10.6084/m9.figshare.31400430](https://doi.org/10.6084/m9.figshare.31400430).
 - **Preprocessing**: **fMRIPrep 20.2.2** (based on Nipype 1.6.1).
 - **Environment**: conda env `risk7t` (Python 3.10) from [`environment.yml`](environment.yml); in-house libraries [`braincoder`](https://braincoder-devs.github.io/) (encoding/decoding) and [`bauer`](https://github.com/ruffgroup/bauer) **0.1.0, pinned at commit `e246d78`** (see [`REPRODUCE.md`](REPRODUCE.md) §1).
 
