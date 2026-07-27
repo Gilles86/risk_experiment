@@ -1,0 +1,32 @@
+{
+    "Name": "Numerosity and risk dataset — derivatives",
+    "BIDSVersion": "1.8.0",
+    "DatasetType": "derivative",
+    "GeneratedBy": [
+        {
+            "Name": "fMRIPrep",
+            "Version": "20.2.2",
+            "CodeURL": "https://github.com/nipreps/fmriprep"
+        },
+        {
+            "Name": "FreeSurfer",
+            "Version": "6.0.1"
+        },
+        {
+            "Name": "braincoder",
+            "Description": "Numerosity population-receptive-field (nPRF) encoding-model fitting and Bayesian decoding.",
+            "CodeURL": "https://github.com/Gilles86/braincoder"
+        },
+        {
+            "Name": "risk_experiment",
+            "Description": "Analysis code for de Hollander et al.",
+            "CodeURL": "https://github.com/Gilles86/risk_experiment"
+        }
+    ],
+    "SourceDatasets": [
+        {
+            "URL": "https://openneuro.org/datasets/ds007508",
+            "Version": "1.0.0"
+        }
+    ]
+}
