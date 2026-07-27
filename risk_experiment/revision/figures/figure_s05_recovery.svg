@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="328.827435pt" height="270.177806pt" viewBox="0 0 328.827435 270.177806" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-07-27T16:25:57.311858</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.10.6, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 270.177806 
+L 328.827435 270.177806 
+L 328.827435 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 68.9925 205.548047 
+L 269.8725 205.548047 
+L 269.8725 4.668047 
+L 68.9925 4.668047 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g clip-path="url(#pf20e569e2e)">
+    <image xlink:href="data:image/png;base64,
+iVBORw0KGgoAAAANSUhEUgAAA0UAAANFCAYAAAC0h1e1AAASz0lEQVR4nO3ZsaoQBBTH4W5diehKt4SCoISgbA+iKQe5bS1ZQ0tP0RhNbT1BY5uB4JCD0hJFg+JeBA1ZUxiCmUMQt1doOxx+3/cE//H8OAe3fv3z9DH4H55/+sz0BBY5OvP49ASWeOav36YnsMi1e2enJ7DEwcnJ9AQWcbUAAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABA2uErx09Ob2CJm7/cn57AIpdfPzc9gSWu3Ts7PYFFfnrr4vQElnjqxo3pCSziUwQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAg7eCfO9dPp0eww7/3/5iewCJXji9NT2CJh5dOpiewyKu3v5uewBIXXzqansAiPkUAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQdnj35benN7DE+Rd+n57AIuff/WB6Akuc+/H29AQWufDz19MTWOLvF9+bnsAiPkUAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0g6fvfrZ9AaW+Obzm9MTWOS1W99PT2CJoy8/mZ7AIncufzo9gSXeeOJ0egKL+BQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABA2sEXxxdOp0eww0dffTw9gUWuPPfO9ASW+PDBt9MTWOTRm+9PT2CJH+4+mJ7AIj5FAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANJEEQAAkCaKAACANFEEAACkiSIAACBNFAEAAGmiCAAASBNFAABAmigCAADSRBEAAJAmigAAgDRRBAAApIkiAAAgTRQBAABpoggAAEgTRQAAQJooAgAA0kQRAACQJooAAIA0UQQAAKSJIgAAIE0UAQAAaaIIAABIE0UAAECaKAIAANL+A/EaPE2LC7k2AAAAAElFTkSuQmCC" id="imagead0773a964" transform="scale(1 -1) translate(0 -200.88)" x="68.9925" y="-4.668047" width="200.88" height="200.88"/>
+   </g>
+   <g id="matplotlib.axis_1">
+    <g id="xtick_1">
+     <g id="line2d_1"/>
+     <g id="text_1">
+      <text style="font-size: 8px; font-family: 'Helvetica'; text-anchor: end; fill: #262626" x="89.113733" y="213.876948" transform="rotate(-35 89.113733 213.876948)">Evidence SD₁</text>
+     </g>
+    </g>
+    <g id="xtick_2">
+     <g id="line2d_2"/>
+     <g id="text_2">
+      <text style="font-size: 8px; font-family: 'Helvetica'; text-anchor: end; fill: #262626" x="122.593733" y="213.876948" transform="rotate(-35 122.593733 213.876948)">Evidence SD₂</text>
+     </g>
+    </g>
+    <g id="xtick_3">
+     <g id="line2d_3"/>
+     <g id="text_3">
+      <text style="font-size: 8px; font-family: 'Helvetica'; text-anchor: end; fill: #262626" x="155.984112" y="213.748956" transform="rotate(-35 155.984112 213.748956)">Risky prior μ</text>
+     </g>
+    </g>
+    <g id="xtick_4">
+     <g id="line2d_4"/>
+     <g id="text_4">
+      <text style="font-size: 8px; font-family: 'Helvetica'; text-anchor: end; fill: #262626" x="189.553733" y="213.876948" transform="rotate(-35 189.553733 213.876948)">Safe prior μ</text>
+     </g>
+    </g>
+    <g id="xtick_5">
+     <g id="line2d_5"/>
+     <g id="text_5">
+      <text style="font-size: 8px; font-family: 'Helvetica'; text-anchor: end; fill: #262626" x="222.944112" y="213.748956" transform="rotate(-35 222.944112 213.748956)">Risky prior σ</text>
+     </g>
+    </g>
+    <g id="xtick_6">
+     <g id="line2d_6"/>
+     <g id="text_6">
+      <text style="font-size: 8px; font-family: 'Helvetica'; text-anchor: end; fill: #262626" x="256.513733" y="213.876948" transform="rotate(-35 256.513733 213.876948)">Safe prior σ</text>
+     </g>
+    </g>
+    <g id="text_7">
+     <text style="font-size: 10px; font-family: 'Helvetica'; text-anchor: middle; fill: #262626" x="169.4325" y="257.092733" transform="rotate(-0 169.4325 257.092733)">Estimated</text>
+    </g>
+   </g>
+   <g id="matplotlib.axis_2">
+    <g id="ytick_1">
+     <g id="line2d_7"/>
+     <g id="text_8">
+      <text style="font-size: 8px; font-family: 'Helvetica'; text-anchor: end; fill: #262626" x="65.4925" y="24.355547" transform="rotate(-0 65.4925 24.355547)">Evidence SD₁</text>
+     </g>
+    </g>
+    <g id="ytick_2">
+     <g id="line2d_8"/>
+     <g id="text_9">
+      <text style="font-size: 8px; font-family: 'Helvetica'; text-anchor: end; fill: #262626" x="65.4925" y="57.835547" transform="rotate(-0 65.4925 57.835547)">Evidence SD₂</text>
+     </g>
+    </g>
+    <g id="ytick_3">
+     <g id="line2d_9"/>
+     <g id="text_10">
+      <text style="font-size: 8px; font-family: 'Helvetica'; text-anchor: end; fill: #262626" x="65.4925" y="91.237422" transform="rotate(-0 65.4925 91.237422)">Risky prior μ</text>
+     </g>
+    </g>
+    <g id="ytick_4">
+     <g id="line2d_10"/>
+     <g id="text_11">
+      <text style="font-size: 8px; font-family: 'Helvetica'; text-anchor: end; fill: #262626" x="65.4925" y="124.795547" transform="rotate(-0 65.4925 124.795547)">Safe prior μ</text>
+     </g>
+    </g>
+    <g id="ytick_5">
+     <g id="line2d_11"/>
+     <g id="text_12">
+      <text style="font-size: 8px; font-family: 'Helvetica'; text-anchor: end; fill: #262626" x="65.4925" y="158.197422" transform="rotate(-0 65.4925 158.197422)">Risky prior σ</text>
+     </g>
+    </g>
+    <g id="ytick_6">
+     <g id="line2d_12"/>
+     <g id="text_13">
+      <text style="font-size: 8px; font-family: 'Helvetica'; text-anchor: end; fill: #262626" x="65.4925" y="191.755547" transform="rotate(-0 65.4925 191.755547)">Safe prior σ</text>
+     </g>
+    </g>
+    <g id="text_14">
+     <text style="font-size: 10px; font-family: 'Helvetica'; text-anchor: middle; fill: #262626" x="8.80875" y="105.108047" transform="rotate(-90 8.80875 105.108047)">Generating</text>
+    </g>
+   </g>
+   <g id="text_15">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #ffffff" x="85.7325" y="23.316445" transform="rotate(-0 85.7325 23.316445)">0.86</text>
+   </g>
+   <g id="text_16">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="119.2125" y="23.316445" transform="rotate(-0 119.2125 23.316445)">0.32</text>
+   </g>
+   <g id="text_17">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="152.6925" y="23.316445" transform="rotate(-0 152.6925 23.316445)">-0.35</text>
+   </g>
+   <g id="text_18">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="186.1725" y="23.316445" transform="rotate(-0 186.1725 23.316445)">0.31</text>
+   </g>
+   <g id="text_19">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="219.6525" y="23.316445" transform="rotate(-0 219.6525 23.316445)">-0.04</text>
+   </g>
+   <g id="text_20">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="253.1325" y="23.316445" transform="rotate(-0 253.1325 23.316445)">-0.30</text>
+   </g>
+   <g id="text_21">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="85.7325" y="56.796445" transform="rotate(-0 85.7325 56.796445)">0.44</text>
+   </g>
+   <g id="text_22">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #ffffff" x="119.2125" y="56.796445" transform="rotate(-0 119.2125 56.796445)">0.77</text>
+   </g>
+   <g id="text_23">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="152.6925" y="56.796445" transform="rotate(-0 152.6925 56.796445)">-0.14</text>
+   </g>
+   <g id="text_24">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="186.1725" y="56.796445" transform="rotate(-0 186.1725 56.796445)">0.47</text>
+   </g>
+   <g id="text_25">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="219.6525" y="56.796445" transform="rotate(-0 219.6525 56.796445)">-0.24</text>
+   </g>
+   <g id="text_26">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="253.1325" y="56.796445" transform="rotate(-0 253.1325 56.796445)">0.01</text>
+   </g>
+   <g id="text_27">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="85.7325" y="90.276445" transform="rotate(-0 85.7325 90.276445)">-0.14</text>
+   </g>
+   <g id="text_28">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="119.2125" y="90.276445" transform="rotate(-0 119.2125 90.276445)">0.13</text>
+   </g>
+   <g id="text_29">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #ffffff" x="152.6925" y="90.276445" transform="rotate(-0 152.6925 90.276445)">0.73</text>
+   </g>
+   <g id="text_30">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="186.1725" y="90.276445" transform="rotate(-0 186.1725 90.276445)">-0.20</text>
+   </g>
+   <g id="text_31">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="219.6525" y="90.276445" transform="rotate(-0 219.6525 90.276445)">0.30</text>
+   </g>
+   <g id="text_32">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="253.1325" y="90.276445" transform="rotate(-0 253.1325 90.276445)">-0.05</text>
+   </g>
+   <g id="text_33">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="85.7325" y="123.756445" transform="rotate(-0 85.7325 123.756445)">0.25</text>
+   </g>
+   <g id="text_34">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="119.2125" y="123.756445" transform="rotate(-0 119.2125 123.756445)">0.31</text>
+   </g>
+   <g id="text_35">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="152.6925" y="123.756445" transform="rotate(-0 152.6925 123.756445)">-0.36</text>
+   </g>
+   <g id="text_36">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #ffffff" x="186.1725" y="123.756445" transform="rotate(-0 186.1725 123.756445)">0.88</text>
+   </g>
+   <g id="text_37">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="219.6525" y="123.756445" transform="rotate(-0 219.6525 123.756445)">-0.28</text>
+   </g>
+   <g id="text_38">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="253.1325" y="123.756445" transform="rotate(-0 253.1325 123.756445)">0.01</text>
+   </g>
+   <g id="text_39">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="85.7325" y="157.236445" transform="rotate(-0 85.7325 157.236445)">-0.06</text>
+   </g>
+   <g id="text_40">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="119.2125" y="157.236445" transform="rotate(-0 119.2125 157.236445)">-0.34</text>
+   </g>
+   <g id="text_41">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="152.6925" y="157.236445" transform="rotate(-0 152.6925 157.236445)">0.00</text>
+   </g>
+   <g id="text_42">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="186.1725" y="157.236445" transform="rotate(-0 186.1725 157.236445)">-0.33</text>
+   </g>
+   <g id="text_43">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #ffffff" x="219.6525" y="157.236445" transform="rotate(-0 219.6525 157.236445)">0.93</text>
+   </g>
+   <g id="text_44">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="253.1325" y="157.236445" transform="rotate(-0 253.1325 157.236445)">-0.42</text>
+   </g>
+   <g id="text_45">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="85.7325" y="190.716445" transform="rotate(-0 85.7325 190.716445)">-0.22</text>
+   </g>
+   <g id="text_46">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="119.2125" y="190.716445" transform="rotate(-0 119.2125 190.716445)">-0.12</text>
+   </g>
+   <g id="text_47">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="152.6925" y="190.716445" transform="rotate(-0 152.6925 190.716445)">-0.06</text>
+   </g>
+   <g id="text_48">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="186.1725" y="190.716445" transform="rotate(-0 186.1725 190.716445)">0.13</text>
+   </g>
+   <g id="text_49">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #1f1f1f" x="219.6525" y="190.716445" transform="rotate(-0 219.6525 190.716445)">-0.32</text>
+   </g>
+   <g id="text_50">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: middle; fill: #ffffff" x="253.1325" y="190.716445" transform="rotate(-0 253.1325 190.716445)">0.82</text>
+   </g>
+   <g id="text_51">
+    <text style="font-size: 7.5px; font-family: 'Helvetica'; text-anchor: end; fill: #595959" x="269.8725" y="267.174525" transform="rotate(-0 269.8725 267.174525)">10 simulations</text>
+   </g>
+  </g>
+  <g id="axes_2">
+   <g id="patch_3">
+    <path d="M 279.81906 205.548047 
+L 289.86306 205.548047 
+L 289.86306 4.668047 
+L 279.81906 4.668047 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="matplotlib.axis_3"/>
+   <g id="matplotlib.axis_4">
+    <g id="ytick_7">
+     <g id="line2d_13">
+      <defs>
+       <path id="me46e35e9b7" d="M 0 0 
+L 3 0 
+" style="stroke: #262626; stroke-width: 0.6"/>
+      </defs>
+      <g>
+       <use xlink:href="#me46e35e9b7" x="289.86306" y="205.548047" style="fill: #262626; stroke: #262626; stroke-width: 0.6"/>
+      </g>
+     </g>
+     <g id="text_52">
+      <text style="font-size: 9px; font-family: 'Helvetica'; text-anchor: start; fill: #262626" x="296.36306" y="208.776094" transform="rotate(-0 296.36306 208.776094)">−1.0</text>
+     </g>
+    </g>
+    <g id="ytick_8">
+     <g id="line2d_14">
+      <g>
+       <use xlink:href="#me46e35e9b7" x="289.86306" y="155.328047" style="fill: #262626; stroke: #262626; stroke-width: 0.6"/>
+      </g>
+     </g>
+     <g id="text_53">
+      <text style="font-size: 9px; font-family: 'Helvetica'; text-anchor: start; fill: #262626" x="296.36306" y="158.556094" transform="rotate(-0 296.36306 158.556094)">−0.5</text>
+     </g>
+    </g>
+    <g id="ytick_9">
+     <g id="line2d_15">
+      <g>
+       <use xlink:href="#me46e35e9b7" x="289.86306" y="105.108047" style="fill: #262626; stroke: #262626; stroke-width: 0.6"/>
+      </g>
+     </g>
+     <g id="text_54">
+      <text style="font-size: 9px; font-family: 'Helvetica'; text-anchor: start; fill: #262626" x="296.36306" y="108.336094" transform="rotate(-0 296.36306 108.336094)">0.0</text>
+     </g>
+    </g>
+    <g id="ytick_10">
+     <g id="line2d_16">
+      <g>
+       <use xlink:href="#me46e35e9b7" x="289.86306" y="54.888047" style="fill: #262626; stroke: #262626; stroke-width: 0.6"/>
+      </g>
+     </g>
+     <g id="text_55">
+      <text style="font-size: 9px; font-family: 'Helvetica'; text-anchor: start; fill: #262626" x="296.36306" y="58.116094" transform="rotate(-0 296.36306 58.116094)">0.5</text>
+     </g>
+    </g>
+    <g id="ytick_11">
+     <g id="line2d_17">
+      <g>
+       <use xlink:href="#me46e35e9b7" x="289.86306" y="4.668047" style="fill: #262626; stroke: #262626; stroke-width: 0.6"/>
+      </g>
+     </g>
+     <g id="text_56">
+      <text style="font-size: 9px; font-family: 'Helvetica'; text-anchor: start; fill: #262626" x="296.36306" y="7.896094" transform="rotate(-0 296.36306 7.896094)">1.0</text>
+     </g>
+    </g>
+    <g id="text_57">
+     <text style="font-size: 10px; font-family: 'Helvetica'; text-anchor: middle; fill: #262626" x="325.30306" y="105.108047" transform="rotate(-90 325.30306 105.108047)">Pearson r</text>
+    </g>
+   </g>
+   <image xlink:href="data:image/png;base64,
+iVBORw0KGgoAAAANSUhEUgAAACoAAANFCAYAAAANiW5JAAAFa0lEQVR4nO3d2Q3bMBAAUVHa9JOW0n8NJtOCPgYQBphXwcArHpZzrD9//51L4P464K1CabPu5+uGVzSfqCa00dM0oY2epglt9LRCabOenlGUJnTutieWJrSTiaYJbfS0Qmmzbkero/IShbY90TShjZ5WKK1nlKYJ7U0JTRPaqqdpQhs9rVBaL3JpmtC2J5omtNHTNKGNnlYorWeUpglt9DRNaC/JaJrQVj2tUFrPKE0T2uhpmtC57/V1wyuaT7RQ2qyeUZYmdNZq9ChNaCcTTRPahk8rlNYzStOEzt2lhKUJbdXTNKGNnlYore9MNE3oLEmqJFMU2ksyWqG0TiaaJrSLM00T2uhpmtBektEKpbU90TShjZ6mCe2rCE0T2psSWqG0XuTSNKGdTDRNaPdRmia0SwmtUFonE00T2slE04TO0+hZhdJ6Rmma0EZP04Q2epomtNHTCqXN9IyyNKFtTzRNaKOnaULn6X9lYxVKa3uiaUIbPU0T2uhphdLm6U9AsDShbU80TWijp2lCez9KK5TW9kTThDZ6mia00dM0oY2eViitZ5SmCW30NE1oo6cVSusZpWlCGz1NE9roaZrQfrSlFUrrH6GkaULncUze84lqQvvHKmia0C4ltEJpXUpomtAuJTRNaJcSmia0DZ9WKK2TiaYJbXuiaUL7+YZWKK3tiaYJ7VJC04S26mma0C4ltEJplr+/6vlENaH9xEjThHYpoWlC55GkSjIL5bU90TShXUpomtBWPa1QWrcnmia07YmmCR3J5D2fqCZ07ssxe80nWiit7YmmCe3nG5omtFVP04R2KaEVSmt7omlCu5TQNKEjmbznE9WE9n6UViitSwlNEzqWUkunJ3SWZNlrPtFCaX1nomlCu5TQNKFdSmia0C4ltEJpXUpomtBe5NI0oa16mia0SwmtUFrbE00T2qWEpgnt12VaobRe5NI0obPO+brhFc0nqgmd6+yvG17RfKKa0FmNnlUore2Jpgmdq0sJSxPaqqdpQruU0AqltT3RNKGNnqYJbfQ0Tehcu9GjCqV1caZpQjuZaJrQXpLRCqW1PdE0oV1KaJrQVj1NE9roaYXSekZpmtAuJTRNaC9yaZrQ3pTQCqV1KaFpQruU0DShrXpaobSeUZomdK79+7rhFc0nqgmd09dllia0VU8rlNYzStOEzvk1epQmtHf4NE1oGz6tUNqcnlGWJrSTiaYJbdXTNKFdSmiF0jqZaJrQ3pTQNKGdTLRCaT2jNE1ovy7TNKGtepomtNHTCqV1MtE0oW1PNE1oo6dpQntJRiuU1jt8mia0k4mmCe0PFtAKpfV1maYJnfNr9ChNaKOnaULb8GmF0tqeaJrQRk/ThM7uRS5LE9qlhFYorZOJpglt9DRNaCcTrVDa7LYnlia0k4mmCW30NE1olxJaobS2J5omtNHTNKGzO5lYmtBWPa1QWn9XhKYJ7TsTTRPayUTThDZ6WqG0fr6haUK7lNA0oZ1MtEJpc379v8soTWiXEpomdM5u1aM0obPb8FmF0ro40zSh3UdpmtBOJpomtA2fVihtdt+ZWJrQLiU0TWgvyWiF0tqeaJrQRk/ThHYy0TSh/XxDK5TW2zyaJrS3eTRNaPdRmia0DZ9WKK0/jE3ThLY90TShXUpomtC+itAKpXUy0TShnUw0Tejs0+hRhdLm1zPK0oSO5GDyfKKa0FY9TRPaqqcVSmt7omlC255omtBWPU0T2qqnFUrrGaVpQjuZaJrQVj2tUFrbE00T2vZE04S26mma0FY9rVBa2xNNEzqOP48r+kQ1oa16mia0SwmtUFrbE00T2vZE04S26mma0FY9rVBa2xNNE9r2RNOE/geToFIcZqmQDAAAAABJRU5ErkJggg==" id="image00cc0d91c1" transform="scale(1 -1) translate(0 -200.88)" x="279.84" y="-4.56" width="10.08" height="200.88"/>
+   <g id="LineCollection_1"/>
+   <g id="patch_4">
+    <path d="M 279.81906 205.548047 
+L 284.84106 205.548047 
+L 289.86306 205.548047 
+L 289.86306 4.668047 
+L 284.84106 4.668047 
+L 279.81906 4.668047 
+L 279.81906 205.548047 
+z
+" style="fill: none; stroke: #262626; stroke-width: 0.6; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pf20e569e2e">
+   <rect x="68.9925" y="4.668047" width="200.88" height="200.88"/>
+  </clipPath>
+ </defs>
+</svg>
