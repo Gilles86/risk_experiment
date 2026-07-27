@@ -8,8 +8,8 @@ de Hollander et al., *Nature Communications* (NCOMMS-24-63995B): "Rapid Changes
 in Risk Attitudes Originate from Bayesian Inference on Parietal Magnitude
 Representations." Combines 7T/3T fMRI (numerosity mapper + risky-choice task)
 with Bayesian behavioural models to show that trial-to-trial uncertainty in
-parietal magnitude representations drives changes in risk attitude. Currently in
-the final-revision / figure-regeneration stage.
+parietal magnitude representations drives changes in risk attitude. Accepted
+at *Nature Communications* (in press).
 
 ## Environment
 

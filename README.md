@@ -1,7 +1,7 @@
 # Rapid Changes in Risk Attitudes Originate from Bayesian Inference on Parietal Magnitude Representations
 
 **de Hollander, G., et al. (2024)**
-*Nature Communications* (under revision)
+*Nature Communications* (in press)
 
 Preprint: https://www.biorxiv.org/content/10.1101/2024.08.23.609296v1.full
 
