@@ -256,8 +256,8 @@ archive/         # code NOT needed to reproduce the paper (see archive/CLEANUP_N
 Create the `risk7t` conda env and install the package (see [`REPRODUCE.md`](REPRODUCE.md) §1 for the full recipe):
 
 ```bash
-git clone https://github.com/ruffgroup/risk_experiment.git
-cd risk_experiment
+git clone https://github.com/ruffgroup/risk_order_experiment.git
+cd risk_order_experiment
 conda env create -f environment.yml      # env "risk7t" (Python 3.10)
 conda activate risk7t
 pip install -e .

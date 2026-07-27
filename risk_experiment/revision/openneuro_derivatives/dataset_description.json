@@ -20,7 +20,7 @@
         {
             "Name": "risk_experiment",
             "Description": "Analysis code for de Hollander et al.",
-            "CodeURL": "https://github.com/Gilles86/risk_experiment"
+            "CodeURL": "https://github.com/ruffgroup/risk_order_experiment"
         }
     ],
     "SourceDatasets": [
