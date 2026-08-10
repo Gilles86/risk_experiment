@@ -22,7 +22,7 @@ greenlet==0.4.15
 idna==2.9
 imageio==2.8.0
 imageio-ffmpeg==0.4.2
-ipython==7.17.0
+ipython==7.31.1
 ipython-genutils==0.2.0
 javascripthon==0.11
 jdcal==1.4.1
